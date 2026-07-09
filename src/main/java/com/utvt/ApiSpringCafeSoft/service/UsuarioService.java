@@ -133,4 +133,22 @@ public class UsuarioService {
                 usuario.getUserTipo()
         );
     }
+
+
+    // Actualizar push token
+    public void actualizarPushToken(Long id, String pushToken) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+        usuario.setPushToken(pushToken);
+        usuarioRepository.save(usuario);
+    }
+
+    // Obtener push tokens de todos los empleados (userTipo = 1)
+    public List<String> getPushTokensEmpleados() {
+        return usuarioRepository.findByUserTipo(1).stream()
+                .map(u -> u.getPushToken())
+                .filter(token -> token != null && !token.isEmpty())
+                .collect(Collectors.toList());
+    }
+
 }

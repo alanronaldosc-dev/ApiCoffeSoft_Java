@@ -35,74 +35,39 @@ public class Usuario {
     @Column(name = "user_tipo", nullable = false)
     private Integer userTipo;
 
+    @Column(name = "push_token")
+    private String pushToken;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
 
-    // Constructor por defecto
     public Usuario() {}
 
-    // Getters y Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getNombre() {
-        return nombre;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getDireccion() { return direccion; }
+    public void setDireccion(String direccion) { this.direccion = direccion; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String telefono) { this.telefono = telefono; }
 
-    public String getPassword() {
-        return password;
-    }
+    public Integer getUserTipo() { return userTipo; }
+    public void setUserTipo(Integer userTipo) { this.userTipo = userTipo; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public String getPushToken() { return pushToken; }
+    public void setPushToken(String pushToken) { this.pushToken = pushToken; }
 
-    public String getDireccion() {
-        return direccion;
-    }
-
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
-    }
-
-    public String getTelefono() {
-        return telefono;
-    }
-
-    public void setTelefono(String telefono) {
-        this.telefono = telefono;
-    }
-
-    public Integer getUserTipo() {
-        return userTipo;
-    }
-
-    public void setUserTipo(Integer userTipo) {
-        this.userTipo = userTipo;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

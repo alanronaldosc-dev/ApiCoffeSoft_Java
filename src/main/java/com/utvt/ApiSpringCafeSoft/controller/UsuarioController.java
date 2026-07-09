@@ -705,4 +705,43 @@ public class UsuarioController {
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         }
     }
+
+
+    // ============================================
+// 📱 9. ACTUALIZAR PUSH TOKEN - PUT
+// ============================================
+
+@Operation(summary = "📱 Actualizar push token del usuario")
+@PutMapping("/{id}/push-token")
+public ResponseEntity<Map<String, Object>> actualizarPushToken(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> body) {
+    try {
+        String pushToken = body.get("pushToken");
+        usuarioService.actualizarPushToken(id, pushToken);
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "✅ Push token actualizado");
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("error", "❌ " + e.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}
+
+// ============================================
+// 📱 10. OBTENER PUSH TOKENS DE EMPLEADOS - GET
+// ============================================
+
+@Operation(summary = "📱 Obtener push tokens de todos los empleados activos")
+@GetMapping("/empleados/push-tokens")
+public ResponseEntity<Map<String, Object>> getPushTokensEmpleados() {
+    List<String> tokens = usuarioService.getPushTokensEmpleados();
+    Map<String, Object> response = new HashMap<>();
+    response.put("tokens", tokens);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+}
+
+
+    
 }
