@@ -27,11 +27,10 @@ public class Producto {
     @Column(length = 500)
     private String descripcion;
 
-    @Size(max = 255, message = "La URL de la imagen no puede exceder los 255 caracteres")
-    @Column(length = 255)
-    private String imagen;
+    @Lob
+    @Column(name = "imagen")
+    private byte[] imagen;
 
-    @NotNull(message = "Los insumos son obligatorios")
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ProductoInsumo> insumos = new ArrayList<>();
 
@@ -39,7 +38,7 @@ public class Producto {
     public Producto() {}
 
     // Constructor con campos principales
-    public Producto(String nombre, Double precio, String descripcion, String imagen) {
+    public Producto(String nombre, Double precio, String descripcion, byte[] imagen) {
         this.nombre = nombre;
         this.precio = precio;
         this.descripcion = descripcion;
@@ -79,11 +78,11 @@ public class Producto {
         this.descripcion = descripcion;
     }
 
-    public String getImagen() {
+    public byte[] getImagen() {
         return imagen;
     }
 
-    public void setImagen(String imagen) {
+    public void setImagen(byte[] imagen) {
         this.imagen = imagen;
     }
 

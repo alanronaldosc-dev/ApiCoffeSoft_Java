@@ -2,9 +2,11 @@ package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.ProductoDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoInsumoDTO;
+import com.utvt.ApiSpringCafeSoft.model.Insumo;
 import com.utvt.ApiSpringCafeSoft.model.Inventario;
 import com.utvt.ApiSpringCafeSoft.model.Producto;
 import com.utvt.ApiSpringCafeSoft.model.ProductoInsumo;
+import com.utvt.ApiSpringCafeSoft.repository.InsumoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ProductoInsumoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
@@ -26,6 +28,7 @@ public class ProductoService {
 
     @Autowired
     private InventarioRepository inventarioRepository;
+
 
     // Convertir Entity a DTO
     private ProductoDTO convertToDTO(Producto producto) {
@@ -91,15 +94,15 @@ public class ProductoService {
     private ProductoInsumo createProductoInsumo(ProductoInsumoDTO dto, Producto producto) {
         Inventario insumo = inventarioRepository.findById(dto.getInsumoId())
             .orElseThrow(() -> new RuntimeException("Insumo no encontrado con ID: " + dto.getInsumoId()));
-        
+
         ProductoInsumo productoInsumo = new ProductoInsumo();
         productoInsumo.setProducto(producto);
         productoInsumo.setInsumo(insumo);
         productoInsumo.setCantidad(dto.getCantidad());
         productoInsumo.setUnidadMedida(dto.getUnidadMedida());
-        
         return productoInsumo;
     }
+
 
     // 2. Obtener todos los productos
     public List<ProductoDTO> obtenerTodosLosProductos() {

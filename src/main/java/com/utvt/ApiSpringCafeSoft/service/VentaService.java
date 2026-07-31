@@ -1,4 +1,4 @@
-package com.utvt.ApiSpringCafeSoft.service;
+/*package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDetalleDTO;
@@ -251,4 +251,4 @@ public class VentaService {
 
         ventaRepository.deleteById(id);
     }
-}
+}*/
