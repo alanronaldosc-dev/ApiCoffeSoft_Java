@@ -32,12 +32,16 @@ public class ProductoService {
 
     // Convertir Entity a DTO
     private ProductoDTO convertToDTO(Producto producto) {
+        String imagenBase64 = null;
+        if (producto.getImagen() != null) {
+            imagenBase64 = java.util.Base64.getEncoder().encodeToString(producto.getImagen());
+        }
         ProductoDTO dto = new ProductoDTO(
             producto.getId(),
             producto.getNombre(),
             producto.getPrecio(),
             producto.getDescripcion(),
-            producto.getImagen()
+            imagenBase64
         );
 
         List<ProductoInsumoDTO> insumosDTO = producto.getInsumos().stream()
@@ -66,7 +70,9 @@ public class ProductoService {
         producto.setNombre(dto.getNombre());
         producto.setPrecio(dto.getPrecio());
         producto.setDescripcion(dto.getDescripcion());
-        producto.setImagen(dto.getImagen());
+        if (dto.getImagen() != null && !dto.getImagen().isEmpty()) {
+            producto.setImagen(java.util.Base64.getDecoder().decode(dto.getImagen()));
+        }
         return producto;
     }
 
@@ -132,7 +138,11 @@ public class ProductoService {
         existingProducto.setNombre(productoDTO.getNombre());
         existingProducto.setPrecio(productoDTO.getPrecio());
         existingProducto.setDescripcion(productoDTO.getDescripcion());
-        existingProducto.setImagen(productoDTO.getImagen());
+        if (productoDTO.getImagen() != null && !productoDTO.getImagen().isEmpty()) {
+            existingProducto.setImagen(java.util.Base64.getDecoder().decode(productoDTO.getImagen()));
+        } else {
+            existingProducto.setImagen(null);
+        }
 
         // Eliminar insumos existentes
         productoInsumoRepository.deleteByProductoId(id);

@@ -54,6 +54,13 @@ public class VentaDTO {
     @Schema(description = "Fecha de creación", example = "2026-06-22T10:30:00")
     private LocalDateTime createdAt;
 
+    @Schema(description = "Monto en efectivo recibido (solo si método es efectivo)", example = "200.00")
+    private Double montoEfectivo;
+
+    @Schema(description = "Cambio a devolver (solo si método es efectivo)", example = "36.00")
+    private Double cambio;
+
+
     // Constructor por defecto
     public VentaDTO() {}
 
@@ -161,4 +168,21 @@ public class VentaDTO {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
+    public Double getMontoEfectivo() { 
+        return montoEfectivo; 
+    }
+    
+    public void setMontoEfectivo(Double montoEfectivo) { 
+        this.montoEfectivo = montoEfectivo; 
+    }
+
+    public Double getCambio() { 
+        return cambio; 
+    }
+
+    public void setCambio(Double cambio) { 
+        this.cambio = cambio; 
+    }
+
 }

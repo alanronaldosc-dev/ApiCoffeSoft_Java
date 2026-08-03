@@ -27,8 +27,7 @@ public class ProductoDTO {
     private String descripcion;
 
     @Schema(description = "Imagen del producto", example = "cafe-latte.jpg")
-    @Size(max = 255, message = "La URL de la imagen no puede exceder los 255 caracteres")
-    private byte[] imagen;
+    private String imagen;
 
     @Schema(description = "Lista de insumos necesarios para el producto")
     @Valid
@@ -38,7 +37,7 @@ public class ProductoDTO {
     public ProductoDTO() {}
 
     // Constructor con parámetros
-    public ProductoDTO(Long id, String nombre, Double precio, String descripcion, byte[] imagen) {
+    public ProductoDTO(Long id, String nombre, Double precio, String descripcion, String imagen) {
         this.id = id;
         this.nombre = nombre;
         this.precio = precio;
@@ -79,11 +78,11 @@ public class ProductoDTO {
         this.descripcion = descripcion;
     }
 
-    public byte[] getImagen() {
+    public String getImagen() {
         return imagen;
     }
 
-    public void setImagen(byte[] imagen) {
+    public void setImagen(String imagen) {
         this.imagen = imagen;
     }
 

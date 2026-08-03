@@ -63,6 +63,19 @@ public class Venta {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "monto_efectivo")
+    private Double montoEfectivo;
+
+    @Column(name = "cambio")
+    private Double cambio;
+
+    public Double getMontoEfectivo() { return montoEfectivo; }
+    public void setMontoEfectivo(Double montoEfectivo) { this.montoEfectivo = montoEfectivo; }
+
+    public Double getCambio() { return cambio; }
+    public void setCambio(Double cambio) { this.cambio = cambio; }
+
+
     // Constructor por defecto
     public Venta() {
         this.fecha = LocalDateTime.now();

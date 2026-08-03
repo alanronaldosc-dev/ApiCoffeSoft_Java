@@ -1,4 +1,4 @@
-/*package com.utvt.ApiSpringCafeSoft.controller;
+package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.service.VentaService;
@@ -136,4 +136,4 @@ public class VentaController {
         ventaService.cancelarVenta(id);
         return ResponseEntity.noContent().build();
     }
-}*/
+}

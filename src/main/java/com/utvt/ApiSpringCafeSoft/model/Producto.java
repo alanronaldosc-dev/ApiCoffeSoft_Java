@@ -27,8 +27,7 @@ public class Producto {
     @Column(length = 500)
     private String descripcion;
 
-    @Lob
-    @Column(name = "imagen")
+    @Column(name = "imagen", columnDefinition = "bytea")
     private byte[] imagen;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
