@@ -29,6 +29,11 @@ public class ProductoDTO {
     @Schema(description = "Imagen del producto", example = "cafe-latte.jpg")
     private String imagen;
 
+    // AGREGAR estos campos:
+    private Long categoriaId;
+    private String categoriaNombre;
+
+
     @Schema(description = "Lista de insumos necesarios para el producto")
     @Valid
     private List<ProductoInsumoDTO> insumos = new ArrayList<>();
@@ -85,6 +90,18 @@ public class ProductoDTO {
     public void setImagen(String imagen) {
         this.imagen = imagen;
     }
+
+    public Long getCategoriaId() { 
+        return categoriaId; 
+    }
+
+    public void setCategoriaId(Long categoriaId) { 
+        this.categoriaId = categoriaId; 
+    }
+
+    public String getCategoriaNombre() { return categoriaNombre; }
+    public void setCategoriaNombre(String categoriaNombre) { this.categoriaNombre = categoriaNombre; }
+
 
     public List<ProductoInsumoDTO> getInsumos() {
         return insumos;

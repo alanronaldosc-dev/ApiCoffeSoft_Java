@@ -15,7 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
+
 
 
 @RestController
@@ -138,4 +139,13 @@ public class ProductoController {
         List<ProductoDTO> productos = productoService.buscarPorInsumo(insumoId);
         return ResponseEntity.ok(productos);
     }
+
+    @Operation(summary = "Obtener productos por categoría")
+    @GetMapping("/categoria/{categoriaId}")
+    public ResponseEntity<List<ProductoDTO>> obtenerPorCategoria(
+            @PathVariable Long categoriaId) {
+        List<ProductoDTO> productos = productoService.obtenerPorCategoria(categoriaId);
+        return ResponseEntity.ok(productos);
+    }
+
 }

@@ -37,4 +37,9 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     // Buscar producto por ID con sus insumos
     @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.insumos pi LEFT JOIN FETCH pi.insumo WHERE p.id = :id")
     Producto findByIdWithInsumos(@Param("id") Long id);
+
+    // AGREGAR:
+    @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.insumos pi LEFT JOIN FETCH pi.insumo WHERE p.categoria.id = :categoriaId")
+    List<Producto> findByCategoriaId(@Param("categoriaId") Long categoriaId);
+
 }

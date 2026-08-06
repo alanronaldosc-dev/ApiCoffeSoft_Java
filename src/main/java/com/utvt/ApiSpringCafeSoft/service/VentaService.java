@@ -67,8 +67,8 @@ public class VentaService {
 
         // Validar stock antes de procesar
         for (VentaDetalleDTO detalleDTO : ventaDTO.getDetalles()) {
-            Producto producto = productoRepository.findById(detalleDTO.getProductoId())
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + detalleDTO.getProductoId()));
+            Producto producto = productoRepository.findByIdWithInsumos(detalleDTO.getProductoId());
+            if (producto == null) throw new RuntimeException("Producto no encontrado con ID: " + detalleDTO.getProductoId());
             validarStock(producto, detalleDTO.getCantidad());
         }
 
@@ -88,7 +88,8 @@ public class VentaService {
         double subtotal = 0.0;
 
         for (VentaDetalleDTO detalleDTO : ventaDTO.getDetalles()) {
-            Producto producto = productoRepository.findById(detalleDTO.getProductoId()).get();
+            Producto producto = productoRepository.findByIdWithInsumos(detalleDTO.getProductoId());
+            if (producto == null) throw new RuntimeException("Producto no encontrado con ID: " + detalleDTO.getProductoId());
             descontarPorLotes(producto, detalleDTO.getCantidad());
 
             Double precioUnitario = detalleDTO.getPrecioUnitario() != null

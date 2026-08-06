@@ -13,6 +13,9 @@ import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.utvt.ApiSpringCafeSoft.repository.CategoriaRepository;
+import com.utvt.ApiSpringCafeSoft.model.Categoria;
+
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +31,9 @@ public class ProductoService {
 
     @Autowired
     private InventarioRepository inventarioRepository;
+
+    @Autowired
+    private CategoriaRepository categoriaRepository;
 
 
     // Convertir Entity a DTO
@@ -48,6 +54,13 @@ public class ProductoService {
             .map(this::convertInsumoToDTO)
             .collect(Collectors.toList());
         dto.setInsumos(insumosDTO);
+
+        // AGREGAR estas 2 líneas antes del return del método convertToDTO:
+        if (producto.getCategoria() != null) {
+            dto.setCategoriaId(producto.getCategoria().getId());
+            dto.setCategoriaNombre(producto.getCategoria().getNombre());
+        }
+
 
         return dto;
     }
@@ -93,8 +106,17 @@ public class ProductoService {
             // Guardar con los insumos
             savedProducto = productoRepository.save(savedProducto);
         }
+
+        // AGREGAR:
+        if (productoDTO.getCategoriaId() != null) {
+            Categoria categoria = categoriaRepository.findById(productoDTO.getCategoriaId())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + productoDTO.getCategoriaId()));
+            producto.setCategoria(categoria);
+        }
+
         
         return convertToDTO(savedProducto);
+        
     }
 
     private ProductoInsumo createProductoInsumo(ProductoInsumoDTO dto, Producto producto) {
@@ -156,6 +178,16 @@ public class ProductoService {
             }
         }
 
+        // AGREGAR:
+        if (productoDTO.getCategoriaId() != null) {
+            Categoria categoria = categoriaRepository.findById(productoDTO.getCategoriaId())
+                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + productoDTO.getCategoriaId()));
+            existingProducto.setCategoria(categoria);
+        } else {
+            existingProducto.setCategoria(null);
+        }
+
+
         Producto updatedProducto = productoRepository.save(existingProducto);
         return convertToDTO(updatedProducto);
     }
@@ -188,4 +220,11 @@ public class ProductoService {
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
+
+    public List<ProductoDTO> obtenerPorCategoria(Long categoriaId) {
+        return productoRepository.findByCategoriaId(categoriaId).stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+    }
+
 }

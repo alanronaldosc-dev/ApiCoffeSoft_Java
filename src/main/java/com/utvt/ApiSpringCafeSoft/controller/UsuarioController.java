@@ -743,5 +743,50 @@ public ResponseEntity<Map<String, Object>> getPushTokensEmpleados() {
 }
 
 
+@Operation(summary = "Iniciar sesión")
+@PostMapping("/login")
+public ResponseEntity<Map<String, Object>> iniciarSesion(
+        @RequestBody Map<String, String> body) {
+
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+        String email = body.get("email");
+        String password = body.get("password");
+
+        if (email == null || email.trim().isEmpty()
+                || password == null || password.trim().isEmpty()) {
+
+            response.put("error", "Correo y contraseña son obligatorios");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        UsuarioDTO usuario = usuarioService.iniciarSesion(
+                email.trim().toLowerCase(),
+                password
+        );
+
+        response.put("mensaje", "Inicio de sesión exitoso");
+        response.put("usuario", usuario);
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (RuntimeException e) {
+
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+}
     
 }

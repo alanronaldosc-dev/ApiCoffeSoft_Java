@@ -151,4 +151,20 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
+    public UsuarioDTO iniciarSesion(String email, String password) {
+
+    Usuario usuario = usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Correo o contraseña incorrectos"));
+
+    boolean passwordCorrecta = passwordEncoder.matches(
+            password,
+            usuario.getPassword()
+    );
+
+    if (!passwordCorrecta) {
+        throw new RuntimeException("Correo o contraseña incorrectos");
+    }
+
+    return convertirADTO(usuario);
+}
 }
