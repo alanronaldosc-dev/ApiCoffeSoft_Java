@@ -1,3 +1,9 @@
+// ============================================
+// HU-008 - INICIO DE SESION
+// Controla la autenticacion de los usuarios
+// y procesa los accesos exitosos al sistema.
+// ============================================
+
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.UsuarioDTO;

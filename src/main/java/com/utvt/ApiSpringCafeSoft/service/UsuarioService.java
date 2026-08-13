@@ -1,3 +1,9 @@
+// ============================================
+// HU-008 - VALIDACION DE INICIO DE SESION
+// Verifica las credenciales del usuario antes
+// de permitir el acceso al sistema.
+// ============================================
+
 package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.UsuarioDTO;
