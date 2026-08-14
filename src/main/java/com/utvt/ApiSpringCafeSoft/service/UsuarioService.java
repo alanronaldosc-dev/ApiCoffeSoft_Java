@@ -167,30 +167,4 @@ public class UsuarioService {
 
     return convertirADTO(usuario);
 }
-public void restablecerPassword(String email, String codigo, String nuevaPassword) {
-    // 1. Buscar usuario por email
-    Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
-
-    // 2. Validar que el código sea correcto y no esté expirado
-    // Aquí deberías tener una tabla o campo en Usuario que guarde el código y su fecha de expiración.
-    if (usuario.getResetToken() == null || !usuario.getResetToken().equals(codigo)) {
-        throw new RuntimeException("Código inválido");
-    }
-    if (usuario.getResetTokenExpiresAt().isBefore(LocalDateTime.now())) {
-        throw new RuntimeException("Código expirado");
-    }
-
-    // 3. Encriptar la nueva contraseña con BCrypt
-    usuario.setPassword(passwordEncoder.encode(nuevaPassword));
-
-    // 4. Limpiar el token para que no se reutilice
-    usuario.setResetToken(null);
-    usuario.setResetTokenExpiresAt(null);
-
-    // 5. Guardar el usuario actualizado
-    usuarioRepository.save(usuario);
-}
-
-
 }
