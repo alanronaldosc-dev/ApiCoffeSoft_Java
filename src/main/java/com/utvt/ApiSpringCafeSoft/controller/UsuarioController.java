@@ -787,6 +787,29 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
                 HttpStatus.UNAUTHORIZED
         );
     }
+// ============================================
+// 🔐 10. RESTABLECER CONTRASEÑA - POST
+// ============================================
+
+@Operation(summary = "🔐 Restablecer contraseña")
+@PostMapping("/reset-password")
+public ResponseEntity<Map<String, Object>> resetPassword(@RequestBody Map<String, String> body) {
+    try {
+        String email = body.get("email");
+        String codigo = body.get("codigo");
+        String nuevaPassword = body.get("nuevaPassword");
+
+        usuarioService.restablecerPassword(email, codigo, nuevaPassword);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "✅ Contraseña restablecida correctamente");
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("error", "❌ " + e.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}    
 }
     
 }
