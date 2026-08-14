@@ -60,6 +60,12 @@ public class VentaDTO {
     @Schema(description = "Cambio a devolver (solo si método es efectivo)", example = "36.00")
     private Double cambio;
 
+    @Schema(description = "Nombre de la persona para quien es el pedido")
+private String nombreCliente;
+
+@Schema(description = "Estado actual del pedido")
+private String estadoPedido;
+
 
     // Constructor por defecto
     public VentaDTO() {}
@@ -184,5 +190,21 @@ public class VentaDTO {
     public void setCambio(Double cambio) { 
         this.cambio = cambio; 
     }
+
+    public String getNombreCliente() {
+    return nombreCliente;
+}
+
+public void setNombreCliente(String nombreCliente) {
+    this.nombreCliente = nombreCliente;
+}
+
+public String getEstadoPedido() {
+    return estadoPedido;
+}
+
+public void setEstadoPedido(String estadoPedido) {
+    this.estadoPedido = estadoPedido;
+}
 
 }

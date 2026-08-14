@@ -33,6 +33,8 @@ public class VentaService {
         dto.setMetodoPago(venta.getMetodoPago());
         dto.setMontoEfectivo(venta.getMontoEfectivo());
         dto.setCambio(venta.getCambio());
+        dto.setNombreCliente(venta.getNombreCliente());
+dto.setEstadoPedido(venta.getEstadoPedido());
         dto.setUsuarioId(venta.getUsuario().getId());
         dto.setUsuarioNombre(venta.getUsuario().getNombre());
         dto.setObservaciones(venta.getObservaciones());
@@ -79,6 +81,9 @@ public class VentaService {
         venta.setUsuario(usuario);
         venta.setObservaciones(ventaDTO.getObservaciones());
         venta.setCreatedAt(LocalDateTime.now());
+
+        venta.setNombreCliente(ventaDTO.getNombreCliente());
+venta.setEstadoPedido("PENDIENTE");
 
         // Efectivo y cambio
         if ("efectivo".equals(ventaDTO.getMetodoPago()) && ventaDTO.getMontoEfectivo() != null) {
@@ -193,6 +198,27 @@ public class VentaService {
         return ventaRepository.findByMetodoPago(metodoPago).stream()
             .map(this::convertToDTO).collect(Collectors.toList());
     }
+
+    public List<VentaDTO> obtenerPedidosPendientes() {
+    return ventaRepository
+        .findByEstadoPedidoOrderByFechaAsc("PENDIENTE")
+        .stream()
+        .map(this::convertToDTO)
+        .collect(Collectors.toList());
+}
+
+@Transactional
+public VentaDTO marcarPedidoEntregado(Long id) {
+
+    Venta venta = ventaRepository.findById(id)
+        .orElseThrow(() ->
+            new RuntimeException("Pedido no encontrado con ID: " + id)
+        );
+
+    venta.setEstadoPedido("ENTREGADA");
+
+    return convertToDTO(ventaRepository.save(venta));
+}
 
     @Transactional
     public void cancelarVenta(Long id) {
