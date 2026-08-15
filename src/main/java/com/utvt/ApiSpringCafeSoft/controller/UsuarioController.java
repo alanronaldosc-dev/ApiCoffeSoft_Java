@@ -2,7 +2,12 @@
 // HU-008 - INICIO DE SESION
 // Controla la autenticacion de los usuarios
 // y procesa los accesos exitosos al sistema.
-// ============================================
+
+// =======================================
+// HU-009 - GESTION DE USUARIOS
+// Controlador encargado de administrar
+// las operaciones CRUD de usuarios
+// =======================================
 
 package com.utvt.ApiSpringCafeSoft.controller;
 
