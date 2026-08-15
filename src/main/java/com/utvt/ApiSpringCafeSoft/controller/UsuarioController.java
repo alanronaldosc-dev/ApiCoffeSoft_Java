@@ -729,8 +729,7 @@ public ResponseEntity<Map<String, Object>> actualizarPushToken(
     }
 }
 
-// ============================================
-// 📱 10. OBTENER PUSH TOKENS DE EMPLEADOS - GET
+// =================== 10. OBTENER PUSH TOKENS DE EMPLEADOS - GET
 // ============================================
 
 @Operation(summary = "📱 Obtener push tokens de todos los empleados activos")
