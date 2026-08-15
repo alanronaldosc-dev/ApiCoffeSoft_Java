@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 @Table(name = "usuarios")
 
 /**
- * HU-015: Rol personalizado para asignar permisos específicos
- * adicionales a los permisos del rol base.
+ * HU-015: Gestión de roles personalizados y permisos específicos
+ * para puestos especiales dentro del sistema.
  */
 
 public class Usuario {
