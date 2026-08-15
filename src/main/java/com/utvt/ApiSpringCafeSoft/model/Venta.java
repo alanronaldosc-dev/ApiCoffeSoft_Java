@@ -69,6 +69,12 @@ public class Venta {
     @Column(name = "cambio")
     private Double cambio;
 
+    @Column(name = "nombre_cliente", length = 100)
+private String nombreCliente;
+
+@Column(name = "estado_pedido", length = 20)
+private String estadoPedido;
+
     public Double getMontoEfectivo() { return montoEfectivo; }
     public void setMontoEfectivo(Double montoEfectivo) { this.montoEfectivo = montoEfectivo; }
 
@@ -205,4 +211,20 @@ public class Venta {
         detalles.remove(detalle);
         detalle.setVenta(null);
     }
+
+    public String getNombreCliente() {
+    return nombreCliente;
+}
+
+public void setNombreCliente(String nombreCliente) {
+    this.nombreCliente = nombreCliente;
+}
+
+public String getEstadoPedido() {
+    return estadoPedido;
+}
+
+public void setEstadoPedido(String estadoPedido) {
+    this.estadoPedido = estadoPedido;
+}
 }

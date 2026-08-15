@@ -24,6 +24,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     // Buscar ventas por método de pago
     List<Venta> findByMetodoPago(String metodoPago);
 
+    List<Venta> findByEstadoPedidoOrderByFechaAsc(String estadoPedido);
+
     // Obtener el último folio
     @Query("SELECT MAX(v.folio) FROM Venta v")
     String findLastFolio();

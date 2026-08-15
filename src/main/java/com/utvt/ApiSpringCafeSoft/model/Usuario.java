@@ -6,6 +6,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
+
+/**
+ * HU-015: Gestión de roles personalizados y permisos específicos
+ * para puestos especiales dentro del sistema.
+ */
+
 public class Usuario {
 
     @Id
