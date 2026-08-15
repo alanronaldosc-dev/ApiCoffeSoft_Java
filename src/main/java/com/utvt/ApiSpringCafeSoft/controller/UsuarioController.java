@@ -637,6 +637,31 @@ public class UsuarioController {
     }
 
     // ============================================
+// 🔒 10. CAMBIAR ESTADO DE USUARIO (ACTIVO/INACTIVO) - PUT
+// ============================================
+
+@Operation(summary = "🔒 Cambiar estado del usuario (activo/inactivo)")
+@PutMapping("/{id}/estado")
+public ResponseEntity<Map<String, Object>> cambiarEstadoUsuario(
+        @PathVariable Long id,
+        @RequestBody Map<String, Boolean> body) {
+    try {
+        boolean activo = body.get("activo");
+        usuarioService.cambiarEstadoUsuario(id, activo);
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "✅ Estado actualizado correctamente");
+        response.put("id", id);
+        response.put("activo", activo);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("error", "❌ " + e.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}
+
+
+    // ============================================
     // 🗑️ 8. ELIMINAR USUARIO - DELETE
     // ============================================
     
