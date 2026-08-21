@@ -47,6 +47,8 @@ public class Usuario {
 
 @Column(name = "reset_token_expiration")
 private LocalDateTime resetTokenExpiration;
+    @Column(nullable = false)
+private Boolean activo = true;
     
 
     public Usuario() {}
@@ -77,6 +79,13 @@ private LocalDateTime resetTokenExpiration;
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Boolean getActivo() {
+    return activo;
+}
+
+public void setActivo(Boolean activo) {
+    this.activo = activo;
+}
 
 
 
