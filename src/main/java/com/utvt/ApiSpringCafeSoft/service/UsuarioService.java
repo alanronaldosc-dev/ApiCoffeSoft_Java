@@ -72,6 +72,23 @@ public class UsuarioService {
             .map(this::convertirADTO)
             .collect(Collectors.toList());
 }
+
+    public UsuarioDTO cambiarEstadoEmpleado(Long id, Boolean activo) {
+
+    Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() ->
+                    new RuntimeException("Usuario no encontrado con ID: " + id));
+
+    if (usuario.getUserTipo() != 1) {
+        throw new RuntimeException("El usuario seleccionado no es un empleado");
+    }
+
+    usuario.setActivo(activo);
+
+    Usuario usuarioGuardado = usuarioRepository.save(usuario);
+
+    return convertirADTO(usuarioGuardado);
+}
     
     // CRUD - Update
     public Usuario actualizarUsuario(Long id, Usuario usuarioActualizado) {
