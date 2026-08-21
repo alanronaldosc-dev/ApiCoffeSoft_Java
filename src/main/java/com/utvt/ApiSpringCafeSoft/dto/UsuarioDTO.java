@@ -19,6 +19,9 @@ public class UsuarioDTO {
     
     @Schema(description = "Teléfono del usuario", example = "7203533170")
     private String telefono;
+
+    @Schema(description = "Estado de la cuenta", example = "true")
+    private Boolean activo;
     
     @Schema(description = "Tipo de usuario: 0=Administrador, 1=Empleado, 2=Cliente", 
             example = "0", 
@@ -31,15 +34,16 @@ public class UsuarioDTO {
     }
     
     // Constructor completo
-    public UsuarioDTO(Long id, String nombre, String email, String direccion, 
-                      String telefono, Integer userTipo) {
-        this.id = id;
-        this.nombre = nombre;
-        this.email = email;
-        this.direccion = direccion;
-        this.telefono = telefono;
-        this.userTipo = userTipo;
-       }
+    public UsuarioDTO(Long id, String nombre, String email, String direccion,
+                  String telefono, Integer userTipo, Boolean activo) {
+    this.id = id;
+    this.nombre = nombre;
+    this.email = email;
+    this.direccion = direccion;
+    this.telefono = telefono;
+    this.userTipo = userTipo;
+    this.activo = activo;
+}
     
     // Getters y Setters
     public Long getId() { 
@@ -89,6 +93,13 @@ public class UsuarioDTO {
     public void setUserTipo(Integer userTipo) { 
         this.userTipo = userTipo; 
     }
+    public Boolean getActivo() {
+    return activo;
+}
+
+public void setActivo(Boolean activo) {
+    this.activo = activo;
+}
     
 
 }
