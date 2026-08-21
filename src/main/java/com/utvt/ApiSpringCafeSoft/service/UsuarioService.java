@@ -67,6 +67,25 @@ public class UsuarioService {
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
+
+    public String solicitarRestablecimiento(String email) {
+
+    Usuario usuario = usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException(
+                    "No existe un usuario registrado con ese correo"
+            ));
+
+    String token = UUID.randomUUID().toString();
+
+    usuario.setResetToken(token);
+    usuario.setResetTokenExpiration(
+            LocalDateTime.now().plusMinutes(15)
+    );
+
+    usuarioRepository.save(usuario);
+
+    return token;
+}
     
     // CRUD - Update
     public Usuario actualizarUsuario(Long id, Usuario usuarioActualizado) {
@@ -150,6 +169,46 @@ public class UsuarioService {
                 .filter(token -> token != null && !token.isEmpty())
                 .collect(Collectors.toList());
     }
+
+
+
+    public void restablecerPassword(String token, String nuevaPassword) {
+
+    if (nuevaPassword == null || nuevaPassword.trim().isEmpty()) {
+        throw new RuntimeException(
+                "La nueva contraseña es obligatoria"
+        );
+    }
+
+    if (nuevaPassword.length() < 8) {
+        throw new RuntimeException(
+                "La contraseña debe tener mínimo 8 caracteres"
+        );
+    }
+
+    Usuario usuario = usuarioRepository.findByResetToken(token)
+            .orElseThrow(() -> new RuntimeException(
+                    "El código de recuperación no es válido"
+            ));
+
+    if (usuario.getResetTokenExpiration() == null ||
+            usuario.getResetTokenExpiration().isBefore(LocalDateTime.now())) {
+
+        throw new RuntimeException(
+                "El código de recuperación ha expirado"
+        );
+    }
+
+    usuario.setPassword(
+            passwordEncoder.encode(nuevaPassword)
+    );
+
+    // Invalidar el token después de utilizarlo
+    usuario.setResetToken(null);
+    usuario.setResetTokenExpiration(null);
+
+    usuarioRepository.save(usuario);
+}
 
     public UsuarioDTO iniciarSesion(String email, String password) {
 
