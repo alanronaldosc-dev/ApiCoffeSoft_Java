@@ -22,6 +22,8 @@ private Boolean activo;
     
     @Schema(description = "Teléfono del usuario", example = "7203533170")
     private String telefono;
+    @Schema(description = "Indica si el usuario puede acceder al sistema", example = "true")
+private Boolean activo;
     
     @Schema(description = "Tipo de usuario: 0=Administrador, 1=Empleado, 2=Cliente", 
             example = "0", 
