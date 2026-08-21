@@ -67,6 +67,11 @@ public class UsuarioService {
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
+    public List<UsuarioDTO> obtenerEmpleados() {
+    return usuarioRepository.findByUserTipo(1).stream()
+            .map(this::convertirADTO)
+            .collect(Collectors.toList());
+}
     
     // CRUD - Update
     public Usuario actualizarUsuario(Long id, Usuario usuarioActualizado) {
