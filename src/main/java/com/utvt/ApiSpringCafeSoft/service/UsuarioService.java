@@ -29,11 +29,14 @@ public class UsuarioService {
         }
         
         // Encriptar la contraseña
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        usuario.setPassword(
+            passwordEncoder.encode(usuario.getPassword())
+    );
 
-        
-        return usuarioRepository.save(usuario);
-    }
+        usuario.setActivo(true);
+
+    return usuarioRepository.save(usuario);
+}
     
     // CRUD - Read (Todos)
     public List<UsuarioDTO> obtenerTodosLosUsuarios() {
