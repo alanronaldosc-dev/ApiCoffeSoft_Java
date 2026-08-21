@@ -12,6 +12,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     
     // Buscar por email
     Optional<Usuario> findByEmail(String email);
+
+    // Buscar por token de recuperación
+    Optional<Usuario> findByResetToken(String resetToken);
     
     // Buscar por tipo de usuario
     List<Usuario> findByUserTipo(Integer userTipo);
