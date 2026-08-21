@@ -9,168 +9,557 @@ package com.utvt.ApiSpringCafeSoft.service;
 import com.utvt.ApiSpringCafeSoft.dto.UsuarioDTO;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
-    
+
     @Autowired
     private UsuarioRepository usuarioRepository;
-    
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    
-    // CRUD - Create
+
+    private final BCryptPasswordEncoder passwordEncoder =
+            new BCryptPasswordEncoder();
+
+    /*
+     * ============================================
+     * HU-015 - PERMISOS DEL SISTEMA
+     * ============================================
+     */
+
+    private static final List<String> TODOS_LOS_PERMISOS = Arrays.asList(
+            "crearProducto",
+            "ventas",
+            "pedidos",
+            "productos",
+            "usuarios",
+            "reportes",
+            "carrito",
+            "registro",
+            "insumos",
+            "lotes",
+            "categorias",
+            "proveedores"
+    );
+
+    /*
+     * Permisos predeterminados para usuarios normales.
+     */
+    private static final List<String> PERMISOS_USUARIO = Arrays.asList(
+            "productos",
+            "pedidos",
+            "ventas",
+            "carrito"
+    );
+
+    /*
+     * ============================================
+     * CREAR USUARIO
+     * ============================================
+     */
     public Usuario crearUsuario(Usuario usuario) {
-        // Validar que el email no exista
+
         if (usuarioRepository.existsByEmail(usuario.getEmail())) {
             throw new RuntimeException("El email ya está registrado");
         }
-        
-        // Encriptar la contraseña
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
 
-        
+        /*
+         * Si no viene tipo de usuario,
+         * se crea como Usuario normal.
+         */
+        if (usuario.getUserTipo() == null) {
+            usuario.setUserTipo(1);
+        }
+
+        /*
+         * ========================================
+         * ADMINISTRADOR
+         * ========================================
+         */
+        if (usuario.getUserTipo() == 0) {
+
+            usuario.setPermisos(
+                    new ArrayList<>(TODOS_LOS_PERMISOS)
+            );
+        }
+
+        /*
+         * ========================================
+         * USUARIO / EMPLEADO
+         * ========================================
+         */
+        else if (usuario.getUserTipo() == 1) {
+
+            usuario.setPermisos(
+                    new ArrayList<>(PERMISOS_USUARIO)
+            );
+        }
+
+        /*
+         * ========================================
+         * CLIENTE
+         * ========================================
+         */
+        else if (usuario.getUserTipo() == 2) {
+
+            /*
+             * Los clientes no necesitan permisos
+             * administrativos.
+             */
+            usuario.setPermisos(
+                    new ArrayList<>()
+            );
+        }
+
+        /*
+         * ========================================
+         * PERSONALIZADO - HU-015
+         * ========================================
+         */
+        else if (usuario.getUserTipo() == 3) {
+
+            if (usuario.getPermisos() == null ||
+                    usuario.getPermisos().isEmpty()) {
+
+                throw new RuntimeException(
+                        "Debe seleccionar al menos un permiso para el usuario personalizado"
+                );
+            }
+
+            /*
+             * Solamente permitimos permisos
+             * reconocidos por el sistema.
+             */
+            List<String> permisosValidos =
+                    usuario.getPermisos()
+                            .stream()
+                            .filter(TODOS_LOS_PERMISOS::contains)
+                            .distinct()
+                            .collect(Collectors.toList());
+
+            if (permisosValidos.isEmpty()) {
+                throw new RuntimeException(
+                        "Los permisos seleccionados no son válidos"
+                );
+            }
+
+            usuario.setPermisos(permisosValidos);
+        }
+
+        /*
+         * Tipo de usuario inválido.
+         */
+        else {
+            throw new RuntimeException(
+                    "El tipo de usuario no es válido"
+            );
+        }
+
+        /*
+         * Encriptar contraseña.
+         */
+        usuario.setPassword(
+                passwordEncoder.encode(
+                        usuario.getPassword()
+                )
+        );
+
         return usuarioRepository.save(usuario);
     }
-    
-    // CRUD - Read (Todos)
+
+    /*
+     * ============================================
+     * OBTENER TODOS
+     * ============================================
+     */
     public List<UsuarioDTO> obtenerTodosLosUsuarios() {
-        return usuarioRepository.findAll().stream()
+
+        return usuarioRepository.findAll()
+                .stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
-    
-    // CRUD - Read (Por ID)
+
+    /*
+     * ============================================
+     * OBTENER POR ID
+     * ============================================
+     */
     public Optional<UsuarioDTO> obtenerUsuarioPorId(Long id) {
+
         return usuarioRepository.findById(id)
                 .map(this::convertirADTO);
     }
-    
-    // CRUD - Read (Por Email)
+
+    /*
+     * ============================================
+     * OBTENER POR EMAIL
+     * ============================================
+     */
     public Optional<UsuarioDTO> obtenerUsuarioPorEmail(String email) {
+
         return usuarioRepository.findByEmail(email)
                 .map(this::convertirADTO);
     }
-    
-    // CRUD - Read (Por Tipo de Usuario)
-    public List<UsuarioDTO> obtenerUsuariosPorTipo(Integer userTipo) {
-        return usuarioRepository.findByUserTipo(userTipo).stream()
+
+    /*
+     * ============================================
+     * OBTENER POR TIPO
+     * ============================================
+     */
+    public List<UsuarioDTO> obtenerUsuariosPorTipo(
+            Integer userTipo
+    ) {
+
+        return usuarioRepository
+                .findByUserTipo(userTipo)
+                .stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
-    
-    // CRUD - Read (Por Nombre - Búsqueda)
-    public List<UsuarioDTO> buscarUsuariosPorNombre(String nombre) {
-        return usuarioRepository.findByNombreContainingIgnoreCase(nombre).stream()
+
+    /*
+     * ============================================
+     * BUSCAR POR NOMBRE
+     * ============================================
+     */
+    public List<UsuarioDTO> buscarUsuariosPorNombre(
+            String nombre
+    ) {
+
+        return usuarioRepository
+                .findByNombreContainingIgnoreCase(nombre)
+                .stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
-    
-    // CRUD - Update
-    public Usuario actualizarUsuario(Long id, Usuario usuarioActualizado) {
-        Optional<Usuario> usuarioExistenteOpt = usuarioRepository.findById(id);
-        
+
+    /*
+     * ============================================
+     * ACTUALIZAR USUARIO
+     * ============================================
+     */
+    public Usuario actualizarUsuario(
+            Long id,
+            Usuario usuarioActualizado
+    ) {
+
+        Optional<Usuario> usuarioExistenteOpt =
+                usuarioRepository.findById(id);
+
         if (usuarioExistenteOpt.isEmpty()) {
-            throw new RuntimeException("Usuario no encontrado con ID: " + id);
+
+            throw new RuntimeException(
+                    "Usuario no encontrado con ID: " + id
+            );
         }
-        
-        Usuario usuarioExistente = usuarioExistenteOpt.get();
-        
-        // Actualizar solo los campos que no sean nulos
+
+        Usuario usuarioExistente =
+                usuarioExistenteOpt.get();
+
+        /*
+         * Nombre
+         */
         if (usuarioActualizado.getNombre() != null) {
-            usuarioExistente.setNombre(usuarioActualizado.getNombre());
+
+            usuarioExistente.setNombre(
+                    usuarioActualizado.getNombre()
+            );
         }
-        
+
+        /*
+         * Email
+         */
         if (usuarioActualizado.getEmail() != null) {
-            // Verificar que el nuevo email no esté en uso por otro usuario
-            Optional<Usuario> usuarioConEmail = usuarioRepository.findByEmail(usuarioActualizado.getEmail());
-            if (usuarioConEmail.isPresent() && !usuarioConEmail.get().getId().equals(id)) {
-                throw new RuntimeException("El email ya está registrado por otro usuario");
+
+            Optional<Usuario> usuarioConEmail =
+                    usuarioRepository.findByEmail(
+                            usuarioActualizado.getEmail()
+                    );
+
+            if (usuarioConEmail.isPresent()
+                    && !usuarioConEmail.get()
+                    .getId()
+                    .equals(id)) {
+
+                throw new RuntimeException(
+                        "El email ya está registrado por otro usuario"
+                );
             }
-            usuarioExistente.setEmail(usuarioActualizado.getEmail());
+
+            usuarioExistente.setEmail(
+                    usuarioActualizado.getEmail()
+            );
         }
-        
-        if (usuarioActualizado.getPassword() != null && !usuarioActualizado.getPassword().isEmpty()) {
-            usuarioExistente.setPassword(passwordEncoder.encode(usuarioActualizado.getPassword()));
+
+        /*
+         * Contraseña
+         */
+        if (usuarioActualizado.getPassword() != null
+                && !usuarioActualizado
+                .getPassword()
+                .isEmpty()) {
+
+            usuarioExistente.setPassword(
+                    passwordEncoder.encode(
+                            usuarioActualizado.getPassword()
+                    )
+            );
         }
-        
+
+        /*
+         * Dirección
+         */
         if (usuarioActualizado.getDireccion() != null) {
-            usuarioExistente.setDireccion(usuarioActualizado.getDireccion());
+
+            usuarioExistente.setDireccion(
+                    usuarioActualizado.getDireccion()
+            );
         }
-        
+
+        /*
+         * Teléfono
+         */
         if (usuarioActualizado.getTelefono() != null) {
-            usuarioExistente.setTelefono(usuarioActualizado.getTelefono());
+
+            usuarioExistente.setTelefono(
+                    usuarioActualizado.getTelefono()
+            );
         }
-        
+
+        /*
+         * ========================================
+         * HU-015
+         * Actualizar tipo y permisos
+         * ========================================
+         */
         if (usuarioActualizado.getUserTipo() != null) {
-            usuarioExistente.setUserTipo(usuarioActualizado.getUserTipo());
+
+            Integer nuevoTipo =
+                    usuarioActualizado.getUserTipo();
+
+            if (nuevoTipo < 0 || nuevoTipo > 3) {
+
+                throw new RuntimeException(
+                        "El tipo de usuario no es válido"
+                );
+            }
+
+            usuarioExistente.setUserTipo(nuevoTipo);
+
+            /*
+             * Administrador
+             */
+            if (nuevoTipo == 0) {
+
+                usuarioExistente.setPermisos(
+                        new ArrayList<>(
+                                TODOS_LOS_PERMISOS
+                        )
+                );
+            }
+
+            /*
+             * Usuario
+             */
+            else if (nuevoTipo == 1) {
+
+                usuarioExistente.setPermisos(
+                        new ArrayList<>(
+                                PERMISOS_USUARIO
+                        )
+                );
+            }
+
+            /*
+             * Cliente
+             */
+            else if (nuevoTipo == 2) {
+
+                usuarioExistente.setPermisos(
+                        new ArrayList<>()
+                );
+            }
+
+            /*
+             * Personalizado
+             */
+            else if (nuevoTipo == 3) {
+
+                if (usuarioActualizado.getPermisos() == null
+                        || usuarioActualizado
+                        .getPermisos()
+                        .isEmpty()) {
+
+                    throw new RuntimeException(
+                            "Debe seleccionar al menos un permiso"
+                    );
+                }
+
+                List<String> permisosValidos =
+                        usuarioActualizado
+                                .getPermisos()
+                                .stream()
+                                .filter(TODOS_LOS_PERMISOS::contains)
+                                .distinct()
+                                .collect(Collectors.toList());
+
+                if (permisosValidos.isEmpty()) {
+
+                    throw new RuntimeException(
+                            "Los permisos seleccionados no son válidos"
+                    );
+                }
+
+                usuarioExistente.setPermisos(
+                        permisosValidos
+                );
+            }
         }
-        
-        
-        return usuarioRepository.save(usuarioExistente);
+
+        /*
+         * Si solamente se actualizaron permisos
+         * sin modificar userTipo.
+         */
+        else if (usuarioActualizado.getPermisos() != null) {
+
+            List<String> permisosValidos =
+                    usuarioActualizado
+                            .getPermisos()
+                            .stream()
+                            .filter(TODOS_LOS_PERMISOS::contains)
+                            .distinct()
+                            .collect(Collectors.toList());
+
+            usuarioExistente.setPermisos(
+                    permisosValidos
+            );
+        }
+
+        return usuarioRepository.save(
+                usuarioExistente
+        );
     }
-    
-    // CRUD - Delete
+
+    /*
+     * ============================================
+     * ELIMINAR
+     * ============================================
+     */
     public void eliminarUsuario(Long id) {
+
         if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuario no encontrado con ID: " + id);
+
+            throw new RuntimeException(
+                    "Usuario no encontrado con ID: " + id
+            );
         }
+
         usuarioRepository.deleteById(id);
     }
-    
-    
-    
-    // Método auxiliar para convertir Usuario a UsuarioDTO
-    private UsuarioDTO convertirADTO(Usuario usuario) {
+
+    /*
+     * ============================================
+     * CONVERTIR A DTO
+     * ============================================
+     */
+    private UsuarioDTO convertirADTO(
+            Usuario usuario
+    ) {
+
         return new UsuarioDTO(
                 usuario.getId(),
                 usuario.getNombre(),
                 usuario.getEmail(),
                 usuario.getDireccion(),
                 usuario.getTelefono(),
-                usuario.getUserTipo()
+                usuario.getUserTipo(),
+                usuario.getPermisos()
         );
     }
 
+    /*
+     * ============================================
+     * PUSH TOKEN
+     * ============================================
+     */
+    public void actualizarPushToken(
+            Long id,
+            String pushToken
+    ) {
 
-    // Actualizar push token
-    public void actualizarPushToken(Long id, String pushToken) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+        Usuario usuario =
+                usuarioRepository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Usuario no encontrado con ID: " + id
+                                )
+                        );
+
         usuario.setPushToken(pushToken);
+
         usuarioRepository.save(usuario);
     }
 
-    // Obtener push tokens de todos los empleados (userTipo = 1)
+    /*
+     * ============================================
+     * PUSH TOKENS DE EMPLEADOS
+     * ============================================
+     */
     public List<String> getPushTokensEmpleados() {
-        return usuarioRepository.findByUserTipo(1).stream()
-                .map(u -> u.getPushToken())
-                .filter(token -> token != null && !token.isEmpty())
+
+        return usuarioRepository
+                .findByUserTipo(1)
+                .stream()
+                .map(Usuario::getPushToken)
+                .filter(token ->
+                        token != null &&
+                        !token.isEmpty()
+                )
                 .collect(Collectors.toList());
     }
 
-    public UsuarioDTO iniciarSesion(String email, String password) {
+    /*
+     * ============================================
+     * LOGIN
+     * ============================================
+     */
+    public UsuarioDTO iniciarSesion(
+            String email,
+            String password
+    ) {
 
-    Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Correo o contraseña incorrectos"));
+        Usuario usuario =
+                usuarioRepository
+                        .findByEmail(email)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Correo o contraseña incorrectos"
+                                )
+                        );
 
-    boolean passwordCorrecta = passwordEncoder.matches(
-            password,
-            usuario.getPassword()
-    );
+        boolean passwordCorrecta =
+                passwordEncoder.matches(
+                        password,
+                        usuario.getPassword()
+                );
 
-    if (!passwordCorrecta) {
-        throw new RuntimeException("Correo o contraseña incorrectos");
+        if (!passwordCorrecta) {
+
+            throw new RuntimeException(
+                    "Correo o contraseña incorrectos"
+            );
+        }
+
+        return convertirADTO(usuario);
     }
-
-    return convertirADTO(usuario);
-}
 }
