@@ -90,34 +90,69 @@ public class ProductoService {
     }
 
     // 1. Crear producto
-    @Transactional
-    public ProductoDTO crearProducto(ProductoDTO productoDTO) {
-        Producto producto = convertToEntity(productoDTO);
-        
-        // Guardar producto primero para obtener ID
-        Producto savedProducto = productoRepository.save(producto);
-        
-        // Procesar insumos
-        if (productoDTO.getInsumos() != null && !productoDTO.getInsumos().isEmpty()) {
-            for (ProductoInsumoDTO insumoDTO : productoDTO.getInsumos()) {
-                ProductoInsumo productoInsumo = createProductoInsumo(insumoDTO, savedProducto);
-                savedProducto.addInsumo(productoInsumo);
-            }
-            // Guardar con los insumos
-            savedProducto = productoRepository.save(savedProducto);
-        }
+   @Transactional
+public ProductoDTO crearProducto(ProductoDTO productoDTO) {
 
-        // AGREGAR:
-        if (productoDTO.getCategoriaId() != null) {
-            Categoria categoria = categoriaRepository.findById(productoDTO.getCategoriaId())
-                .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + productoDTO.getCategoriaId()));
-            producto.setCategoria(categoria);
-        }
+    Producto producto = convertToEntity(productoDTO);
 
-        
-        return convertToDTO(savedProducto);
-        
+    // Asignar categoría ANTES de guardar
+    if (productoDTO.getCategoriaId() != null) {
+        Categoria categoria = categoriaRepository.findById(
+                productoDTO.getCategoriaId()
+        ).orElseThrow(() ->
+                new RuntimeException(
+                    "Categoría no encontrada con ID: "
+                    + productoDTO.getCategoriaId()
+                )
+        );
+
+        producto.setCategoria(categoria);
     }
+
+    // Guardar producto
+    Producto savedProducto = productoRepository.save(producto);
+
+    // Procesar insumos
+    if (productoDTO.getInsumos() != null &&
+        !productoDTO.getInsumos().isEmpty()) {
+
+        for (ProductoInsumoDTO insumoDTO : productoDTO.getInsumos()) {
+
+            ProductoInsumo productoInsumo =
+                    createProductoInsumo(insumoDTO, savedProducto);
+
+            savedProducto.addInsumo(productoInsumo);
+        }
+
+        savedProducto = productoRepository.save(savedProducto);
+    }
+
+    return convertToDTO(savedProducto);
+}
+
+    // Guardar producto
+    Producto savedProducto = productoRepository.save(producto);
+
+    // Procesar insumos
+    if (productoDTO.getInsumos() != null
+            && !productoDTO.getInsumos().isEmpty()) {
+
+        for (ProductoInsumoDTO insumoDTO : productoDTO.getInsumos()) {
+
+            ProductoInsumo productoInsumo =
+                    createProductoInsumo(
+                            insumoDTO,
+                            savedProducto
+                    );
+
+            savedProducto.addInsumo(productoInsumo);
+        }
+
+        savedProducto = productoRepository.save(savedProducto);
+    }
+
+    return convertToDTO(savedProducto);
+}
 
     private ProductoInsumo createProductoInsumo(ProductoInsumoDTO dto, Producto producto) {
         Inventario insumo = inventarioRepository.findById(dto.getInsumoId())
