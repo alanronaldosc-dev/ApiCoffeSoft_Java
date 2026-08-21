@@ -40,6 +40,13 @@ public class Usuario {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+
+    @Column(name = "reset_token")
+    private String resetToken;
+
+@Column(name = "reset_token_expiration")
+private LocalDateTime resetTokenExpiration;
     
 
     public Usuario() {}
@@ -70,4 +77,23 @@ public class Usuario {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+
+
+
+    public String getResetToken() {
+    return resetToken;
+}
+
+    public void setResetToken(String resetToken) {
+    this.resetToken = resetToken;
+}
+
+    public LocalDateTime getResetTokenExpiration() {
+    return resetTokenExpiration;
+}
+
+    public void setResetTokenExpiration(LocalDateTime resetTokenExpiration) {
+    this.resetTokenExpiration = resetTokenExpiration;
+}
 }
