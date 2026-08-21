@@ -177,7 +177,8 @@ public class UsuarioService {
     public UsuarioDTO iniciarSesion(String email, String password) {
 
     Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Correo o contraseña incorrectos"));
+            .orElseThrow(() ->
+                    new RuntimeException("Correo o contraseña incorrectos"));
 
     boolean passwordCorrecta = passwordEncoder.matches(
             password,
@@ -186,6 +187,13 @@ public class UsuarioService {
 
     if (!passwordCorrecta) {
         throw new RuntimeException("Correo o contraseña incorrectos");
+    }
+
+    // Verificar si la cuenta está activa
+    if (Boolean.FALSE.equals(usuario.getActivo())) {
+        throw new RuntimeException(
+                "Esta cuenta está inactiva. No es posible iniciar sesión."
+        );
     }
 
     return convertirADTO(usuario);
