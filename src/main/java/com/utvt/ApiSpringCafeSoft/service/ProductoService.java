@@ -97,18 +97,38 @@ public ProductoDTO crearProducto(ProductoDTO productoDTO) {
 
     // Asignar categoría ANTES de guardar
     if (productoDTO.getCategoriaId() != null) {
-
-        Categoria categoria = categoriaRepository
-                .findById(productoDTO.getCategoriaId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Categoría no encontrada con ID: "
-                                + productoDTO.getCategoriaId()
-                        )
-                );
+        Categoria categoria = categoriaRepository.findById(
+                productoDTO.getCategoriaId()
+        ).orElseThrow(() ->
+                new RuntimeException(
+                    "Categoría no encontrada con ID: "
+                    + productoDTO.getCategoriaId()
+                )
+        );
 
         producto.setCategoria(categoria);
     }
+
+    // Guardar producto
+    Producto savedProducto = productoRepository.save(producto);
+
+    // Procesar insumos
+    if (productoDTO.getInsumos() != null &&
+        !productoDTO.getInsumos().isEmpty()) {
+
+        for (ProductoInsumoDTO insumoDTO : productoDTO.getInsumos()) {
+
+            ProductoInsumo productoInsumo =
+                    createProductoInsumo(insumoDTO, savedProducto);
+
+            savedProducto.addInsumo(productoInsumo);
+        }
+
+        savedProducto = productoRepository.save(savedProducto);
+    }
+
+    return convertToDTO(savedProducto);
+}
 
     // Guardar producto
     Producto savedProducto = productoRepository.save(producto);
