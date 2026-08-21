@@ -144,13 +144,14 @@ public class UsuarioService {
     // Método auxiliar para convertir Usuario a UsuarioDTO
     private UsuarioDTO convertirADTO(Usuario usuario) {
         return new UsuarioDTO(
-                usuario.getId(),
-                usuario.getNombre(),
-                usuario.getEmail(),
-                usuario.getDireccion(),
-                usuario.getTelefono(),
-                usuario.getUserTipo()
-        );
+        usuario.getId(),
+        usuario.getNombre(),
+        usuario.getEmail(),
+        usuario.getDireccion(),
+        usuario.getTelefono(),
+        usuario.getUserTipo(),
+        usuario.getActivo()
+);
     }
 
 
