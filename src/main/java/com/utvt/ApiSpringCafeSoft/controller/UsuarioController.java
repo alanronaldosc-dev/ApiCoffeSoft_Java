@@ -787,5 +787,106 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
         );
     }
 }
+    @Operation(summary = "Solicitar restablecimiento de contraseña")
+@PostMapping("/recuperar-password")
+public ResponseEntity<Map<String, Object>> solicitarRestablecimiento(
+        @RequestBody Map<String, String> body) {
+
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+
+        String email = body.get("email");
+
+        if (email == null || email.trim().isEmpty()) {
+            response.put("error", "El correo es obligatorio");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        String token = usuarioService.solicitarRestablecimiento(
+                email.trim().toLowerCase()
+        );
+
+        response.put(
+                "mensaje",
+                "Se generó un código de recuperación"
+        );
+
+        response.put("codigo", token);
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (RuntimeException e) {
+
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.NOT_FOUND
+        );
+    }
+}
+    @Operation(summary = "Restablecer contraseña")
+@PostMapping("/restablecer-password")
+public ResponseEntity<Map<String, Object>> restablecerPassword(
+        @RequestBody Map<String, String> body) {
+
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+
+        String token = body.get("token");
+        String nuevaPassword = body.get("nuevaPassword");
+
+        if (token == null || token.trim().isEmpty()) {
+            response.put("error", "El código de recuperación es obligatorio");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        if (nuevaPassword == null || nuevaPassword.trim().isEmpty()) {
+            response.put("error", "La nueva contraseña es obligatoria");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        usuarioService.restablecerPassword(
+                token,
+                nuevaPassword
+        );
+
+        response.put(
+                "mensaje",
+                "Contraseña restablecida exitosamente"
+        );
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (RuntimeException e) {
+
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.BAD_REQUEST
+        );
+    }
+}
     
 }
