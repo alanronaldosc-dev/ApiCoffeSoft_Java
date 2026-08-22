@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface LoteRepository extends JpaRepository<Lote, Long> {
     List<Lote> findByInsumoId(Long insumoId);
+    List<Lote> findByProveedorId(Long proveedorId);
     List<Lote> findByFechaCaducidadBefore(LocalDate fecha);
 
 @Query("SELECT l FROM Lote l WHERE l.insumo.id = :insumoId AND l.cantidad > 0 ORDER BY l.fechaCaducidad ASC, l.fechaEntrada DESC")
