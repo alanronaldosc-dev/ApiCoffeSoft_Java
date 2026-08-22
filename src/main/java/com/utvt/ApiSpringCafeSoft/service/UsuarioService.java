@@ -43,7 +43,10 @@ public class UsuarioService {
     );
 
     
-    // CRUD - Create
+    // ============================================
+    // HU-011: REGISTRAR USUARIO (Formulario de alta)
+    // Crea un nuevo perfil de administrador, empleado o cliente
+    // ============================================
     public Usuario crearUsuario(Usuario usuario) {
 
         if (usuarioRepository.existsByEmail(usuario.getEmail())) {
@@ -154,44 +157,49 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
     
-    // CRUD - Read (Todos)
+    // ============================================
+    // HU-011: CONSULTAR TODOS LOS USUARIOS
+    // Permite al administrador ver la lista completa de perfiles
+    // ============================================
     public List<UsuarioDTO> obtenerTodosLosUsuarios() {
         return usuarioRepository.findAll().stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
     
-    // CRUD - Read (Por ID)
+    // HU-011: Consultar perfil de un usuario por su ID
     public Optional<UsuarioDTO> obtenerUsuarioPorId(Long id) {
         return usuarioRepository.findById(id)
                 .map(this::convertirADTO);
     }
     
-    // CRUD - Read (Por Email)
+    // HU-011: Consultar perfil de un usuario por su email
     public Optional<UsuarioDTO> obtenerUsuarioPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .map(this::convertirADTO);
     }
     
-    // CRUD - Read (Por Tipo de Usuario)
+    // HU-011: Filtrar perfiles por tipo (0=Admin, 1=Empleado, 2=Cliente)
     public List<UsuarioDTO> obtenerUsuariosPorTipo(Integer userTipo) {
         return usuarioRepository.findByUserTipo(userTipo).stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
     
-    // CRUD - Read (Por Nombre - Búsqueda)
+    // HU-011: Buscar perfiles por nombre (búsqueda parcial, sin importar mayúsculas)
     public List<UsuarioDTO> buscarUsuariosPorNombre(String nombre) {
         return usuarioRepository.findByNombreContainingIgnoreCase(nombre).stream()
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
+    // HU-011: Obtener la lista de empleados (userTipo=1) para la tabla visible del administrador
     public List<UsuarioDTO> obtenerEmpleados() {
     return usuarioRepository.findByUserTipo(1).stream()
             .map(this::convertirADTO)
             .collect(Collectors.toList());
 }
 
+    // HU-011: Activar o desactivar un empleado para mantener la plantilla actualizada
     public UsuarioDTO cambiarEstadoEmpleado(Long id, Boolean activo) {
 
     Usuario usuario = usuarioRepository.findById(id)
@@ -209,7 +217,12 @@ public class UsuarioService {
     return convertirADTO(usuarioGuardado);
 }
     
-    // CRUD - Update
+    // ============================================
+    // HU-011: ACTUALIZAR PERFIL DE USUARIO
+    // Permite editar los datos básicos de cualquier perfil (nombre, email,
+    // contraseña, dirección, teléfono y tipo), cumpliendo el criterio de
+    // "formulario único para dar de alta y editar datos básicos del empleado"
+    // ============================================
     public Usuario actualizarUsuario(
             Long id,
             Usuario usuarioActualizado
@@ -413,7 +426,7 @@ public class UsuarioService {
     }
 
     
-    // CRUD - Delete
+    // HU-011: Eliminar un perfil del sistema (borrado físico)
     public void eliminarUsuario(Long id) {
         if (!usuarioRepository.existsById(id)) {
             throw new RuntimeException("Usuario no encontrado con ID: " + id);
@@ -423,7 +436,7 @@ public class UsuarioService {
     
     
     
-    // Método auxiliar para convertir Usuario a UsuarioDTO
+    // HU-011: Convierte la entidad Usuario a DTO para no exponer la contraseña en las respuestas
     private UsuarioDTO convertirADTO(Usuario usuario) {
         return new UsuarioDTO(
             usuario.getId(),
@@ -461,6 +474,7 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
+    // HU-011: Inicio de sesión — valida credenciales y verifica que la cuenta esté activa
     public UsuarioDTO iniciarSesion(String email, String password) {
 
     Usuario usuario = usuarioRepository.findByEmail(email)

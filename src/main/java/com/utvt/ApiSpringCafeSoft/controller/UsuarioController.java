@@ -22,16 +22,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * HU-011: Controlador REST para registrar, consultar y actualizar perfiles de usuario.
+ * Expone los endpoints necesarios para gestionar administradores, empleados y clientes,
+ * manteniendo la plantilla del personal operativa y actualizada.
+ */
 @RestController
 @RequestMapping("/api/usuarios")
 @CrossOrigin(origins = "*")
 @Tag(name = "👤 Usuarios", description = "API para la gestión completa de usuarios del sistema CoffeeSoft")
 public class UsuarioController {
-    
+
     @Autowired
     private UsuarioService usuarioService;
 
     // ============================================
+    // HU-011: CREAR USUARIO — Formulario único para dar de alta datos básicos
     // 📝 1. CREAR USUARIO - POST
     // ============================================
     
@@ -160,8 +166,9 @@ public class UsuarioController {
         }
     }
 
+    // ============================================
+    // HU-011: OBTENER EMPLEADOS — Tabla visible para el administrador con empleados activos e inactivos
     @Operation(
-        summary = "👥 Obtener empleados",
         description = "Obtiene la lista simplificada de todos los empleados y su estado."
 )
 @GetMapping("/empleados")
@@ -176,6 +183,8 @@ public ResponseEntity<Map<String, Object>> obtenerEmpleados() {
 
     return new ResponseEntity<>(response, HttpStatus.OK);
 }
+    // ============================================
+    // HU-011: CAMBIAR ESTADO DE EMPLEADO — Mantiene la plantilla activa/inactiva actualizada
     @Operation(
         summary = "🔄 Cambiar estado de empleado",
         description = "Activa o desactiva una cuenta de empleado."
@@ -229,6 +238,7 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
 }
 
     // ============================================
+    // HU-011: OBTENER TODOS — Lista completa de perfiles para el administrador
     // 📋 2. OBTENER TODOS LOS USUARIOS - GET
     // ============================================
     
@@ -282,6 +292,7 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
     }
 
     // ============================================
+    // HU-011: CONSULTAR POR ID — Ver el perfil de un usuario específico
     // 🔍 3. OBTENER USUARIO POR ID - GET
     // ============================================
     
@@ -574,6 +585,7 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
     }
 
     // ============================================
+    // HU-011: ACTUALIZAR PERFIL — Formulario único para editar datos básicos del usuario
     // ✏️ 7. ACTUALIZAR USUARIO - PUT
     // ============================================
     
