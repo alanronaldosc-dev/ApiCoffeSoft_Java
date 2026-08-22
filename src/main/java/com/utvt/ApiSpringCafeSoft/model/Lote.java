@@ -16,6 +16,11 @@ public class Lote {
     @JoinColumn(name = "insumo_id", nullable = false)
     private Insumo insumo;
 
+    /** Nuevo: proveedor que entregó este lote */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
+
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.001", message = "La cantidad debe ser mayor a 0")
     @Column(nullable = false)
@@ -34,8 +39,9 @@ public class Lote {
 
     public Lote() {}
 
-    public Lote(Insumo insumo, Double cantidad, LocalDate fechaCaducidad, String observaciones) {
+    public Lote(Insumo insumo, Proveedor proveedor, Double cantidad, LocalDate fechaCaducidad, String observaciones) {
         this.insumo = insumo;
+        this.proveedor = proveedor;
         this.cantidad = cantidad;
         this.fechaCaducidad = fechaCaducidad;
         this.observaciones = observaciones;
@@ -46,6 +52,8 @@ public class Lote {
     public void setId(Long id) { this.id = id; }
     public Insumo getInsumo() { return insumo; }
     public void setInsumo(Insumo insumo) { this.insumo = insumo; }
+    public Proveedor getProveedor() { return proveedor; }
+    public void setProveedor(Proveedor proveedor) { this.proveedor = proveedor; }
     public Double getCantidad() { return cantidad; }
     public void setCantidad(Double cantidad) { this.cantidad = cantidad; }
     public LocalDate getFechaCaducidad() { return fechaCaducidad; }

@@ -160,6 +160,74 @@ public class UsuarioController {
         }
     }
 
+    @Operation(
+        summary = "👥 Obtener empleados",
+        description = "Obtiene la lista simplificada de todos los empleados y su estado."
+)
+@GetMapping("/empleados")
+public ResponseEntity<Map<String, Object>> obtenerEmpleados() {
+
+    Map<String, Object> response = new HashMap<>();
+
+    List<UsuarioDTO> empleados = usuarioService.obtenerEmpleados();
+
+    response.put("cantidad", empleados.size());
+    response.put("empleados", empleados);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
+}
+    @Operation(
+        summary = "🔄 Cambiar estado de empleado",
+        description = "Activa o desactiva una cuenta de empleado."
+)
+@PutMapping("/empleados/{id}/estado")
+public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
+        @PathVariable Long id,
+        @RequestBody Map<String, Boolean> body) {
+
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+
+        Boolean activo = body.get("activo");
+
+        if (activo == null) {
+            response.put("error", "El campo 'activo' es obligatorio");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        UsuarioDTO empleado =
+                usuarioService.cambiarEstadoEmpleado(id, activo);
+
+        response.put(
+                "mensaje",
+                activo
+                        ? "Empleado activado correctamente"
+                        : "Empleado desactivado correctamente"
+        );
+
+        response.put("empleado", empleado);
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (RuntimeException e) {
+
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.BAD_REQUEST
+        );
+    }
+}
+
     // ============================================
     // 2. OBTENER TODOS LOS USUARIOS - GET
     // ============================================

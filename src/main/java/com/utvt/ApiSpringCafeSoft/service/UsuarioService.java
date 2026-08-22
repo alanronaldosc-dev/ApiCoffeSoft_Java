@@ -71,6 +71,13 @@ public class UsuarioService {
             throw new RuntimeException("El email ya está registrado");
         }
 
+        // Encriptar la contraseña
+        usuario.setPassword(
+            passwordEncoder.encode(usuario.getPassword())
+        );
+
+        usuario.setActivo(true);
+
         /*
          * Si no viene tipo de usuario,
          * se crea como Usuario normal.
@@ -85,7 +92,6 @@ public class UsuarioService {
          * ========================================
          */
         if (usuario.getUserTipo() == 0) {
-
             usuario.setPermisos(
                     new ArrayList<>(TODOS_LOS_PERMISOS)
             );
@@ -97,7 +103,6 @@ public class UsuarioService {
          * ========================================
          */
         else if (usuario.getUserTipo() == 1) {
-
             usuario.setPermisos(
                     new ArrayList<>(PERMISOS_USUARIO)
             );
@@ -109,7 +114,6 @@ public class UsuarioService {
          * ========================================
          */
         else if (usuario.getUserTipo() == 2) {
-
             /*
              * Los clientes no necesitan permisos
              * administrativos.
@@ -125,10 +129,8 @@ public class UsuarioService {
          * ========================================
          */
         else if (usuario.getUserTipo() == 3) {
-
             if (usuario.getPermisos() == null ||
                     usuario.getPermisos().isEmpty()) {
-
                 throw new RuntimeException(
                         "Debe seleccionar al menos un permiso para el usuario personalizado"
                 );
@@ -163,15 +165,6 @@ public class UsuarioService {
             );
         }
 
-        /*
-         * Encriptar contraseña.
-         */
-        usuario.setPassword(
-                passwordEncoder.encode(
-                        usuario.getPassword()
-                )
-        );
-
         return usuarioRepository.save(usuario);
     }
 
@@ -181,7 +174,6 @@ public class UsuarioService {
      * ============================================
      */
     public List<UsuarioDTO> obtenerTodosLosUsuarios() {
-
         return usuarioRepository.findAll()
                 .stream()
                 .map(this::convertirADTO)
@@ -194,7 +186,6 @@ public class UsuarioService {
      * ============================================
      */
     public Optional<UsuarioDTO> obtenerUsuarioPorId(Long id) {
-
         return usuarioRepository.findById(id)
                 .map(this::convertirADTO);
     }
@@ -205,7 +196,6 @@ public class UsuarioService {
      * ============================================
      */
     public Optional<UsuarioDTO> obtenerUsuarioPorEmail(String email) {
-
         return usuarioRepository.findByEmail(email)
                 .map(this::convertirADTO);
     }
@@ -215,10 +205,7 @@ public class UsuarioService {
      * OBTENER POR TIPO
      * ============================================
      */
-    public List<UsuarioDTO> obtenerUsuariosPorTipo(
-            Integer userTipo
-    ) {
-
+    public List<UsuarioDTO> obtenerUsuariosPorTipo(Integer userTipo) {
         return usuarioRepository
                 .findByUserTipo(userTipo)
                 .stream()
@@ -231,10 +218,7 @@ public class UsuarioService {
      * BUSCAR POR NOMBRE
      * ============================================
      */
-    public List<UsuarioDTO> buscarUsuariosPorNombre(
-            String nombre
-    ) {
-
+    public List<UsuarioDTO> buscarUsuariosPorNombre(String nombre) {
         return usuarioRepository
                 .findByNombreContainingIgnoreCase(nombre)
                 .stream()
@@ -244,32 +228,54 @@ public class UsuarioService {
 
     /*
      * ============================================
+     * OBTENER EMPLEADOS
+     * ============================================
+     */
+    public List<UsuarioDTO> obtenerEmpleados() {
+        return usuarioRepository.findByUserTipo(1).stream()
+                .map(this::convertirADTO)
+                .collect(Collectors.toList());
+    }
+
+    /*
+     * ============================================
+     * CAMBIAR ESTADO DE EMPLEADO
+     * ============================================
+     */
+    public UsuarioDTO cambiarEstadoEmpleado(Long id, Boolean activo) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Usuario no encontrado con ID: " + id));
+
+        if (usuario.getUserTipo() != 1) {
+            throw new RuntimeException("El usuario seleccionado no es un empleado");
+        }
+
+        usuario.setActivo(activo);
+        Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        return convertirADTO(usuarioGuardado);
+    }
+
+    /*
+     * ============================================
      * ACTUALIZAR USUARIO
      * ============================================
      */
-    public Usuario actualizarUsuario(
-            Long id,
-            Usuario usuarioActualizado
-    ) {
-
-        Optional<Usuario> usuarioExistenteOpt =
-                usuarioRepository.findById(id);
-
+    public Usuario actualizarUsuario(Long id, Usuario usuarioActualizado) {
+        Optional<Usuario> usuarioExistenteOpt = usuarioRepository.findById(id);
+        
         if (usuarioExistenteOpt.isEmpty()) {
-
             throw new RuntimeException(
                     "Usuario no encontrado con ID: " + id
             );
         }
 
-        Usuario usuarioExistente =
-                usuarioExistenteOpt.get();
+        Usuario usuarioExistente = usuarioExistenteOpt.get();
 
         /*
          * Nombre
          */
         if (usuarioActualizado.getNombre() != null) {
-
             usuarioExistente.setNombre(
                     usuarioActualizado.getNombre()
             );
@@ -279,7 +285,6 @@ public class UsuarioService {
          * Email
          */
         if (usuarioActualizado.getEmail() != null) {
-
             Optional<Usuario> usuarioConEmail =
                     usuarioRepository.findByEmail(
                             usuarioActualizado.getEmail()
@@ -289,7 +294,6 @@ public class UsuarioService {
                     && !usuarioConEmail.get()
                     .getId()
                     .equals(id)) {
-
                 throw new RuntimeException(
                         "El email ya está registrado por otro usuario"
                 );
@@ -307,7 +311,6 @@ public class UsuarioService {
                 && !usuarioActualizado
                 .getPassword()
                 .isEmpty()) {
-
             usuarioExistente.setPassword(
                     passwordEncoder.encode(
                             usuarioActualizado.getPassword()
@@ -319,7 +322,6 @@ public class UsuarioService {
          * Dirección
          */
         if (usuarioActualizado.getDireccion() != null) {
-
             usuarioExistente.setDireccion(
                     usuarioActualizado.getDireccion()
             );
@@ -329,10 +331,16 @@ public class UsuarioService {
          * Teléfono
          */
         if (usuarioActualizado.getTelefono() != null) {
-
             usuarioExistente.setTelefono(
                     usuarioActualizado.getTelefono()
             );
+        }
+
+        /*
+         * Estado activo
+         */
+        if (usuarioActualizado.getActivo() != null) {
+            usuarioExistente.setActivo(usuarioActualizado.getActivo());
         }
 
         /*
@@ -342,12 +350,9 @@ public class UsuarioService {
          * ========================================
          */
         if (usuarioActualizado.getUserTipo() != null) {
-
-            Integer nuevoTipo =
-                    usuarioActualizado.getUserTipo();
+            Integer nuevoTipo = usuarioActualizado.getUserTipo();
 
             if (nuevoTipo < 0 || nuevoTipo > 3) {
-
                 throw new RuntimeException(
                         "El tipo de usuario no es válido"
                 );
@@ -359,11 +364,8 @@ public class UsuarioService {
              * Administrador
              */
             if (nuevoTipo == 0) {
-
                 usuarioExistente.setPermisos(
-                        new ArrayList<>(
-                                TODOS_LOS_PERMISOS
-                        )
+                        new ArrayList<>(TODOS_LOS_PERMISOS)
                 );
             }
 
@@ -371,11 +373,8 @@ public class UsuarioService {
              * Usuario
              */
             else if (nuevoTipo == 1) {
-
                 usuarioExistente.setPermisos(
-                        new ArrayList<>(
-                                PERMISOS_USUARIO
-                        )
+                        new ArrayList<>(PERMISOS_USUARIO)
                 );
             }
 
@@ -383,7 +382,6 @@ public class UsuarioService {
              * Cliente
              */
             else if (nuevoTipo == 2) {
-
                 usuarioExistente.setPermisos(
                         new ArrayList<>()
                 );
@@ -393,12 +391,10 @@ public class UsuarioService {
              * Personalizado
              */
             else if (nuevoTipo == 3) {
-
                 if (usuarioActualizado.getPermisos() == null
                         || usuarioActualizado
                         .getPermisos()
                         .isEmpty()) {
-
                     throw new RuntimeException(
                             "Debe seleccionar al menos un permiso"
                     );
@@ -413,7 +409,6 @@ public class UsuarioService {
                                 .collect(Collectors.toList());
 
                 if (permisosValidos.isEmpty()) {
-
                     throw new RuntimeException(
                             "Los permisos seleccionados no son válidos"
                     );
@@ -430,7 +425,6 @@ public class UsuarioService {
          * sin modificar userTipo.
          */
         else if (usuarioActualizado.getPermisos() != null) {
-
             List<String> permisosValidos =
                     usuarioActualizado
                             .getPermisos()
@@ -444,9 +438,7 @@ public class UsuarioService {
             );
         }
 
-        return usuarioRepository.save(
-                usuarioExistente
-        );
+        return usuarioRepository.save(usuarioExistente);
     }
 
     /*
@@ -455,14 +447,11 @@ public class UsuarioService {
      * ============================================
      */
     public void eliminarUsuario(Long id) {
-
         if (!usuarioRepository.existsById(id)) {
-
             throw new RuntimeException(
                     "Usuario no encontrado con ID: " + id
             );
         }
-
         usuarioRepository.deleteById(id);
     }
 
@@ -471,18 +460,17 @@ public class UsuarioService {
      * CONVERTIR A DTO
      * ============================================
      */
-    private UsuarioDTO convertirADTO(
-            Usuario usuario
-    ) {
-
+    private UsuarioDTO convertirADTO(Usuario usuario) {
+        // Convertir a DTO con todos los campos
         return new UsuarioDTO(
-                usuario.getId(),
-                usuario.getNombre(),
-                usuario.getEmail(),
-                usuario.getDireccion(),
-                usuario.getTelefono(),
-                usuario.getUserTipo(),
-                usuario.getPermisos()
+            usuario.getId(),
+            usuario.getNombre(),
+            usuario.getEmail(),
+            usuario.getDireccion(),
+            usuario.getTelefono(),
+            usuario.getUserTipo(),
+            usuario.getActivo(),
+            usuario.getPermisos()
         );
     }
 
@@ -491,22 +479,16 @@ public class UsuarioService {
      * PUSH TOKEN
      * ============================================
      */
-    public void actualizarPushToken(
-            Long id,
-            String pushToken
-    ) {
-
-        Usuario usuario =
-                usuarioRepository
-                        .findById(id)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Usuario no encontrado con ID: " + id
-                                )
-                        );
+    public void actualizarPushToken(Long id, String pushToken) {
+        Usuario usuario = usuarioRepository
+                .findById(id)
+                .orElseThrow(
+                        () -> new RuntimeException(
+                                "Usuario no encontrado con ID: " + id
+                        )
+                );
 
         usuario.setPushToken(pushToken);
-
         usuarioRepository.save(usuario);
     }
 
@@ -516,7 +498,6 @@ public class UsuarioService {
      * ============================================
      */
     public List<String> getPushTokensEmpleados() {
-
         return usuarioRepository
                 .findByUserTipo(1)
                 .stream()
@@ -530,33 +511,29 @@ public class UsuarioService {
 
     /*
      * ============================================
-     * LOGIN
+     * LOGIN - HU-008
      * ============================================
      */
-    public UsuarioDTO iniciarSesion(
-            String email,
-            String password
-    ) {
+    public UsuarioDTO iniciarSesion(String email, String password) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("Correo o contraseña incorrectos"));
 
-        Usuario usuario =
-                usuarioRepository
-                        .findByEmail(email)
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Correo o contraseña incorrectos"
-                                )
-                        );
-
-        boolean passwordCorrecta =
-                passwordEncoder.matches(
-                        password,
-                        usuario.getPassword()
-                );
+        boolean passwordCorrecta = passwordEncoder.matches(
+                password,
+                usuario.getPassword()
+        );
 
         if (!passwordCorrecta) {
-
             throw new RuntimeException(
                     "Correo o contraseña incorrectos"
+            );
+        }
+
+        // Verificar si la cuenta está activa
+        if (Boolean.FALSE.equals(usuario.getActivo())) {
+            throw new RuntimeException(
+                    "Esta cuenta está inactiva. No es posible iniciar sesión."
             );
         }
 

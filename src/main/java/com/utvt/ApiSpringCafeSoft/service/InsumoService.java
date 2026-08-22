@@ -2,7 +2,9 @@ package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.InsumoDTO;
 import com.utvt.ApiSpringCafeSoft.model.Insumo;
+import com.utvt.ApiSpringCafeSoft.model.Proveedor;
 import com.utvt.ApiSpringCafeSoft.repository.InsumoRepository;
+import com.utvt.ApiSpringCafeSoft.repository.ProveedorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,37 +18,46 @@ public class InsumoService {
     @Autowired
     private InsumoRepository insumoRepository;
 
+    @Autowired
+    private ProveedorRepository proveedorRepository;
+
     private InsumoDTO convertToDTO(Insumo insumo) {
+        Long proveedorId = null;
+        String proveedorNombre = null;
+        if (insumo.getProveedor() != null) {
+            proveedorId = insumo.getProveedor().getId();
+            proveedorNombre = insumo.getProveedor().getNombreEmpresa();
+        }
         return new InsumoDTO(
             insumo.getId(),
             insumo.getNombre(),
             insumo.getTipo(),
             insumo.getUnidadMedida(),
-            insumo.getProveedor(),
+            proveedorId,
+            proveedorNombre,
             insumo.getPrecio()
         );
     }
 
-    private Insumo convertToEntity(InsumoDTO dto) {
-        Insumo insumo = new Insumo();
-        insumo.setId(dto.getId());
-        insumo.setNombre(dto.getNombre());
-        insumo.setTipo(dto.getTipo());
-        insumo.setUnidadMedida(dto.getUnidadMedida());
-        insumo.setProveedor(dto.getProveedor());
-        insumo.setPrecio(dto.getPrecio());
-        return insumo;
+    private Proveedor resolverProveedor(Long proveedorId) {
+        if (proveedorId == null) return null;
+        return proveedorRepository.findById(proveedorId)
+            .orElseThrow(() -> new RuntimeException("Proveedor no encontrado con ID: " + proveedorId));
     }
 
     @Transactional
     public InsumoDTO crearInsumo(InsumoDTO dto) {
-        return convertToDTO(insumoRepository.save(convertToEntity(dto)));
+        Insumo insumo = new Insumo();
+        insumo.setNombre(dto.getNombre());
+        insumo.setTipo(dto.getTipo());
+        insumo.setUnidadMedida(dto.getUnidadMedida());
+        insumo.setPrecio(dto.getPrecio());
+        insumo.setProveedor(resolverProveedor(dto.getProveedorId()));
+        return convertToDTO(insumoRepository.save(insumo));
     }
 
     public List<InsumoDTO> obtenerTodos() {
-        return insumoRepository.findAll().stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+        return insumoRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public InsumoDTO obtenerPorId(Long id) {
@@ -62,8 +73,8 @@ public class InsumoService {
         existing.setNombre(dto.getNombre());
         existing.setTipo(dto.getTipo());
         existing.setUnidadMedida(dto.getUnidadMedida());
-        existing.setProveedor(dto.getProveedor());
         existing.setPrecio(dto.getPrecio());
+        existing.setProveedor(resolverProveedor(dto.getProveedorId()));
         return convertToDTO(insumoRepository.save(existing));
     }
 
@@ -76,7 +87,6 @@ public class InsumoService {
 
     public List<InsumoDTO> buscarPorNombre(String nombre) {
         return insumoRepository.findByNombreContainingIgnoreCase(nombre).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .map(this::convertToDTO).collect(Collectors.toList());
     }
 }

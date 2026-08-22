@@ -14,10 +14,10 @@ public class UsuarioDTO {
     )
     private Long id;
 
-    @Schema(
-        description = "Nombre completo del usuario",
-        example = "Alan"
-    )
+    @Schema(description = "Estado de la cuenta", example = "true")
+    private Boolean activo;
+    
+    @Schema(description = "Nombre completo del usuario", example = "Alan")
     private String nombre;
 
     @Schema(
@@ -39,7 +39,7 @@ public class UsuarioDTO {
     private String telefono;
 
     @Schema(
-        description = "Tipo de usuario: 0=Administrador, 1=Usuario, 2=Cliente, 3=Personalizado",
+        description = "Tipo de usuario: 0=Administrador, 1=Empleado, 2=Cliente, 3=Personalizado",
         example = "3",
         allowableValues = {"0", "1", "2", "3"}
     )
@@ -54,28 +54,46 @@ public class UsuarioDTO {
     public UsuarioDTO() {
     }
 
-    public UsuarioDTO(
-            Long id,
-            String nombre,
-            String email,
-            String direccion,
-            String telefono,
-            Integer userTipo,
-            List<String> permisos
-    ) {
+    // Constructor completo con todos los campos
+    public UsuarioDTO(Long id, String nombre, String email, String direccion,
+                  String telefono, Integer userTipo, Boolean activo) {
         this.id = id;
         this.nombre = nombre;
         this.email = email;
         this.direccion = direccion;
         this.telefono = telefono;
         this.userTipo = userTipo;
-        this.permisos = permisos != null
-                ? new ArrayList<>(permisos)
-                : new ArrayList<>();
+        this.activo = activo;
     }
 
-    public Long getId() {
-        return id;
+    // Constructor con permisos (para HU-015)
+    public UsuarioDTO(Long id, String nombre, String email, String direccion,
+                  String telefono, Integer userTipo, List<String> permisos) {
+        this.id = id;
+        this.nombre = nombre;
+        this.email = email;
+        this.direccion = direccion;
+        this.telefono = telefono;
+        this.userTipo = userTipo;
+        this.permisos = permisos != null ? new ArrayList<>(permisos) : new ArrayList<>();
+    }
+
+    // Constructor completo con todos los campos incluyendo permisos
+    public UsuarioDTO(Long id, String nombre, String email, String direccion,
+                  String telefono, Integer userTipo, Boolean activo, List<String> permisos) {
+        this.id = id;
+        this.nombre = nombre;
+        this.email = email;
+        this.direccion = direccion;
+        this.telefono = telefono;
+        this.userTipo = userTipo;
+        this.activo = activo;
+        this.permisos = permisos != null ? new ArrayList<>(permisos) : new ArrayList<>();
+    }
+
+    // Getters y Setters
+    public Long getId() { 
+        return id; 
     }
 
     public void setId(Long id) {
@@ -127,8 +145,14 @@ public class UsuarioDTO {
     }
 
     public void setPermisos(List<String> permisos) {
-        this.permisos = permisos != null
-                ? new ArrayList<>(permisos)
-                : new ArrayList<>();
+        this.permisos = permisos != null ? new ArrayList<>(permisos) : new ArrayList<>();
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 }
