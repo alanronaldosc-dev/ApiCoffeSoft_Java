@@ -4,14 +4,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * HU-011: DTO de Usuario para exponer los datos del perfil en las respuestas de la API,
+ * sin incluir la contraseña. Soporta administrador (0), empleado (1) y cliente (2).
+ */
 @Schema(description = "DTO de Usuario para respuestas de la API")
 public class UsuarioDTO {
     
     @Schema(description = "ID único del usuario", example = "1")
     private Long id;
 
+    // HU-011: Indica si la cuenta del usuario está activa en la plantilla operativa
     @Schema(description = "Estado de la cuenta", example = "true")
-private Boolean activo;
+    private Boolean activo;
     
     @Schema(description = "Nombre completo del usuario", example = "Alan")
     private String nombre;

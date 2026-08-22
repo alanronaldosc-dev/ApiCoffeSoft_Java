@@ -7,14 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@Entity
-@Table(name = "usuarios")
-
 /**
+ * HU-011: Registro, consulta y actualización de perfiles de usuario.
+ * Esta entidad representa a los usuarios del sistema: administrador (0),
+ * empleado (1) y cliente (2), manteniendo la plantilla del personal operativa.
+ *
  * HU-015: Gestión de roles personalizados y permisos específicos
  * para puestos especiales dentro del sistema.
  */
-
+@Entity
+@Table(name = "usuarios")
 public class Usuario {
 
     @Id
@@ -22,6 +24,7 @@ public class Usuario {
     @Column(name = "id_usuario")
     private Long id;
 
+    // HU-011: Datos básicos del perfil del usuario (nombre, email, contraseña, dirección, teléfono)
     @NotBlank(message = "El nombre es obligatorio")
     @Column(nullable = false)
     private String nombre;
@@ -42,11 +45,13 @@ public class Usuario {
     private String telefono;
 
 
-    /** Tipos de usuario:
+    /**
+     * HU-011: Tipo de usuario para diferenciar los roles del personal operativo.
+     * Tipos de usuario:
      * 0 = Administrador
      * 1 = Usuario / Empleado
      * 2 = Cliente
-     * 3 = Personalizado
+     * 3 = Personalizado (HU-015)
      */
     @Column(name = "user_tipo", nullable = false)
     private Integer userTipo;
@@ -57,8 +62,9 @@ public class Usuario {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    // HU-011: Campo para activar/desactivar una cuenta de usuario en la plantilla operativa
     @Column(nullable = false)
-private Boolean activo = true;
+    private Boolean activo = true;
 
     public Usuario() {}
 
