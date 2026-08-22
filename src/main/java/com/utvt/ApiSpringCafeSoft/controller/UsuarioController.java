@@ -25,27 +25,27 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/usuarios")
 @CrossOrigin(origins = "*")
-@Tag(name = "Usuarios", description = "API para la gestión completa de usuarios del sistema CoffeeSoft")
+@Tag(name = "👤 Usuarios", description = "API para la gestión completa de usuarios del sistema CoffeeSoft")
 public class UsuarioController {
-
+    
     @Autowired
     private UsuarioService usuarioService;
 
     // ============================================
-    // 1. CREAR USUARIO - POST
+    // 📝 1. CREAR USUARIO - POST
     // ============================================
-
+    
     @Operation(
-        summary = "Crear un nuevo usuario",
+        summary = "📝 Crear un nuevo usuario",
         description = """
             Registra un nuevo usuario en el sistema con todos sus datos.
-
-            ### Seguridad:
+            
+            ### 🔐 Seguridad:
             - La contraseña se encripta automáticamente con BCrypt
             - El email debe ser de Gmail o Hotmail
             - El teléfono debe tener exactamente 10 dígitos
-
-            ### Validaciones:
+            
+            ### 📋 Validaciones:
             - Nombre: mínimo 2 caracteres, máximo 100
             - Email: formato válido y dominio permitido
             - Contraseña: mínimo 8 caracteres
@@ -55,8 +55,8 @@ public class UsuarioController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "201",
-            description = "Usuario creado exitosamente",
+            responseCode = "201", 
+            description = "✅ Usuario creado exitosamente",
             content = @Content(
                 mediaType = "application/json",
                 examples = @ExampleObject(
@@ -78,8 +78,8 @@ public class UsuarioController {
             )
         ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Datos inválidos o email ya registrado",
+            responseCode = "400", 
+            description = "❌ Datos inválidos o email ya registrado",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -90,19 +90,19 @@ public class UsuarioController {
                 )
             )
         ),
-        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+        @ApiResponse(responseCode = "500", description = "❌ Error interno del servidor")
     })
     @PostMapping
     public ResponseEntity<Map<String, Object>> crearUsuario(
-            @Valid @RequestBody
+            @Valid @RequestBody 
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "Datos del usuario a crear (todos los campos son obligatorios)",
+                description = "📦 Datos del usuario a crear (todos los campos son obligatorios)",
                 required = true,
                 content = @Content(
                     mediaType = "application/json",
                     examples = {
                         @ExampleObject(
-                            name = "Usuario Administrador",
+                            name = "👑 Usuario Administrador",
                             summary = "Crear un administrador",
                             value = """
                                 {
@@ -116,7 +116,7 @@ public class UsuarioController {
                                 """
                         ),
                         @ExampleObject(
-                            name = "Usuario Empleado",
+                            name = "👔 Usuario Empleado",
                             summary = "Crear un empleado",
                             value = """
                                 {
@@ -130,7 +130,7 @@ public class UsuarioController {
                                 """
                         ),
                         @ExampleObject(
-                            name = "Usuario Cliente",
+                            name = "👤 Usuario Cliente",
                             summary = "Crear un cliente",
                             value = """
                                 {
@@ -145,31 +145,99 @@ public class UsuarioController {
                         )
                     }
                 )
-            )
+            ) 
             Usuario usuario) {
         try {
             Usuario nuevoUsuario = usuarioService.crearUsuario(usuario);
             Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Usuario creado exitosamente");
+            response.put("mensaje", "✅ Usuario creado exitosamente");
             response.put("usuario", usuarioService.obtenerUsuarioPorId(nuevoUsuario.getId()));
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "❌ " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
-    // ============================================
-    // 2. OBTENER TODOS LOS USUARIOS - GET
-    // ============================================
-
     @Operation(
-        summary = "Obtener todos los usuarios",
+        summary = "👥 Obtener empleados",
+        description = "Obtiene la lista simplificada de todos los empleados y su estado."
+)
+@GetMapping("/empleados")
+public ResponseEntity<Map<String, Object>> obtenerEmpleados() {
+
+    Map<String, Object> response = new HashMap<>();
+
+    List<UsuarioDTO> empleados = usuarioService.obtenerEmpleados();
+
+    response.put("cantidad", empleados.size());
+    response.put("empleados", empleados);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
+}
+    @Operation(
+        summary = "🔄 Cambiar estado de empleado",
+        description = "Activa o desactiva una cuenta de empleado."
+)
+@PutMapping("/empleados/{id}/estado")
+public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
+        @PathVariable Long id,
+        @RequestBody Map<String, Boolean> body) {
+
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+
+        Boolean activo = body.get("activo");
+
+        if (activo == null) {
+            response.put("error", "El campo 'activo' es obligatorio");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        UsuarioDTO empleado =
+                usuarioService.cambiarEstadoEmpleado(id, activo);
+
+        response.put(
+                "mensaje",
+                activo
+                        ? "Empleado activado correctamente"
+                        : "Empleado desactivado correctamente"
+        );
+
+        response.put("empleado", empleado);
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (RuntimeException e) {
+
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.BAD_REQUEST
+        );
+    }
+}
+
+    // ============================================
+    // 📋 2. OBTENER TODOS LOS USUARIOS - GET
+    // ============================================
+    
+    @Operation(
+        summary = "📋 Obtener todos los usuarios",
         description = """
             Retorna una lista con todos los usuarios registrados en el sistema.
-
-            ### La respuesta incluye:
+            
+            ### 📊 La respuesta incluye:
             - Todos los usuarios con sus datos completos
             - Ordenados por ID (ascendente)
             - Sin información de contraseñas (campo excluido)
@@ -177,8 +245,8 @@ public class UsuarioController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Lista de usuarios obtenida exitosamente",
+            responseCode = "200", 
+            description = "✅ Lista de usuarios obtenida exitosamente",
             content = @Content(
                 mediaType = "application/json",
                 examples = @ExampleObject(
@@ -205,7 +273,7 @@ public class UsuarioController {
                 )
             )
         ),
-        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+        @ApiResponse(responseCode = "500", description = "❌ Error interno del servidor")
     })
     @GetMapping
     public ResponseEntity<List<UsuarioDTO>> obtenerTodosLosUsuarios() {
@@ -214,25 +282,25 @@ public class UsuarioController {
     }
 
     // ============================================
-    // 3. OBTENER USUARIO POR ID - GET
+    // 🔍 3. OBTENER USUARIO POR ID - GET
     // ============================================
-
+    
     @Operation(
-        summary = "Obtener usuario por ID",
+        summary = "🔍 Obtener usuario por ID",
         description = """
             Retorna los datos completos de un usuario específico usando su ID único.
-
-            ### Parámetros:
+            
+            ### 🔑 Parámetros:
             - **id**: ID numérico del usuario (generado automáticamente)
-
-            ### Ejemplo de uso:
-            - `GET /api/usuarios/1` -> Obtiene el usuario con ID 1
+            
+            ### 💡 Ejemplo de uso:
+            - `GET /api/usuarios/1` → Obtiene el usuario con ID 1
             """
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Usuario encontrado",
+            responseCode = "200", 
+            description = "✅ Usuario encontrado",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -252,8 +320,8 @@ public class UsuarioController {
             )
         ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Usuario no encontrado",
+            responseCode = "404", 
+            description = "❌ Usuario no encontrado",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -268,48 +336,48 @@ public class UsuarioController {
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> obtenerUsuarioPorId(
             @Parameter(
-                description = "ID único del usuario (número entero)",
-                example = "1",
+                description = "🆔 ID único del usuario (número entero)", 
+                example = "1", 
                 required = true,
                 schema = @Schema(type = "integer", minimum = "1")
             )
             @PathVariable Long id) {
         Optional<UsuarioDTO> usuarioOpt = usuarioService.obtenerUsuarioPorId(id);
-
+        
         if (usuarioOpt.isPresent()) {
             Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Usuario encontrado");
+            response.put("mensaje", "✅ Usuario encontrado");
             response.put("usuario", usuarioOpt.get());
             return new ResponseEntity<>(response, HttpStatus.OK);
         } else {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Usuario no encontrado con ID: " + id);
+            errorResponse.put("error", "❌ Usuario no encontrado con ID: " + id);
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         }
     }
 
     // ============================================
-    // 4. OBTENER USUARIO POR EMAIL - GET
+    // 📧 4. OBTENER USUARIO POR EMAIL - GET
     // ============================================
-
+    
     @Operation(
-        summary = "Obtener usuario por email",
+        summary = "📧 Obtener usuario por email",
         description = """
             Retorna los datos de un usuario específico usando su email.
-
-            ### Requisitos del email:
+            
+            ### 📧 Requisitos del email:
             - Debe ser de Gmail (@gmail.com) o Hotmail (@hotmail.com)
             - No distingue entre mayúsculas y minúsculas
             - Debe estar registrado en el sistema
-
-            ### Ejemplo de uso:
+            
+            ### 💡 Ejemplo de uso:
             - `GET /api/usuarios/email/alan@gmail.com`
             """
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Usuario encontrado",
+            responseCode = "200", 
+            description = "✅ Usuario encontrado",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -329,8 +397,8 @@ public class UsuarioController {
             )
         ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Usuario no encontrado",
+            responseCode = "404", 
+            description = "❌ Usuario no encontrado",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -345,48 +413,48 @@ public class UsuarioController {
     @GetMapping("/email/{email}")
     public ResponseEntity<Map<String, Object>> obtenerUsuarioPorEmail(
             @Parameter(
-                description = "Email del usuario (debe ser Gmail o Hotmail)",
-                example = "alan@gmail.com",
+                description = "📧 Email del usuario (debe ser Gmail o Hotmail)", 
+                example = "alan@gmail.com", 
                 required = true,
                 schema = @Schema(type = "string", format = "email", pattern = "^[A-Za-z0-9+_.-]+@(gmail\\.com|hotmail\\.com)$")
             )
             @PathVariable String email) {
         Optional<UsuarioDTO> usuarioOpt = usuarioService.obtenerUsuarioPorEmail(email);
-
+        
         if (usuarioOpt.isPresent()) {
             Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Usuario encontrado");
+            response.put("mensaje", "✅ Usuario encontrado");
             response.put("usuario", usuarioOpt.get());
             return new ResponseEntity<>(response, HttpStatus.OK);
         } else {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Usuario no encontrado con email: " + email);
+            errorResponse.put("error", "❌ Usuario no encontrado con email: " + email);
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         }
     }
 
     // ============================================
-    // 5. OBTENER POR TIPO - GET
+    // 👥 5. OBTENER POR TIPO - GET
     // ============================================
-
+    
     @Operation(
-        summary = "Obtener usuarios por tipo",
+        summary = "👥 Obtener usuarios por tipo",
         description = """
             Retorna todos los usuarios filtrados por su tipo de rol.
-
-            ### Tipos de usuario:
+            
+            ### 👤 Tipos de usuario:
             - **0**: Administrador (acceso total)
             - **1**: Empleado (acceso limitado)
             - **2**: Cliente (acceso básico)
-
-            ### Ejemplo de uso:
-            - `GET /api/usuarios/tipo/0` -> Obtiene todos los administradores
+            
+            ### 💡 Ejemplo de uso:
+            - `GET /api/usuarios/tipo/0` → Obtiene todos los administradores
             """
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Usuarios encontrados",
+            responseCode = "200", 
+            description = "✅ Usuarios encontrados",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -409,8 +477,8 @@ public class UsuarioController {
             )
         ),
         @ApiResponse(
-            responseCode = "200",
-            description = "No se encontraron usuarios con ese tipo",
+            responseCode = "200", 
+            description = "⚠️ No se encontraron usuarios con ese tipo",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -427,44 +495,44 @@ public class UsuarioController {
     @GetMapping("/tipo/{userTipo}")
     public ResponseEntity<Map<String, Object>> obtenerUsuariosPorTipo(
             @Parameter(
-                description = "Tipo de usuario: 0=Admin, 1=Empleado, 2=Cliente",
-                example = "0",
+                description = "👤 Tipo de usuario: 0=Admin, 1=Empleado, 2=Cliente", 
+                example = "0", 
                 required = true,
                 schema = @Schema(type = "integer", allowableValues = {"0", "1", "2"})
             )
             @PathVariable Integer userTipo) {
         List<UsuarioDTO> usuarios = usuarioService.obtenerUsuariosPorTipo(userTipo);
-
+        
         Map<String, Object> response = new HashMap<>();
-        response.put("mensaje", "Usuarios encontrados por tipo: " + userTipo);
+        response.put("mensaje", "✅ Usuarios encontrados por tipo: " + userTipo);
         response.put("cantidad", usuarios.size());
         response.put("usuarios", usuarios);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     // ============================================
-    // 6. BUSCAR POR NOMBRE - GET
+    // 🔎 6. BUSCAR POR NOMBRE - GET
     // ============================================
-
+    
     @Operation(
-        summary = "Buscar usuarios por nombre",
+        summary = "🔎 Buscar usuarios por nombre",
         description = """
             Retorna todos los usuarios cuyo nombre contenga la palabra buscada.
-
-            ### Características:
+            
+            ### 🔍 Características:
             - Búsqueda parcial (contiene la palabra)
             - No distingue entre mayúsculas y minúsculas
             - Útil para autocompletado y búsquedas rápidas
-
-            ### Ejemplos:
-            - `GET /api/usuarios/buscar?nombre=Al` -> Encuentra "Alan", "Alejandro", etc.
-            - `GET /api/usuarios/buscar?nombre=maria` -> Encuentra "María", "Mariam", etc.
+            
+            ### 💡 Ejemplos:
+            - `GET /api/usuarios/buscar?nombre=Al` → Encuentra "Alan", "Alejandro", etc.
+            - `GET /api/usuarios/buscar?nombre=maria` → Encuentra "María", "Mariam", etc.
             """
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Resultados de búsqueda",
+            responseCode = "200", 
+            description = "✅ Resultados de búsqueda",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -490,45 +558,45 @@ public class UsuarioController {
     @GetMapping("/buscar")
     public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
             @Parameter(
-                description = "Nombre o parte del nombre a buscar (mínimo 2 caracteres)",
-                example = "Alan",
+                description = "🔤 Nombre o parte del nombre a buscar (mínimo 2 caracteres)", 
+                example = "Alan", 
                 required = true,
                 schema = @Schema(type = "string", minLength = 2)
             )
             @RequestParam String nombre) {
         List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
-
+        
         Map<String, Object> response = new HashMap<>();
-        response.put("mensaje", "Resultados de búsqueda para: " + nombre);
+        response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
         response.put("cantidad", usuarios.size());
         response.put("usuarios", usuarios);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     // ============================================
-    // 7. ACTUALIZAR USUARIO - PUT
+    // ✏️ 7. ACTUALIZAR USUARIO - PUT
     // ============================================
-
+    
     @Operation(
-        summary = "Actualizar usuario",
+        summary = "✏️ Actualizar usuario",
         description = """
             Actualiza los datos de un usuario existente.
-
-            ### Características:
+            
+            ### 📝 Características:
             - Solo se actualizan los campos enviados
             - Los campos no enviados mantienen su valor actual
             - La contraseña se encripta automáticamente si se envía
             - Validación de email único (no puede usarse en otro usuario)
-
-            ### Nota:
+            
+            ### ⚠️ Nota:
             - Para actualizar la contraseña, enviar el campo 'password'
             - El ID no se puede modificar
             """
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Usuario actualizado exitosamente",
+            responseCode = "200", 
+            description = "✅ Usuario actualizado exitosamente",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -548,8 +616,8 @@ public class UsuarioController {
             )
         ),
         @ApiResponse(
-            responseCode = "400",
-            description = "Datos inválidos",
+            responseCode = "400", 
+            description = "❌ Datos inválidos",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -561,8 +629,8 @@ public class UsuarioController {
             )
         ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Usuario no encontrado",
+            responseCode = "404", 
+            description = "❌ Usuario no encontrado",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -577,14 +645,14 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> actualizarUsuario(
             @Parameter(
-                description = "ID del usuario a actualizar",
-                example = "1",
+                description = "🆔 ID del usuario a actualizar", 
+                example = "1", 
                 required = true
             )
             @PathVariable Long id,
-            @Valid @RequestBody
+            @Valid @RequestBody 
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "Datos a actualizar (solo los campos que se quieren modificar)",
+                description = "📦 Datos a actualizar (solo los campos que se quieren modificar)",
                 required = true,
                 content = @Content(
                     examples = {
@@ -620,45 +688,70 @@ public class UsuarioController {
                         )
                     }
                 )
-            )
+            ) 
             Usuario usuarioActualizado) {
         try {
             Usuario usuarioActualizadoObj = usuarioService.actualizarUsuario(id, usuarioActualizado);
-
+            
             Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Usuario actualizado exitosamente");
+            response.put("mensaje", "✅ Usuario actualizado exitosamente");
             response.put("usuario", usuarioService.obtenerUsuarioPorId(usuarioActualizadoObj.getId()));
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "❌ " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         }
     }
 
     // ============================================
-    // 8. ELIMINAR USUARIO - DELETE
-    // ============================================
+// 🔒 10. CAMBIAR ESTADO DE USUARIO (ACTIVO/INACTIVO) - PUT
+// ============================================
 
+@Operation(summary = "🔒 Cambiar estado del usuario (activo/inactivo)")
+@PutMapping("/{id}/estado")
+public ResponseEntity<Map<String, Object>> cambiarEstadoUsuario(
+        @PathVariable Long id,
+        @RequestBody Map<String, Boolean> body) {
+    try {
+        boolean activo = body.get("activo");
+        usuarioService.cambiarEstadoEmpleado(id, activo);
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "✅ Estado actualizado correctamente");
+        response.put("id", id);
+        response.put("activo", activo);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("error", "❌ " + e.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}
+
+
+    // ============================================
+    // 🗑️ 8. ELIMINAR USUARIO - DELETE
+    // ============================================
+    
     @Operation(
-        summary = "Eliminar usuario",
+        summary = "🗑️ Eliminar usuario",
         description = """
             Elimina un usuario del sistema por su ID.
-
-            ### Advertencia:
+            
+            ### ⚠️ Advertencia:
             - Esta acción **no se puede deshacer**
             - Se eliminan todos los datos del usuario
             - Los IDs no se reutilizan (permanecen como históricos)
-
-            ### Recomendación:
+            
+            ### 💡 Recomendación:
             - En sistemas productivos, considerar un borrado lógico (activo/inactivo)
             - Esta implementación es un borrado físico definitivo
             """
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200",
-            description = "Usuario eliminado exitosamente",
+            responseCode = "200", 
+            description = "✅ Usuario eliminado exitosamente",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -671,8 +764,8 @@ public class UsuarioController {
             )
         ),
         @ApiResponse(
-            responseCode = "404",
-            description = "Usuario no encontrado",
+            responseCode = "404", 
+            description = "❌ Usuario no encontrado",
             content = @Content(
                 examples = @ExampleObject(
                     value = """
@@ -687,124 +780,106 @@ public class UsuarioController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> eliminarUsuario(
             @Parameter(
-                description = "ID del usuario a eliminar",
-                example = "1",
+                description = "🆔 ID del usuario a eliminar", 
+                example = "1", 
                 required = true
             )
             @PathVariable Long id) {
         try {
             usuarioService.eliminarUsuario(id);
-
+            
             Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Usuario eliminado exitosamente");
+            response.put("mensaje", "🗑️ Usuario eliminado exitosamente");
             response.put("id", id);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
+            errorResponse.put("error", "❌ " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
         }
     }
 
-    // ============================================
-    // 9. ACTUALIZAR PUSH TOKEN - PUT
-    // ============================================
-
-    @Operation(summary = "Actualizar push token del usuario")
-    @PutMapping("/{id}/push-token")
-    public ResponseEntity<Map<String, Object>> actualizarPushToken(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
-        try {
-            String pushToken = body.get("pushToken");
-            usuarioService.actualizarPushToken(id, pushToken);
-            Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Push token actualizado");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-        }
-    }
 
     // ============================================
-    // 10. OBTENER PUSH TOKENS DE EMPLEADOS - GET
-    // ============================================
+// 📱 9. ACTUALIZAR PUSH TOKEN - PUT
+// ============================================
 
-    @Operation(summary = "Obtener push tokens de todos los empleados activos")
-    @GetMapping("/empleados/push-tokens")
-    public ResponseEntity<Map<String, Object>> getPushTokensEmpleados() {
-        List<String> tokens = usuarioService.getPushTokensEmpleados();
+@Operation(summary = "📱 Actualizar push token del usuario")
+@PutMapping("/{id}/push-token")
+public ResponseEntity<Map<String, Object>> actualizarPushToken(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> body) {
+    try {
+        String pushToken = body.get("pushToken");
+        usuarioService.actualizarPushToken(id, pushToken);
         Map<String, Object> response = new HashMap<>();
-        response.put("tokens", tokens);
+        response.put("mensaje", "✅ Push token actualizado");
         return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("error", "❌ " + e.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
+}
 
-    // ============================================
-    // 11. CAMBIAR ESTADO DE USUARIO - PUT
-    // ============================================
+// ============================================
+// 📱 10. OBTENER PUSH TOKENS DE EMPLEADOS - GET
+// ============================================
 
-    @Operation(summary = "Cambiar estado del usuario (activo/inactivo)")
-    @PutMapping("/{id}/estado")
-    public ResponseEntity<Map<String, Object>> cambiarEstadoUsuario(
-            @PathVariable Long id,
-            @RequestBody Map<String, Boolean> body) {
-        try {
-            boolean activo = body.get("activo");
-            usuarioService.cambiarEstadoUsuario(id, activo);
-            Map<String, Object> response = new HashMap<>();
-            response.put("mensaje", "Estado actualizado correctamente");
-            response.put("id", id);
-            response.put("activo", activo);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+@Operation(summary = "📱 Obtener push tokens de todos los empleados activos")
+@GetMapping("/empleados/push-tokens")
+public ResponseEntity<Map<String, Object>> getPushTokensEmpleados() {
+    List<String> tokens = usuarioService.getPushTokensEmpleados();
+    Map<String, Object> response = new HashMap<>();
+    response.put("tokens", tokens);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+}
+
+
+@Operation(summary = "Iniciar sesión")
+@PostMapping("/login")
+public ResponseEntity<Map<String, Object>> iniciarSesion(
+        @RequestBody Map<String, String> body) {
+
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+        String email = body.get("email");
+        String password = body.get("password");
+
+        if (email == null || email.trim().isEmpty()
+                || password == null || password.trim().isEmpty()) {
+
+            response.put("error", "Correo y contraseña son obligatorios");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
         }
+
+        UsuarioDTO usuario = usuarioService.iniciarSesion(
+                email.trim().toLowerCase(),
+                password
+        );
+
+        response.put("mensaje", "Inicio de sesión exitoso");
+        response.put("usuario", usuario);
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (RuntimeException e) {
+
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.UNAUTHORIZED
+        );
     }
-
-    // ============================================
-    // 12. INICIAR SESIÓN - POST (HU-008)
-    // ============================================
-
-    @Operation(summary = "Iniciar sesión")
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> iniciarSesion(
-            @RequestBody Map<String, String> body) {
-
-        Map<String, Object> response = new HashMap<>();
-
-        try {
-            String email = body.get("email");
-            String password = body.get("password");
-
-            if (email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty()) {
-                response.put("error", "Correo y contraseña son obligatorios");
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-            }
-
-            UsuarioDTO usuario = usuarioService.iniciarSesion(email, password);
-            response.put("mensaje", "Inicio de sesión exitoso");
-            response.put("usuario", usuario);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (Exception e) {
-            response.put("error", e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    // ============================================
-    // 13. CERRAR SESIÓN - POST (HU-010)
-    // ============================================
-
-    @Operation(summary = "Cerrar sesión")
-    @PostMapping("/logout")
-    public ResponseEntity<Map<String, Object>> cerrarSesion() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("mensaje", "Sesión cerrada correctamente");
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
+}
+    
 }

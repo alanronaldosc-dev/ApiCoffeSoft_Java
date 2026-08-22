@@ -3,6 +3,9 @@ package com.utvt.ApiSpringCafeSoft.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Entity
 @Table(name = "usuarios")
@@ -38,6 +41,13 @@ public class Usuario {
     @Column(nullable = false)
     private String telefono;
 
+
+    /** Tipos de usuario:
+     * 0 = Administrador
+     * 1 = Usuario / Empleado
+     * 2 = Cliente
+     * 3 = Personalizado
+     */
     @Column(name = "user_tipo", nullable = false)
     private Integer userTipo;
 
@@ -46,7 +56,9 @@ public class Usuario {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-    
+
+    @Column(nullable = false)
+private Boolean activo = true;
 
     public Usuario() {}
 
@@ -76,4 +88,33 @@ public class Usuario {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    /** HU-015
+     *
+     * Permisos específicos asignados a un usuario
+     * con rol personalizado.
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "usuario_permisos",
+            joinColumns = @JoinColumn(name = "id_usuario"))
+    @Column(name = "permiso")
+    private List<String> permisos = new ArrayList<>();
+
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+    public List<String> getPermisos() {
+        return permisos;
+    }
+
+    public void setPermisos(List<String> permisos) {
+        this.permisos = permisos;
+    }
+
 }

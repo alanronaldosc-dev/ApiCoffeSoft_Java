@@ -44,4 +44,10 @@ public class LoteController {
         loteService.eliminarLote(id);
         return ResponseEntity.noContent().build();
     }
+    @Operation(summary = "Obtener lotes por proveedor")
+@GetMapping("/proveedor/{proveedorId}")
+public ResponseEntity<List<LoteDTO>> obtenerPorProveedor(@PathVariable Long proveedorId) {
+    return ResponseEntity.ok(loteService.obtenerPorProveedor(proveedorId));
+}
+
 }
