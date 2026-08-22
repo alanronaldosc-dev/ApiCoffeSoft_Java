@@ -35,11 +35,14 @@ public class UsuarioService {
         }
         
         // Encriptar la contraseña
-        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        usuario.setPassword(
+            passwordEncoder.encode(usuario.getPassword())
+    );
 
-        
-        return usuarioRepository.save(usuario);
-    }
+        usuario.setActivo(true);
+
+    return usuarioRepository.save(usuario);
+}
     
     // CRUD - Read (Todos)
     public List<UsuarioDTO> obtenerTodosLosUsuarios() {
@@ -73,6 +76,28 @@ public class UsuarioService {
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
+    public List<UsuarioDTO> obtenerEmpleados() {
+    return usuarioRepository.findByUserTipo(1).stream()
+            .map(this::convertirADTO)
+            .collect(Collectors.toList());
+}
+
+    public UsuarioDTO cambiarEstadoEmpleado(Long id, Boolean activo) {
+
+    Usuario usuario = usuarioRepository.findById(id)
+            .orElseThrow(() ->
+                    new RuntimeException("Usuario no encontrado con ID: " + id));
+
+    if (usuario.getUserTipo() != 1) {
+        throw new RuntimeException("El usuario seleccionado no es un empleado");
+    }
+
+    usuario.setActivo(activo);
+
+    Usuario usuarioGuardado = usuarioRepository.save(usuario);
+
+    return convertirADTO(usuarioGuardado);
+}
     
     // CRUD - Update
     public Usuario actualizarUsuario(Long id, Usuario usuarioActualizado) {
@@ -131,13 +156,14 @@ public class UsuarioService {
     // Método auxiliar para convertir Usuario a UsuarioDTO
     private UsuarioDTO convertirADTO(Usuario usuario) {
         return new UsuarioDTO(
-                usuario.getId(),
-                usuario.getNombre(),
-                usuario.getEmail(),
-                usuario.getDireccion(),
-                usuario.getTelefono(),
-                usuario.getUserTipo()
-        );
+        usuario.getId(),
+        usuario.getNombre(),
+        usuario.getEmail(),
+        usuario.getDireccion(),
+        usuario.getTelefono(),
+        usuario.getUserTipo(),
+        usuario.getActivo()
+);
     }
 
 
@@ -160,7 +186,8 @@ public class UsuarioService {
     public UsuarioDTO iniciarSesion(String email, String password) {
 
     Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Correo o contraseña incorrectos"));
+            .orElseThrow(() ->
+                    new RuntimeException("Correo o contraseña incorrectos"));
 
     boolean passwordCorrecta = passwordEncoder.matches(
             password,
@@ -169,6 +196,13 @@ public class UsuarioService {
 
     if (!passwordCorrecta) {
         throw new RuntimeException("Correo o contraseña incorrectos");
+    }
+
+    // Verificar si la cuenta está activa
+    if (Boolean.FALSE.equals(usuario.getActivo())) {
+        throw new RuntimeException(
+                "Esta cuenta está inactiva. No es posible iniciar sesión."
+        );
     }
 
     return convertirADTO(usuario);

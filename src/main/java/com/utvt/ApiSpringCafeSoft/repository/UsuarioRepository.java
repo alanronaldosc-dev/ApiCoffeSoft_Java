@@ -22,4 +22,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // Verificar si existe por email
     boolean existsByEmail(String email);
 
+    List<Usuario> findByUserTipoAndActivo(Integer userTipo, Boolean activo);
+
 }
