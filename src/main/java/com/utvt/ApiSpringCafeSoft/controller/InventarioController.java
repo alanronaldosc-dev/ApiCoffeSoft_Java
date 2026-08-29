@@ -94,6 +94,10 @@ public class InventarioController {
         return ResponseEntity.noContent().build();
     }
 
+   // HU - Consulta de existencias actuales:
+// Permite consultar el inventario, buscar existencias por nombre
+// e identificar insumos con bajo stock y stock crítico. 
+
     // ==================== MÉTODOS ADICIONALES DE CONSULTA ====================
 
     @Operation(summary = "Buscar insumos por nombre", description = "Busca insumos que contengan el texto en su nombre")
