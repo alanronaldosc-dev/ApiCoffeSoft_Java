@@ -139,11 +139,16 @@ public class UsuarioService {
         /*
          * Tipo de usuario inválido.
          */
+                else if (usuario.getUserTipo() == 4) {
+            // Repartidor: sin permisos asignados por el momento
+            usuario.setPermisos(new ArrayList<>());
+        }
         else {
             throw new RuntimeException(
                     "El tipo de usuario no es válido"
             );
         }
+
 
         /*
          * Encriptar contraseña.
@@ -322,7 +327,7 @@ public class UsuarioService {
             Integer nuevoTipo =
                     usuarioActualizado.getUserTipo();
 
-            if (nuevoTipo < 0 || nuevoTipo > 3) {
+            if (nuevoTipo < 0 || nuevoTipo > 4) {
 
                 throw new RuntimeException(
                         "El tipo de usuario no es válido"

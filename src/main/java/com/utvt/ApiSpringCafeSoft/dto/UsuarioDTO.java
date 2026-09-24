@@ -31,9 +31,9 @@ public class UsuarioDTO {
     private String telefono;
 
 
-    @Schema(description = "Tipo de usuario: 0=Administrador, 1=Usuario, 2=Cliente, 3=Personalizado",
+    @Schema(description = "Tipo de usuario: 0=Administrador, 1=Usuario, 2=Cliente, 3=Personalizado, 4=Repartidor",
             example = "3",
-            allowableValues = {"0", "1", "2", "3"})
+            allowableValues = {"0", "1", "2", "3", "4"})
     private Integer userTipo;
 
     @Schema(
