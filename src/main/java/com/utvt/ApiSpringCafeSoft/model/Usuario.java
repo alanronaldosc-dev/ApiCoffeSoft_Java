@@ -51,7 +51,8 @@ public class Usuario {
      * 0 = Administrador
      * 1 = Usuario / Empleado
      * 2 = Cliente
-     * 3 = Personalizado (HU-015)
+     * 3 = Personalizado 
+     * 4 = Repartidor 
      */
     @Column(name = "user_tipo", nullable = false)
     private Integer userTipo;
