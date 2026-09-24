@@ -1,5 +1,11 @@
 package com.utvt.ApiSpringCafeSoft.dto;
 
+/**
+     * 
+     * (HU-006): agrega confirmacion de carga por repartidor
+     * 
+     */
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
