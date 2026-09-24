@@ -27,8 +27,9 @@ public class CargaController {
     private CargaService cargaService;
 
     /**
-     * HU-005
-     * Registrar carga inicial de garrafones.
+     * 
+     * (HU-006): agrega confirmacion de carga por repartidor
+     * 
      */
     @PostMapping
     @Operation(

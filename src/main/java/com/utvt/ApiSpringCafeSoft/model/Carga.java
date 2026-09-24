@@ -1,5 +1,9 @@
 package com.utvt.ApiSpringCafeSoft.model;
-
+/**
+     * 
+     * (HU-006): agrega confirmacion de carga por repartidor
+     * 
+     */
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -114,4 +118,4 @@ public class Carga {
     public void setEstado(String estado) {
         this.estado = estado;
     }
-}
+}    
