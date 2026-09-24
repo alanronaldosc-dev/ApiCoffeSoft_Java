@@ -197,4 +197,32 @@ public class InventarioController {
         List<InventarioDTO> insumos = inventarioService.obtenerInsumosPorRangoPrecio(precioMin, precioMax);
         return ResponseEntity.ok(insumos);
     }
+
+    // DTO interno para recibir el request
+    static class RecibirProductoRequest {
+        private Long productoId;
+        private Double cantidad;
+        public Long getProductoId() { return productoId; }
+        public void setProductoId(Long productoId) { this.productoId = productoId; }
+        public Double getCantidad() { return cantidad; }
+        public void setCantidad(Double cantidad) { this.cantidad = cantidad; }
+    }
+
+    @Operation(summary = "Recibir producto en inventario",
+            description = "Registra o incrementa la existencia de un producto terminado en inventario")
+    @PostMapping("/producto")
+    public ResponseEntity<InventarioDTO> recibirProducto(
+            @RequestBody RecibirProductoRequest request) {
+        InventarioDTO resultado = inventarioService.recibirProducto(
+            request.getProductoId(), request.getCantidad());
+        return new ResponseEntity<>(resultado, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Obtener productos en inventario",
+            description = "Lista todos los productos terminados registrados en inventario")
+    @GetMapping("/productos")
+    public ResponseEntity<List<InventarioDTO>> obtenerProductosEnInventario() {
+        return ResponseEntity.ok(inventarioService.obtenerProductosEnInventario());
+    }
+
 }

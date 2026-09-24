@@ -7,14 +7,13 @@ public class LoteDTO {
 
     private Long id;
 
-    @NotNull(message = "El insumo es obligatorio")
+    // nullable cuando es lote de producción
     private Long insumoId;
-
     private String insumoNombre;
     private String insumoUnidad;
 
-    private Long proveedorId;       // nuevo
-    private String proveedorNombre; // nuevo
+    private Long proveedorId;
+    private String proveedorNombre;
 
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.001")
@@ -28,11 +27,17 @@ public class LoteDTO {
     @Size(max = 255)
     private String observaciones;
 
+    // Campos de producción
+    private Long productoId;
+    private String productoNombre;
+    private String tipoLote; // "insumo" o "produccion"
+
     public LoteDTO() {}
 
     public LoteDTO(Long id, Long insumoId, String insumoNombre, String insumoUnidad,
                    Long proveedorId, String proveedorNombre,
-                   Double cantidad, LocalDate fechaCaducidad, LocalDate fechaEntrada, String observaciones) {
+                   Double cantidad, LocalDate fechaCaducidad, LocalDate fechaEntrada,
+                   String observaciones, Long productoId, String productoNombre, String tipoLote) {
         this.id = id;
         this.insumoId = insumoId;
         this.insumoNombre = insumoNombre;
@@ -43,6 +48,9 @@ public class LoteDTO {
         this.fechaCaducidad = fechaCaducidad;
         this.fechaEntrada = fechaEntrada;
         this.observaciones = observaciones;
+        this.productoId = productoId;
+        this.productoNombre = productoNombre;
+        this.tipoLote = tipoLote;
     }
 
     public Long getId() { return id; }
@@ -65,4 +73,10 @@ public class LoteDTO {
     public void setFechaEntrada(LocalDate fechaEntrada) { this.fechaEntrada = fechaEntrada; }
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+    public Long getProductoId() { return productoId; }
+    public void setProductoId(Long productoId) { this.productoId = productoId; }
+    public String getProductoNombre() { return productoNombre; }
+    public void setProductoNombre(String productoNombre) { this.productoNombre = productoNombre; }
+    public String getTipoLote() { return tipoLote; }
+    public void setTipoLote(String tipoLote) { this.tipoLote = tipoLote; }
 }

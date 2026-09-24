@@ -20,10 +20,23 @@ public class LoteController {
     @Autowired
     private LoteService loteService;
 
-    @Operation(summary = "Registrar un nuevo lote")
+    @Operation(summary = "Registrar un nuevo lote de insumo")
     @PostMapping
     public ResponseEntity<LoteDTO> registrarLote(@Valid @RequestBody LoteDTO loteDTO) {
         return new ResponseEntity<>(loteService.registrarLote(loteDTO), HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Producir unidades de un producto",
+               description = "Descuenta insumos del inventario, suma al inventario de productos y registra un lote de producción")
+    @PostMapping("/producir")
+    public ResponseEntity<LoteDTO> producirProducto(@RequestBody ProducirRequest request) {
+        LoteDTO resultado = loteService.producirProducto(
+            request.getProductoId(),
+            request.getCantidad(),
+            request.getFechaCaducidad(),
+            request.getObservaciones()
+        );
+        return new ResponseEntity<>(resultado, HttpStatus.CREATED);
     }
 
     @Operation(summary = "Obtener todos los lotes")
@@ -38,16 +51,33 @@ public class LoteController {
         return ResponseEntity.ok(loteService.obtenerPorInsumo(insumoId));
     }
 
+    @Operation(summary = "Obtener lotes por proveedor")
+    @GetMapping("/proveedor/{proveedorId}")
+    public ResponseEntity<List<LoteDTO>> obtenerPorProveedor(@PathVariable Long proveedorId) {
+        return ResponseEntity.ok(loteService.obtenerPorProveedor(proveedorId));
+    }
+
     @Operation(summary = "Eliminar un lote")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarLote(@PathVariable Long id) {
         loteService.eliminarLote(id);
         return ResponseEntity.noContent().build();
     }
-    @Operation(summary = "Obtener lotes por proveedor")
-@GetMapping("/proveedor/{proveedorId}")
-public ResponseEntity<List<LoteDTO>> obtenerPorProveedor(@PathVariable Long proveedorId) {
-    return ResponseEntity.ok(loteService.obtenerPorProveedor(proveedorId));
-}
 
+    // ── DTO interno para la request de producción ──
+    static class ProducirRequest {
+        private Long productoId;
+        private Double cantidad;
+        private String fechaCaducidad; // formato "yyyy-MM-dd", puede ser null
+        private String observaciones;
+
+        public Long getProductoId() { return productoId; }
+        public void setProductoId(Long productoId) { this.productoId = productoId; }
+        public Double getCantidad() { return cantidad; }
+        public void setCantidad(Double cantidad) { this.cantidad = cantidad; }
+        public String getFechaCaducidad() { return fechaCaducidad; }
+        public void setFechaCaducidad(String fechaCaducidad) { this.fechaCaducidad = fechaCaducidad; }
+        public String getObservaciones() { return observaciones; }
+        public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+    }
 }

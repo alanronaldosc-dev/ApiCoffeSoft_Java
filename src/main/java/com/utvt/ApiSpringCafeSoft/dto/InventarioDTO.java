@@ -3,6 +3,7 @@ package com.utvt.ApiSpringCafeSoft.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
+
 @Schema(description = "DTO para el inventario de insumos")
 public class InventarioDTO {
 
@@ -45,11 +46,13 @@ public class InventarioDTO {
     @NotNull(message = "El precio unitario es obligatorio")
     @Min(value = 0, message = "El precio unitario no puede ser negativo")
     private Double precioUnitario;
+    private Long productoId;
+
 
     public InventarioDTO() {}
 
     public InventarioDTO(Long id, String nombre, String tipo, Double cantidad, String unidadMedida,
-                         Double cantidadMinima, String caducidad, String proveedor, Double precioUnitario) {
+                         Double cantidadMinima, String caducidad, String proveedor, Double precioUnitario, Long productoId) {
         this.id = id;
         this.nombre = nombre;
         this.tipo = tipo;
@@ -59,6 +62,7 @@ public class InventarioDTO {
         this.caducidad = caducidad;
         this.proveedor = proveedor;
         this.precioUnitario = precioUnitario;
+        this.productoId = productoId;
     }
 
     public Long getId() { return id; }
@@ -79,4 +83,7 @@ public class InventarioDTO {
     public void setProveedor(String proveedor) { this.proveedor = proveedor; }
     public Double getPrecioUnitario() { return precioUnitario; }
     public void setPrecioUnitario(Double precioUnitario) { this.precioUnitario = precioUnitario; }
+    public Long getProductoId() { return productoId; }
+    public void setProductoId(Long productoId) { this.productoId = productoId; }
+
 }

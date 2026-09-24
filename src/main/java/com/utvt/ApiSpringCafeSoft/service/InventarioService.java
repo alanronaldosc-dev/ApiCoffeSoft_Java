@@ -2,7 +2,9 @@ package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.InventarioDTO;
 import com.utvt.ApiSpringCafeSoft.model.Inventario;
+import com.utvt.ApiSpringCafeSoft.model.Producto;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
+import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +14,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class InventarioService {
+
+    @Autowired
+    private ProductoRepository productoRepository;
 
     @Autowired
     private InventarioRepository inventarioRepository;
@@ -26,7 +31,8 @@ public class InventarioService {
             inventario.getCantidadMinima(),
             inventario.getCaducidad(),
             inventario.getProveedor(),
-            inventario.getPrecioUnitario()
+            inventario.getPrecioUnitario(),
+            inventario.getProductoId()
         );
     }
 
@@ -119,5 +125,36 @@ public class InventarioService {
     public List<InventarioDTO> obtenerInsumosPorRangoPrecio(Double precioMin, Double precioMax) {
         return inventarioRepository.findByPrecioRange(precioMin, precioMax).stream()
                 .map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public InventarioDTO recibirProducto(Long productoId, Double cantidad) {
+        Producto producto = productoRepository.findById(productoId)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + productoId));
+
+        Inventario existente = inventarioRepository.findByProductoId(productoId).orElse(null);
+
+        if (existente != null) {
+            existente.setCantidad(existente.getCantidad() + cantidad);
+            return convertToDTO(inventarioRepository.save(existente));
+        } else {
+            Inventario nuevo = new Inventario();
+            nuevo.setNombre(producto.getNombre());
+            nuevo.setTipo("producto");
+            nuevo.setCantidad(cantidad);
+            nuevo.setUnidadMedida("piezas");
+            nuevo.setCantidadMinima(1.0);
+            nuevo.setPrecioUnitario(producto.getPrecio());
+            nuevo.setProveedor(null);
+            nuevo.setCaducidad(null);
+            nuevo.setProductoId(productoId);
+            return convertToDTO(inventarioRepository.save(nuevo));
+        }
+    }
+
+    public List<InventarioDTO> obtenerProductosEnInventario() {
+        return inventarioRepository.findByTipo("producto").stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 }
