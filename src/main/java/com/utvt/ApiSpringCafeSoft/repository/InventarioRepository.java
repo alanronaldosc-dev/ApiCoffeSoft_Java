@@ -18,7 +18,10 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     List<Inventario> findByUnidadMedida(String unidadMedida);
     List<Inventario> findByCaducidadBefore(String fecha);
     List<Inventario> findByCaducidadAfter(String fecha);
+    List<Inventario> findByTipo(String tipo);
 
+    java.util.Optional<Inventario> findByProductoId(Long productoId);
+    
     @Query("SELECT i FROM Inventario i WHERE i.cantidad <= i.cantidadMinima")
     List<Inventario> findLowStockItems();
 
