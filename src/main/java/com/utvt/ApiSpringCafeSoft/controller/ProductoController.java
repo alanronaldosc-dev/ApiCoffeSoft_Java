@@ -16,9 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @CrossOrigin(origins = "*")
-
-
-
 @RestController
 @RequestMapping("/api/productos")
 @Tag(name = "Productos", description = "API para la gestión de productos")
@@ -29,6 +26,11 @@ public class ProductoController {
 
     // ==================== CRUD BÁSICO ====================
 
+    // ============================================
+    // HU-003 - ALTA Y CATEGORIZACIÓN DE GARRAFONES
+    // Permite registrar productos especificando
+    // tipo de garrafón (20L, 10L, nuevo, retornable)
+    // ============================================
     @Operation(summary = "Crear un nuevo producto", description = "Registra un nuevo producto con sus insumos asociados")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Producto creado exitosamente"),
