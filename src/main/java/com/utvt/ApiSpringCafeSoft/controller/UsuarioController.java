@@ -580,21 +580,15 @@ public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
     })
     @GetMapping("/buscar")
     public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
-            @Parameter(
-                description = "🔤 Nombre o parte del nombre a buscar (mínimo 2 caracteres)", 
-                example = "Alan", 
-                required = true,
-                schema = @Schema(type = "string", minLength = 2)
-            )
-            @RequestParam String nombre) {
-        List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
-        response.put("cantidad", usuarios.size());
-        response.put("usuarios", usuarios);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
+        @RequestParam String nombre) {
+    List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
+    
+    Map<String, Object> response = new HashMap<>();
+    response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
+    response.put("cantidad", usuarios.size());
+    response.put("usuarios", usuarios);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+}
 
     // ============================================
     // HU-011: ACTUALIZAR PERFIL — Formulario único para editar datos básicos del usuario
