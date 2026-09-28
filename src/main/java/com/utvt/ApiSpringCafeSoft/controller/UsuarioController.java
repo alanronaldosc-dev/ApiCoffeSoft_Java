@@ -540,6 +540,18 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
             - `GET /api/usuarios/buscar?nombre=maria` → Encuentra "María", "Mariam", etc.
             """
     )
+    )
+@GetMapping("/buscar")
+public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
+        @RequestParam String nombre) {
+    List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
+    
+    Map<String, Object> response = new HashMap<>();
+    response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
+    response.put("cantidad", usuarios.size());
+    response.put("usuarios", usuarios);
+    return new ResponseEntity<>(response, HttpStatus.OK);
+}
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
