@@ -148,4 +148,11 @@ public class ProductoController {
         return ResponseEntity.ok(productos);
     }
 
+    @Operation(summary = "Obtener productos por sucursal")
+    @GetMapping("/sucursal/{sucursalId}")
+    public ResponseEntity<List<ProductoDTO>> obtenerPorSucursal(@PathVariable Long sucursalId) {
+        return ResponseEntity.ok(productoService.obtenerPorSucursal(sucursalId));
+    }
+
+
 }

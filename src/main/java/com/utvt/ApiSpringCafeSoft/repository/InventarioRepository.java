@@ -35,4 +35,11 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     List<Object[]> countByTipo();
 
     List<Inventario> findByCantidadLessThan(Double cantidad);
+
+    List<Inventario> findBySucursalId(Long sucursalId);
+    List<Inventario> findBySucursalIdAndTipo(Long sucursalId, String tipo);
+    java.util.Optional<Inventario> findByProductoIdAndSucursalId(Long productoId, Long sucursalId);
+
+    @Query("SELECT i FROM Inventario i WHERE i.sucursal.id = :sucursalId AND i.cantidad <= i.cantidadMinima")
+    List<Inventario> findLowStockBySucursal(@Param("sucursalId") Long sucursalId);
 }

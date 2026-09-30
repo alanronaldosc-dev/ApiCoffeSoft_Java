@@ -2,11 +2,8 @@ package com.utvt.ApiSpringCafeSoft.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import com.utvt.ApiSpringCafeSoft.model.Categoria;
-
 import java.util.ArrayList;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "productos")
@@ -32,7 +29,7 @@ public class Producto {
 
     @Column(name = "imagen", columnDefinition = "bytea")
     private byte[] imagen;
-    
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "categoria_id")
     private Categoria categoria;
@@ -40,10 +37,13 @@ public class Producto {
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ProductoInsumo> insumos = new ArrayList<>();
 
-    // Constructor por defecto
+    // ── Sucursal ──
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sucursal_id")
+    private Sucursal sucursal;
+
     public Producto() {}
 
-    // Constructor con campos principales
     public Producto(String nombre, Double precio, String descripcion, byte[] imagen, Categoria categoria) {
         this.nombre = nombre;
         this.precio = precio;
@@ -52,71 +52,28 @@ public class Producto {
         this.categoria = categoria;
     }
 
-    // Getters y Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+    public Double getPrecio() { return precio; }
+    public void setPrecio(Double precio) { this.precio = precio; }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public byte[] getImagen() { return imagen; }
+    public void setImagen(byte[] imagen) { this.imagen = imagen; }
+    public Categoria getCategoria() { return categoria; }
+    public void setCategoria(Categoria categoria) { this.categoria = categoria; }
+    public List<ProductoInsumo> getInsumos() { return insumos; }
+    public void setInsumos(List<ProductoInsumo> insumos) { this.insumos = insumos; }
+    public Sucursal getSucursal() { return sucursal; }
+    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public Double getPrecio() {
-        return precio;
-    }
-
-    public void setPrecio(Double precio) {
-        this.precio = precio;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public byte[] getImagen() {
-        return imagen;
-    }
-
-    public void setImagen(byte[] imagen) {
-        this.imagen = imagen;
-    }
-
-    public Categoria getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(Categoria categoria) {
-        this.categoria = categoria;
-    }
-
-
-    public List<ProductoInsumo> getInsumos() {
-        return insumos;
-    }
-
-    public void setInsumos(List<ProductoInsumo> insumos) {
-        this.insumos = insumos;
-    }
-
-    // Método helper para agregar insumo
     public void addInsumo(ProductoInsumo insumo) {
         insumos.add(insumo);
         insumo.setProducto(this);
     }
 
-    // Método helper para remover insumo
     public void removeInsumo(ProductoInsumo insumo) {
         insumos.remove(insumo);
         insumo.setProducto(null);

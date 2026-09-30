@@ -202,10 +202,13 @@ public class InventarioController {
     static class RecibirProductoRequest {
         private Long productoId;
         private Double cantidad;
+        private Long sucursalId;
         public Long getProductoId() { return productoId; }
         public void setProductoId(Long productoId) { this.productoId = productoId; }
         public Double getCantidad() { return cantidad; }
         public void setCantidad(Double cantidad) { this.cantidad = cantidad; }
+        public Long getSucursalId() { return sucursalId; }
+        public void setSucursalId(Long sucursalId) { this.sucursalId = sucursalId; }
     }
 
     @Operation(summary = "Recibir producto en inventario",
@@ -214,7 +217,7 @@ public class InventarioController {
     public ResponseEntity<InventarioDTO> recibirProducto(
             @RequestBody RecibirProductoRequest request) {
         InventarioDTO resultado = inventarioService.recibirProducto(
-            request.getProductoId(), request.getCantidad());
+            request.getProductoId(), request.getCantidad(), request.getSucursalId());
         return new ResponseEntity<>(resultado, HttpStatus.CREATED);
     }
 
@@ -223,6 +226,15 @@ public class InventarioController {
     @GetMapping("/productos")
     public ResponseEntity<List<InventarioDTO>> obtenerProductosEnInventario() {
         return ResponseEntity.ok(inventarioService.obtenerProductosEnInventario());
+    }
+
+    @Operation(summary = "Obtener inventario por sucursal",
+            description = "Lista todos los registros de inventario de una sucursal específica")
+    @GetMapping("/sucursal/{sucursalId}")
+    public ResponseEntity<List<InventarioDTO>> obtenerPorSucursal(
+            @Parameter(description = "ID de la sucursal", required = true, example = "1")
+            @PathVariable Long sucursalId) {
+        return ResponseEntity.ok(inventarioService.obtenerPorSucursal(sucursalId));
     }
 
 }

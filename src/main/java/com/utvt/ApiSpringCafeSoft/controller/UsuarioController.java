@@ -117,7 +117,8 @@ public class UsuarioController {
                                     "password": "admin123456",
                                     "direccion": "Calle Emiliano Zapata #45, Colonia Centro",
                                     "telefono": "7203533170",
-                                    "userTipo": 0
+                                    "userTipo": 0,
+                                    "sucursal": { "id": 1 }
                                 }
                                 """
                         ),
@@ -131,7 +132,8 @@ public class UsuarioController {
                                     "password": "empleado123",
                                     "direccion": "Avenida Morelos #123, Colonia Reforma",
                                     "telefono": "7221234567",
-                                    "userTipo": 1
+                                    "userTipo": 1,
+                                    "sucursal": { "id": 1 }
                                 }
                                 """
                         ),
@@ -145,7 +147,8 @@ public class UsuarioController {
                                     "password": "cliente12345",
                                     "direccion": "Calle Hidalgo #78, Colonia Juárez",
                                     "telefono": "7339876543",
-                                    "userTipo": 2
+                                    "userTipo": 2,
+                                    "sucursal": { "id": 1 }
                                 }
                                 """
                         )
@@ -464,7 +467,7 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200", 
+            responseCode = "200",
             description = "✅ Usuarios encontrados",
             content = @Content(
                 examples = @ExampleObject(
@@ -472,30 +475,6 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
                         {
                             "mensaje": "Usuarios encontrados por tipo: 0",
                             "cantidad": 2,
-                            "usuarios": [
-                                {
-                                    "id": 1,
-                                    "nombre": "Alan Hernández",
-                                    "email": "alan@gmail.com",
-                                    "direccion": "Calle Emiliano Zapata #45",
-                                    "telefono": "7203533170",
-                                    "userTipo": 0
-                                }
-                            ]
-                        }
-                        """
-                )
-            )
-        ),
-        @ApiResponse(
-            responseCode = "200", 
-            description = "⚠️ No se encontraron usuarios con ese tipo",
-            content = @Content(
-                examples = @ExampleObject(
-                    value = """
-                        {
-                            "mensaje": "Usuarios encontrados por tipo: 3",
-                            "cantidad": 0,
                             "usuarios": []
                         }
                         """
@@ -524,6 +503,21 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
     // ============================================
     // 🔎 6. BUSCAR POR NOMBRE - GET
     // ============================================
+
+    @Operation(summary = "Obtener usuarios por sucursal")
+    @GetMapping("/sucursal/{sucursalId}")
+    public ResponseEntity<Map<String, Object>> obtenerPorSucursal(@PathVariable Long sucursalId) {
+        List<UsuarioDTO> usuarios = usuarioService.obtenerUsuariosPorSucursal(sucursalId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucursalId", sucursalId);
+        response.put("cantidad", usuarios.size());
+        response.put("usuarios", usuarios);
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================
+    // 🔎 BUSCAR POR NOMBRE - GET
+    // ============================================
     
     @Operation(
         summary = "🔎 Buscar usuarios por nombre",
@@ -540,55 +534,16 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
             - `GET /api/usuarios/buscar?nombre=maria` → Encuentra "María", "Mariam", etc.
             """
     )
-    )
-@GetMapping("/buscar")
-public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
-        @RequestParam String nombre) {
-    List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
-    
-    Map<String, Object> response = new HashMap<>();
-    response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
-    response.put("cantidad", usuarios.size());
-    response.put("usuarios", usuarios);
-    return new ResponseEntity<>(response, HttpStatus.OK);
-}
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "✅ Resultados de búsqueda",
-            content = @Content(
-                examples = @ExampleObject(
-                    value = """
-                        {
-                            "mensaje": "Resultados de búsqueda para: Alan",
-                            "cantidad": 1,
-                            "usuarios": [
-                                {
-                                    "id": 1,
-                                    "nombre": "Alan Hernández",
-                                    "email": "alan@gmail.com",
-                                    "direccion": "Calle Emiliano Zapata #45",
-                                    "telefono": "7203533170",
-                                    "userTipo": 0
-                                }
-                            ]
-                        }
-                        """
-                )
-            )
-        )
-    })
     @GetMapping("/buscar")
     public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
-        @RequestParam String nombre) {
-    List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
-    
-    Map<String, Object> response = new HashMap<>();
-    response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
-    response.put("cantidad", usuarios.size());
-    response.put("usuarios", usuarios);
-    return new ResponseEntity<>(response, HttpStatus.OK);
-}
+            @RequestParam String nombre) {
+        List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
+        response.put("cantidad", usuarios.size());
+        response.put("usuarios", usuarios);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 
     // ============================================
     // HU-011: ACTUALIZAR PERFIL — Formulario único para editar datos básicos del usuario

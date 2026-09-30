@@ -48,13 +48,16 @@ public class Inventario {
     @Column(name = "precio_unitario", nullable = false)
     private Double precioUnitario;
 
-    /** Referencia al producto cuando tipo = "producto" */
     @Column(name = "producto_id")
     private Long productoId;
 
+    // ── NUEVO: relación con sucursal ──
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sucursal_id", nullable = false)
+    private Sucursal sucursal;
+
     public Inventario() {}
 
-    // Constructor original — usado por LoteService
     public Inventario(String nombre, String tipo, Double cantidad, String unidadMedida,
                       Double cantidadMinima, String caducidad, String proveedor, Double precioUnitario) {
         this.nombre = nombre;
@@ -67,7 +70,6 @@ public class Inventario {
         this.precioUnitario = precioUnitario;
     }
 
-    // Constructor con productoId — para productos en inventario
     public Inventario(String nombre, String tipo, Double cantidad, String unidadMedida,
                       Double cantidadMinima, String caducidad, String proveedor, Double precioUnitario,
                       Long productoId) {
@@ -102,4 +104,8 @@ public class Inventario {
     public void setPrecioUnitario(Double precioUnitario) { this.precioUnitario = precioUnitario; }
     public Long getProductoId() { return productoId; }
     public void setProductoId(Long productoId) { this.productoId = productoId; }
+
+    // ── NUEVO getter/setter ──
+    public Sucursal getSucursal() { return sucursal; }
+    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
 }

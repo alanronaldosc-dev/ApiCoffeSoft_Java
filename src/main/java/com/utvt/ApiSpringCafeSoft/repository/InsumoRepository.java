@@ -10,4 +10,5 @@ import java.util.List;
 public interface InsumoRepository extends JpaRepository<Insumo, Long> {
     List<Insumo> findByNombreContainingIgnoreCase(String nombre);
     List<Insumo> findByTipoContainingIgnoreCase(String tipo);
+    List<Insumo> findBySucursalId(Long sucursalId);
 }

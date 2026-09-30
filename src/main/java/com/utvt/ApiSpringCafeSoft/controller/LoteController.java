@@ -34,7 +34,8 @@ public class LoteController {
             request.getProductoId(),
             request.getCantidad(),
             request.getFechaCaducidad(),
-            request.getObservaciones()
+            request.getObservaciones(),
+            request.getSucursalId()
         );
         return new ResponseEntity<>(resultado, HttpStatus.CREATED);
     }
@@ -70,6 +71,7 @@ public class LoteController {
         private Double cantidad;
         private String fechaCaducidad; // formato "yyyy-MM-dd", puede ser null
         private String observaciones;
+        private Long sucursalId;
 
         public Long getProductoId() { return productoId; }
         public void setProductoId(Long productoId) { this.productoId = productoId; }
@@ -79,5 +81,7 @@ public class LoteController {
         public void setFechaCaducidad(String fechaCaducidad) { this.fechaCaducidad = fechaCaducidad; }
         public String getObservaciones() { return observaciones; }
         public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+        public Long getSucursalId() { return sucursalId; }
+        public void setSucursalId(Long sucursalId) { this.sucursalId = sucursalId; }
     }
 }
