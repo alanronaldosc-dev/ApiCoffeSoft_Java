@@ -70,17 +70,15 @@ public class Venta {
     private Double cambio;
 
     @Column(name = "nombre_cliente", length = 100)
-private String nombreCliente;
+    private String nombreCliente;
 
-@Column(name = "estado_pedido", length = 20)
-private String estadoPedido;
+    @Column(name = "estado_pedido", length = 20)
+    private String estadoPedido;
 
-    public Double getMontoEfectivo() { return montoEfectivo; }
-    public void setMontoEfectivo(Double montoEfectivo) { this.montoEfectivo = montoEfectivo; }
-
-    public Double getCambio() { return cambio; }
-    public void setCambio(Double cambio) { this.cambio = cambio; }
-
+    // ── NUEVO: relación con sucursal ──
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sucursal_id", nullable = false)
+    private Sucursal sucursal;
 
     // Constructor por defecto
     public Venta() {
@@ -90,7 +88,7 @@ private String estadoPedido;
     }
 
     // Constructor con parámetros básicos
-    public Venta(String folio, Double subtotal, Double impuestos, Double descuento, 
+    public Venta(String folio, Double subtotal, Double impuestos, Double descuento,
                  Double total, String metodoPago, Usuario usuario) {
         this.folio = folio;
         this.fecha = LocalDateTime.now();
@@ -103,128 +101,50 @@ private String estadoPedido;
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters y Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getFolio() { return folio; }
+    public void setFolio(String folio) { this.folio = folio; }
+    public LocalDateTime getFecha() { return fecha; }
+    public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
+    public Double getSubtotal() { return subtotal; }
+    public void setSubtotal(Double subtotal) { this.subtotal = subtotal; }
+    public Double getImpuestos() { return impuestos; }
+    public void setImpuestos(Double impuestos) { this.impuestos = impuestos; }
+    public Double getDescuento() { return descuento; }
+    public void setDescuento(Double descuento) { this.descuento = descuento; }
+    public Double getTotal() { return total; }
+    public void setTotal(Double total) { this.total = total; }
+    public String getMetodoPago() { return metodoPago; }
+    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+    public Usuario getUsuario() { return usuario; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
+    public String getObservaciones() { return observaciones; }
+    public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+    public List<VentaDetalle> getDetalles() { return detalles; }
+    public void setDetalles(List<VentaDetalle> detalles) { this.detalles = detalles; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Double getMontoEfectivo() { return montoEfectivo; }
+    public void setMontoEfectivo(Double montoEfectivo) { this.montoEfectivo = montoEfectivo; }
+    public Double getCambio() { return cambio; }
+    public void setCambio(Double cambio) { this.cambio = cambio; }
+    public String getNombreCliente() { return nombreCliente; }
+    public void setNombreCliente(String nombreCliente) { this.nombreCliente = nombreCliente; }
+    public String getEstadoPedido() { return estadoPedido; }
+    public void setEstadoPedido(String estadoPedido) { this.estadoPedido = estadoPedido; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    // ── NUEVO getter/setter ──
+    public Sucursal getSucursal() { return sucursal; }
+    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
 
-    public String getFolio() {
-        return folio;
-    }
-
-    public void setFolio(String folio) {
-        this.folio = folio;
-    }
-
-    public LocalDateTime getFecha() {
-        return fecha;
-    }
-
-    public void setFecha(LocalDateTime fecha) {
-        this.fecha = fecha;
-    }
-
-    public Double getSubtotal() {
-        return subtotal;
-    }
-
-    public void setSubtotal(Double subtotal) {
-        this.subtotal = subtotal;
-    }
-
-    public Double getImpuestos() {
-        return impuestos;
-    }
-
-    public void setImpuestos(Double impuestos) {
-        this.impuestos = impuestos;
-    }
-
-    public Double getDescuento() {
-        return descuento;
-    }
-
-    public void setDescuento(Double descuento) {
-        this.descuento = descuento;
-    }
-
-    public Double getTotal() {
-        return total;
-    }
-
-    public void setTotal(Double total) {
-        this.total = total;
-    }
-
-    public String getMetodoPago() {
-        return metodoPago;
-    }
-
-    public void setMetodoPago(String metodoPago) {
-        this.metodoPago = metodoPago;
-    }
-
-    public Usuario getUsuario() {
-        return usuario;
-    }
-
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
-    }
-
-    public String getObservaciones() {
-        return observaciones;
-    }
-
-    public void setObservaciones(String observaciones) {
-        this.observaciones = observaciones;
-    }
-
-    public List<VentaDetalle> getDetalles() {
-        return detalles;
-    }
-
-    public void setDetalles(List<VentaDetalle> detalles) {
-        this.detalles = detalles;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    // Método helper para agregar detalle
     public void addDetalle(VentaDetalle detalle) {
         detalles.add(detalle);
         detalle.setVenta(this);
     }
 
-    // Método helper para remover detalle
     public void removeDetalle(VentaDetalle detalle) {
         detalles.remove(detalle);
         detalle.setVenta(null);
     }
-
-    public String getNombreCliente() {
-    return nombreCliente;
-}
-
-public void setNombreCliente(String nombreCliente) {
-    this.nombreCliente = nombreCliente;
-}
-
-public String getEstadoPedido() {
-    return estadoPedido;
-}
-
-public void setEstadoPedido(String estadoPedido) {
-    this.estadoPedido = estadoPedido;
-}
 }

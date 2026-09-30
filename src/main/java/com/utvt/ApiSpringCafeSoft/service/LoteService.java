@@ -7,11 +7,13 @@ import com.utvt.ApiSpringCafeSoft.model.Lote;
 import com.utvt.ApiSpringCafeSoft.model.Producto;
 import com.utvt.ApiSpringCafeSoft.model.ProductoInsumo;
 import com.utvt.ApiSpringCafeSoft.model.Proveedor;
+import com.utvt.ApiSpringCafeSoft.model.Sucursal;
 import com.utvt.ApiSpringCafeSoft.repository.InsumoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.LoteRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ProveedorRepository;
+import com.utvt.ApiSpringCafeSoft.repository.SucursalRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class LoteService {
     @Autowired private InventarioRepository inventarioRepository;
     @Autowired private ProveedorRepository proveedorRepository;
     @Autowired private ProductoRepository productoRepository;
+    @Autowired private SucursalRepository sucursalRepository;
 
     private LoteDTO convertToDTO(Lote lote) {
         Long proveedorId = null;
@@ -47,7 +50,7 @@ public class LoteService {
         // Proteger contra lotes viejos que no tienen tipoLote
         String tipoLote = lote.getTipoLote() != null ? lote.getTipoLote() : "insumo";
 
-        return new LoteDTO(
+        LoteDTO dto = new LoteDTO(
             lote.getId(),
             insumoId,
             insumoNombre,
@@ -62,6 +65,17 @@ public class LoteService {
             lote.getProductoNombre(),
             tipoLote
         );
+        if (lote.getSucursal() != null) {
+            dto.setSucursalId(lote.getSucursal().getId());
+            dto.setSucursalNombre(lote.getSucursal().getNombre());
+        }
+        return dto;
+    }
+
+    private Sucursal resolverSucursal(Long sucursalId) {
+        if (sucursalId == null) throw new RuntimeException("El sucursalId es obligatorio");
+        return sucursalRepository.findById(sucursalId)
+            .orElseThrow(() -> new RuntimeException("Sucursal no encontrada con ID: " + sucursalId));
     }
 
     private Proveedor resolverProveedor(Long proveedorId, Insumo insumo) {
@@ -77,8 +91,10 @@ public class LoteService {
         Insumo insumo = insumoRepository.findById(dto.getInsumoId())
             .orElseThrow(() -> new RuntimeException("Insumo no encontrado con ID: " + dto.getInsumoId()));
 
+        Sucursal sucursal = resolverSucursal(dto.getSucursalId());
         Proveedor proveedor = resolverProveedor(dto.getProveedorId(), insumo);
         Lote lote = new Lote(insumo, proveedor, dto.getCantidad(), dto.getFechaCaducidad(), dto.getObservaciones());
+        lote.setSucursal(sucursal);
         loteRepository.save(lote);
 
         String nombreProveedor = proveedor != null ? proveedor.getNombreEmpresa() : null;
@@ -91,13 +107,16 @@ public class LoteService {
         if (inventario != null) {
             inventario.setCantidad(inventario.getCantidad() + dto.getCantidad());
             if (nombreProveedor != null) inventario.setProveedor(nombreProveedor);
+            if (inventario.getSucursal() == null) inventario.setSucursal(sucursal);
             inventarioRepository.save(inventario);
         } else {
-            inventarioRepository.save(new Inventario(
+            Inventario nuevo = new Inventario(
                 insumo.getNombre(), insumo.getTipo(), dto.getCantidad(),
                 insumo.getUnidadMedida(), 0.0, dto.getFechaCaducidad().toString(),
                 nombreProveedor, insumo.getPrecio()
-            ));
+            );
+            nuevo.setSucursal(sucursal);
+            inventarioRepository.save(nuevo);
         }
         return convertToDTO(lote);
     }
@@ -110,11 +129,14 @@ public class LoteService {
      * 4. Registra un lote de producción
      */
     @Transactional
-    public LoteDTO producirProducto(Long productoId, Double cantidadProducida, String fechaCaducidadStr, String observaciones) {
+    public LoteDTO producirProducto(Long productoId, Double cantidadProducida, String fechaCaducidadStr,
+                                    String observaciones, Long sucursalId) {
         Producto producto = productoRepository.findByIdWithInsumos(productoId);
         if (producto == null) {
             throw new RuntimeException("Producto no encontrado con ID: " + productoId);
         }
+
+        Sucursal sucursal = resolverSucursal(sucursalId);
 
         // 1. Verificar y descontar insumos
         for (ProductoInsumo pi : producto.getInsumos()) {
@@ -143,6 +165,7 @@ public class LoteService {
                 "piezas", 1.0, fechaCaducidadStr, null, producto.getPrecio()
             );
             nuevo.setProductoId(productoId);
+            nuevo.setSucursal(sucursal);
             inventarioRepository.save(nuevo);
         }
 
@@ -152,6 +175,7 @@ public class LoteService {
             : LocalDate.now().plusMonths(1);
 
         Lote lote = new Lote(productoId, producto.getNombre(), cantidadProducida, fechaCaducidad, observaciones);
+        lote.setSucursal(sucursal);
         loteRepository.save(lote);
 
         return convertToDTO(lote);

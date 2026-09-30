@@ -12,7 +12,6 @@ public class Lote {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // nullable: puede ser null cuando el lote es de producción de producto
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "insumo_id", nullable = true)
     private Insumo insumo;
@@ -37,21 +36,22 @@ public class Lote {
     @Column(length = 255)
     private String observaciones;
 
-    /** Referencia al producto cuando el lote es de producción */
     @Column(name = "producto_id")
     private Long productoId;
 
-    /** Nombre del producto producido (desnormalizado para consultas fáciles) */
     @Column(name = "producto_nombre", length = 100)
     private String productoNombre;
 
-    /** Tipo de lote: "insumo" o "produccion" */
     @Column(name = "tipo_lote", length = 20, nullable = true)
     private String tipoLote = "insumo";
 
+    // ── NUEVO: relación con sucursal ──
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sucursal_id", nullable = false)
+    private Sucursal sucursal;
+
     public Lote() {}
 
-    // Constructor para lotes de insumo (existente)
     public Lote(Insumo insumo, Proveedor proveedor, Double cantidad,
                 LocalDate fechaCaducidad, String observaciones) {
         this.insumo = insumo;
@@ -63,7 +63,6 @@ public class Lote {
         this.tipoLote = "insumo";
     }
 
-    // Constructor para lotes de producción (nuevo)
     public Lote(Long productoId, String productoNombre, Double cantidad,
                 LocalDate fechaCaducidad, String observaciones) {
         this.productoId = productoId;
@@ -95,4 +94,8 @@ public class Lote {
     public void setProductoNombre(String productoNombre) { this.productoNombre = productoNombre; }
     public String getTipoLote() { return tipoLote; }
     public void setTipoLote(String tipoLote) { this.tipoLote = tipoLote; }
+
+    // ── NUEVO getter/setter ──
+    public Sucursal getSucursal() { return sucursal; }
+    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
 }

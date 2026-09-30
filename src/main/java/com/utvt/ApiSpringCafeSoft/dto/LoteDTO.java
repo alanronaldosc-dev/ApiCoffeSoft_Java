@@ -6,12 +6,9 @@ import java.time.LocalDate;
 public class LoteDTO {
 
     private Long id;
-
-    // nullable cuando es lote de producción
     private Long insumoId;
     private String insumoNombre;
     private String insumoUnidad;
-
     private Long proveedorId;
     private String proveedorNombre;
 
@@ -27,10 +24,13 @@ public class LoteDTO {
     @Size(max = 255)
     private String observaciones;
 
-    // Campos de producción
     private Long productoId;
     private String productoNombre;
-    private String tipoLote; // "insumo" o "produccion"
+    private String tipoLote;
+
+    // ── NUEVO: sucursal ──
+    private Long sucursalId;
+    private String sucursalNombre;
 
     public LoteDTO() {}
 
@@ -79,4 +79,10 @@ public class LoteDTO {
     public void setProductoNombre(String productoNombre) { this.productoNombre = productoNombre; }
     public String getTipoLote() { return tipoLote; }
     public void setTipoLote(String tipoLote) { this.tipoLote = tipoLote; }
+
+    // ── NUEVO ──
+    public Long getSucursalId() { return sucursalId; }
+    public void setSucursalId(Long sucursalId) { this.sucursalId = sucursalId; }
+    public String getSucursalNombre() { return sucursalNombre; }
+    public void setSucursalNombre(String sucursalNombre) { this.sucursalNombre = sucursalNombre; }
 }

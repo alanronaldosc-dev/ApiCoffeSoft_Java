@@ -2,17 +2,8 @@ package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.ProductoDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoInsumoDTO;
-import com.utvt.ApiSpringCafeSoft.model.Categoria;
-import com.utvt.ApiSpringCafeSoft.model.Inventario;
-import com.utvt.ApiSpringCafeSoft.model.Producto;
-import com.utvt.ApiSpringCafeSoft.model.ProductoInsumo;
-import com.utvt.ApiSpringCafeSoft.repository.CargaRepository;
-import com.utvt.ApiSpringCafeSoft.repository.CategoriaRepository;
-import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
-import com.utvt.ApiSpringCafeSoft.repository.LoteRepository;
-import com.utvt.ApiSpringCafeSoft.repository.ProductoInsumoRepository;
-import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
-import com.utvt.ApiSpringCafeSoft.repository.VentaDetalleRepository;
+import com.utvt.ApiSpringCafeSoft.model.*;
+import com.utvt.ApiSpringCafeSoft.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,28 +14,15 @@ import java.util.stream.Collectors;
 @Service
 public class ProductoService {
 
-    @Autowired
-    private ProductoRepository productoRepository;
+    @Autowired private ProductoRepository productoRepository;
+    @Autowired private ProductoInsumoRepository productoInsumoRepository;
+    @Autowired private InventarioRepository inventarioRepository;
+    @Autowired private CategoriaRepository categoriaRepository;
+    @Autowired private LoteRepository loteRepository;
+    @Autowired private CargaRepository cargaRepository;
+    @Autowired private VentaDetalleRepository ventaDetalleRepository;
+    @Autowired private SucursalRepository sucursalRepository;
 
-    @Autowired
-    private ProductoInsumoRepository productoInsumoRepository;
-
-    @Autowired
-    private InventarioRepository inventarioRepository;
-
-    @Autowired
-    private CategoriaRepository categoriaRepository;
-
-    @Autowired
-    private LoteRepository loteRepository;
-
-    @Autowired
-    private CargaRepository cargaRepository;
-
-    @Autowired
-    private VentaDetalleRepository ventaDetalleRepository;
-
-    // ── Convertir Entity a DTO ──
     private ProductoDTO convertToDTO(Producto producto) {
         String imagenBase64 = null;
         if (producto.getImagen() != null) {
@@ -65,6 +43,11 @@ public class ProductoService {
             dto.setCategoriaId(producto.getCategoria().getId());
             dto.setCategoriaNombre(producto.getCategoria().getNombre());
         }
+        // ── Sucursal ──
+        if (producto.getSucursal() != null) {
+            dto.setSucursalId(producto.getSucursal().getId());
+            dto.setSucursalNombre(producto.getSucursal().getNombre());
+        }
         return dto;
     }
 
@@ -79,7 +62,6 @@ public class ProductoService {
         return dto;
     }
 
-    // ── Convertir DTO a Entity ──
     private Producto convertToEntity(ProductoDTO dto) {
         Producto producto = new Producto();
         producto.setId(dto.getId());
@@ -92,10 +74,17 @@ public class ProductoService {
         return producto;
     }
 
-    // 1. Crear producto
     @Transactional
     public ProductoDTO crearProducto(ProductoDTO productoDTO) {
         Producto producto = convertToEntity(productoDTO);
+
+        // ── Asignar sucursal si viene en el DTO ──
+        if (productoDTO.getSucursalId() != null) {
+            Sucursal sucursal = sucursalRepository.findById(productoDTO.getSucursalId())
+                .orElseThrow(() -> new RuntimeException("Sucursal no encontrada con ID: " + productoDTO.getSucursalId()));
+            producto.setSucursal(sucursal);
+        }
+
         Producto savedProducto = productoRepository.save(producto);
 
         if (productoDTO.getInsumos() != null && !productoDTO.getInsumos().isEmpty()) {
@@ -127,29 +116,21 @@ public class ProductoService {
         return productoInsumo;
     }
 
-    // 2. Obtener todos los productos
     public List<ProductoDTO> obtenerTodosLosProductos() {
         return productoRepository.findAllWithInsumos().stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    // 3. Obtener producto por ID
     public ProductoDTO obtenerProductoPorId(Long id) {
         Producto producto = productoRepository.findByIdWithInsumos(id);
-        if (producto == null) {
-            throw new RuntimeException("Producto no encontrado con ID: " + id);
-        }
+        if (producto == null) throw new RuntimeException("Producto no encontrado con ID: " + id);
         return convertToDTO(producto);
     }
 
-    // 4. Actualizar producto
     @Transactional
     public ProductoDTO actualizarProducto(Long id, ProductoDTO productoDTO) {
         Producto existingProducto = productoRepository.findByIdWithInsumos(id);
-        if (existingProducto == null) {
-            throw new RuntimeException("Producto no encontrado con ID: " + id);
-        }
+        if (existingProducto == null) throw new RuntimeException("Producto no encontrado con ID: " + id);
         existingProducto.setNombre(productoDTO.getNombre());
         existingProducto.setPrecio(productoDTO.getPrecio());
         existingProducto.setDescripcion(productoDTO.getDescripcion());
@@ -176,49 +157,42 @@ public class ProductoService {
         return convertToDTO(productoRepository.save(existingProducto));
     }
 
-    // 5. Eliminar producto
     @Transactional
     public void eliminarProducto(Long id) {
-        if (!productoRepository.existsById(id)) {
-            throw new RuntimeException("Producto no encontrado con ID: " + id);
-        }
-        // 1. Borrar detalles de ventas que referencian este producto
+        if (!productoRepository.existsById(id)) throw new RuntimeException("Producto no encontrado con ID: " + id);
         ventaDetalleRepository.deleteByProductoId(id);
-        // 2. Borrar relaciones producto_insumo
         productoInsumoRepository.deleteByProductoId(id);
-        // 3. Borrar lotes de producción
         loteRepository.deleteByProductoId(id);
-        // 4. Borrar cargas e inventario que referencian este producto
         inventarioRepository.findByProductoId(id).ifPresent(inv -> {
             cargaRepository.deleteByInventarioId(inv.getId());
             inventarioRepository.delete(inv);
         });
-        // 5. Borrar el producto
         productoRepository.deleteById(id);
     }
 
-    // 6. Búsquedas adicionales
     public List<ProductoDTO> buscarPorNombre(String nombre) {
         return productoRepository.findByNombreContainingIgnoreCase(nombre).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public List<ProductoDTO> buscarPorRangoPrecio(Double precioMin, Double precioMax) {
         return productoRepository.findByPrecioBetween(precioMin, precioMax).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public List<ProductoDTO> buscarPorInsumo(Long insumoId) {
         return productoRepository.findProductosByInsumoId(insumoId).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .map(this::convertToDTO).collect(Collectors.toList());
     }
 
     public List<ProductoDTO> obtenerPorCategoria(Long categoriaId) {
         return productoRepository.findByCategoriaId(categoriaId).stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    // ── Filtrar por sucursal ──
+    public List<ProductoDTO> obtenerPorSucursal(Long sucursalId) {
+        return productoRepository.findBySucursalId(sucursalId).stream()
+            .map(this::convertToDTO).collect(Collectors.toList());
     }
 }
