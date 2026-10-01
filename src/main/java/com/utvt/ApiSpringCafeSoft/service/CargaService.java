@@ -112,6 +112,7 @@ public class CargaService {
         carga.setRepartidor(repartidor);
         carga.setInventario(inventario);
         carga.setCantidad(dto.getCantidad());
+        carga.setCantidadDisponible(dto.getCantidad());
         carga.setFechaHora(LocalDateTime.now());
 
         // HU-005: carga registrada pero todavía no aceptada
@@ -224,6 +225,10 @@ public class CargaService {
             );
         }
 
+        if (carga.getCantidadDisponible() == null) {
+            carga.setCantidadDisponible(carga.getCantidad());
+        }
+
         carga.setEstado("CARGA EN TRÁNSITO");
 
         return convertirDTO(cargaRepository.save(carga));
@@ -259,6 +264,9 @@ public class CargaService {
                         ? carga.getInventario().getId()
                         : null,
                 carga.getCantidad(),
+                carga.getCantidadDisponible() != null
+                        ? carga.getCantidadDisponible()
+                        : carga.getCantidad(),
                 carga.getFechaHora(),
                 carga.getEstado(),
                 repartidorNombre,

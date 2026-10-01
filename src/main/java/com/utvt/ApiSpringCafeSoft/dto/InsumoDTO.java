@@ -20,12 +20,16 @@ public class InsumoDTO {
     @Pattern(regexp = "^(litros|kilogramos|piezas)$")
     private String unidadMedida;
 
-    private Long proveedorId;        // ID del catálogo
-    private String proveedorNombre;  // solo lectura en respuestas
+    private Long proveedorId;
+    private String proveedorNombre;
 
     @NotNull(message = "El precio es obligatorio")
     @Min(value = 0)
     private Double precio;
+
+    // ── NUEVO: sucursal ──
+    private Long sucursalId;
+    private String sucursalNombre;
 
     public InsumoDTO() {}
 
@@ -54,4 +58,10 @@ public class InsumoDTO {
     public void setProveedorNombre(String proveedorNombre) { this.proveedorNombre = proveedorNombre; }
     public Double getPrecio() { return precio; }
     public void setPrecio(Double precio) { this.precio = precio; }
+
+    // ── NUEVO ──
+    public Long getSucursalId() { return sucursalId; }
+    public void setSucursalId(Long sucursalId) { this.sucursalId = sucursalId; }
+    public String getSucursalNombre() { return sucursalNombre; }
+    public void setSucursalNombre(String sucursalNombre) { this.sucursalNombre = sucursalNombre; }
 }

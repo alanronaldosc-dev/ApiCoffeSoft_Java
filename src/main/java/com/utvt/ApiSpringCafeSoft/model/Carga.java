@@ -55,6 +55,13 @@ public class Carga {
     @Column(nullable = false, length = 30)
     private String estado;
 
+    /**
+     * HU-015: cantidad de garrafones que todavía conserva el repartidor.
+     * Se inicializa con la carga y disminuye con cada entrega confirmada.
+     */
+    @Column(name = "cantidad_disponible")
+    private Double cantidadDisponible;
+
     public Carga() {
     }
 
@@ -69,6 +76,7 @@ public class Carga {
         this.cantidad = cantidad;
         this.fechaHora = fechaHora;
         this.estado = estado;
+        this.cantidadDisponible = cantidad;
     }
 
     public Long getId() {
@@ -117,5 +125,13 @@ public class Carga {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public Double getCantidadDisponible() {
+        return cantidadDisponible;
+    }
+
+    public void setCantidadDisponible(Double cantidadDisponible) {
+        this.cantidadDisponible = cantidadDisponible;
     }
 }    
