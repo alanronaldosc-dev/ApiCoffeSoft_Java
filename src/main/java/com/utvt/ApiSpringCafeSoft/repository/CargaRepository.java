@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.LockModeType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +24,18 @@ public interface CargaRepository extends JpaRepository<Carga, Long> {
     List<Carga> findByRepartidorIdAndEstadoOrderByFechaHoraDesc(
             Long repartidorId,
             String estado
+    );
+
+
+    List<Carga> findByRepartidorIdAndEstadoOrderByFechaHoraAsc(
+            Long repartidorId,
+            String estado
+    );
+
+    List<Carga> findByRepartidorIdAndFechaHoraBetweenOrderByFechaHoraAsc(
+            Long repartidorId,
+            LocalDateTime inicio,
+            LocalDateTime fin
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
