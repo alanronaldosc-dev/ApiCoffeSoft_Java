@@ -127,6 +127,7 @@ public class Carga {
         this.estado = estado;
     }
 
+
     public Double getCantidadDisponible() {
         return cantidadDisponible;
     }
@@ -134,4 +135,6 @@ public class Carga {
     public void setCantidadDisponible(Double cantidadDisponible) {
         this.cantidadDisponible = cantidadDisponible;
     }
+=======
+
 }    

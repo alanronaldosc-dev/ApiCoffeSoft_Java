@@ -1,5 +1,9 @@
 package com.utvt.ApiSpringCafeSoft.repository;
-
+/**
+     * 
+     * (HU-006): agrega confirmacion de carga por repartidor
+     * 
+     */
 import com.utvt.ApiSpringCafeSoft.model.Carga;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -41,9 +45,19 @@ public interface CargaRepository extends JpaRepository<Carga, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Carga> findWithLockById(Long id);
 
+
     List<Carga> findByRepartidorIsNullAndEstadoOrderByFechaHoraDesc(String estado);
+=======
+}   
+=======
+
 
     @Modifying
     @Query("DELETE FROM Carga c WHERE c.inventario.id = :inventarioId")
     void deleteByInventarioId(@Param("inventarioId") Long inventarioId);
+
 }
+=======
+}
+
+
