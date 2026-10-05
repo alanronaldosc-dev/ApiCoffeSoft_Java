@@ -1,5 +1,9 @@
 package com.utvt.ApiSpringCafeSoft.model;
-
+/**
+     * 
+     * (HU-006): agrega confirmacion de carga por repartidor
+     * 
+     */
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -50,15 +54,6 @@ public class Carga {
      */
     @Column(nullable = false, length = 30)
     private String estado;
-    /**
- * Cantidad disponible tras las entregas del turno.
- * Se actualiza durante la liquidación.
- */
-    @Column(name = "cantidad_disponible")
-    private Double cantidadDisponible;
-
-
-
 
     public Carga() {
     }
@@ -67,15 +62,13 @@ public class Carga {
                  Inventario inventario,
                  Double cantidad,
                  LocalDateTime fechaHora,
-                 String estado,
-                 Double cantidadDisponible) {
+                 String estado) {
 
         this.repartidor = repartidor;
         this.inventario = inventario;
         this.cantidad = cantidad;
         this.fechaHora = fechaHora;
         this.estado = estado;
-        this.cantidadDisponible = cantidadDisponible; 
     }
 
     public Long getId() {
@@ -125,12 +118,4 @@ public class Carga {
     public void setEstado(String estado) {
         this.estado = estado;
     }
-
-    public Double getCantidadDisponible() {
-        return cantidadDisponible;
-    }
-
-    public void setCantidadDisponible(Double cantidadDisponible) {
-        this.cantidadDisponible = cantidadDisponible;
-    }
-}
+}    
