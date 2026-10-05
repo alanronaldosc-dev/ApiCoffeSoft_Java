@@ -15,7 +15,6 @@ public class CargaDTO {
 
     private Long id;
 
-    @NotNull(message = "El ID del repartidor es obligatorio")
     private Long repartidorId;
 
     @NotNull(message = "El ID del inventario es obligatorio")
@@ -24,6 +23,9 @@ public class CargaDTO {
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.01", message = "La cantidad debe ser mayor a 0")
     private Double cantidad;
+
+    // HU-015: garrafones que aún conserva el repartidor
+    private Double cantidadDisponible;
 
     private LocalDateTime fechaHora;
 
@@ -44,6 +46,7 @@ public class CargaDTO {
                     Long repartidorId,
                     Long inventarioId,
                     Double cantidad,
+                    Double cantidadDisponible,
                     LocalDateTime fechaHora,
                     String estado,
                     String repartidorNombre,
@@ -55,6 +58,7 @@ public class CargaDTO {
         this.repartidorId = repartidorId;
         this.inventarioId = inventarioId;
         this.cantidad = cantidad;
+        this.cantidadDisponible = cantidadDisponible;
         this.fechaHora = fechaHora;
         this.estado = estado;
         this.repartidorNombre = repartidorNombre;
@@ -93,6 +97,14 @@ public class CargaDTO {
 
     public void setCantidad(Double cantidad) {
         this.cantidad = cantidad;
+    }
+
+    public Double getCantidadDisponible() {
+        return cantidadDisponible;
+    }
+
+    public void setCantidadDisponible(Double cantidadDisponible) {
+        this.cantidadDisponible = cantidadDisponible;
     }
 
     public LocalDateTime getFechaHora() {
