@@ -60,11 +60,18 @@ public class VentaDTO {
     @Schema(description = "Cambio a devolver (solo si método es efectivo)", example = "36.00")
     private Double cambio;
 
-    @Schema(description = "Nombre de la persona para quien es el pedido")
-private String nombreCliente;
+        @Schema(description = "ID de la sucursal donde se realizó la venta", example = "1")
+    private Long sucursalId;
 
-@Schema(description = "Estado actual del pedido")
-private String estadoPedido;
+    @Schema(description = "Nombre de la sucursal", example = "Sucursal Centro")
+    private String sucursalNombre;
+
+    @Schema(description = "Nombre de la persona para quien es el pedido")
+    private String nombreCliente;
+
+
+    @Schema(description = "Estado actual del pedido")
+    private String estadoPedido;
 
 
     // Constructor por defecto
@@ -193,18 +200,31 @@ private String estadoPedido;
 
     public String getNombreCliente() {
     return nombreCliente;
-}
+    }
 
-public void setNombreCliente(String nombreCliente) {
-    this.nombreCliente = nombreCliente;
-}
+    public void setNombreCliente(String nombreCliente) {
+        this.nombreCliente = nombreCliente;
+    }
 
-public String getEstadoPedido() {
-    return estadoPedido;
-}
+    public String getEstadoPedido() {
+        return estadoPedido;
+    }
 
-public void setEstadoPedido(String estadoPedido) {
-    this.estadoPedido = estadoPedido;
-}
+    public void setEstadoPedido(String estadoPedido) {
+        this.estadoPedido = estadoPedido;
+    }
+
+    public Long getSucursalId() { return sucursalId; }
+
+    public void setSucursalId(Long sucursalId) { 
+        this.sucursalId = sucursalId; 
+    }
+    public String getSucursalNombre() { 
+        return sucursalNombre; 
+    }
+    public void setSucursalNombre(String sucursalNombre) { 
+        this.sucursalNombre = sucursalNombre; 
+    }
+
 
 }

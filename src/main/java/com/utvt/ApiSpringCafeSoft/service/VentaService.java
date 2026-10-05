@@ -34,13 +34,20 @@ public class VentaService {
         dto.setMontoEfectivo(venta.getMontoEfectivo());
         dto.setCambio(venta.getCambio());
         dto.setNombreCliente(venta.getNombreCliente());
-dto.setEstadoPedido(venta.getEstadoPedido());
+        dto.setEstadoPedido(venta.getEstadoPedido());
         dto.setUsuarioId(venta.getUsuario().getId());
         dto.setUsuarioNombre(venta.getUsuario().getNombre());
         dto.setObservaciones(venta.getObservaciones());
         dto.setCreatedAt(venta.getCreatedAt());
         dto.setDetalles(venta.getDetalles().stream()
             .map(this::convertDetalleToDTO).collect(Collectors.toList()));
+
+        // ── Sucursal ──
+        if (venta.getSucursal() != null) {
+            dto.setSucursalId(venta.getSucursal().getId());
+            dto.setSucursalNombre(venta.getSucursal().getNombre());
+        }
+
         return dto;
     }
 
@@ -81,9 +88,13 @@ dto.setEstadoPedido(venta.getEstadoPedido());
         venta.setUsuario(usuario);
         venta.setObservaciones(ventaDTO.getObservaciones());
         venta.setCreatedAt(LocalDateTime.now());
-
         venta.setNombreCliente(ventaDTO.getNombreCliente());
-venta.setEstadoPedido("PENDIENTE");
+        venta.setEstadoPedido("PENDIENTE");
+
+        // ── Asignar la sucursal del usuario que realiza la venta ──
+        if (usuario.getSucursal() != null) {
+            venta.setSucursal(usuario.getSucursal());
+        }
 
         // Efectivo y cambio
         if ("efectivo".equals(ventaDTO.getMetodoPago()) && ventaDTO.getMontoEfectivo() != null) {
@@ -119,7 +130,6 @@ venta.setEstadoPedido("PENDIENTE");
         venta.setDescuento(descuento);
         venta.setTotal(total);
 
-        // Calcular cambio si es efectivo
         if ("efectivo".equals(ventaDTO.getMetodoPago()) && ventaDTO.getMontoEfectivo() != null) {
             double cambio = ventaDTO.getMontoEfectivo() - total;
             if (cambio < 0) throw new RuntimeException("El monto en efectivo es insuficiente");
@@ -146,11 +156,9 @@ venta.setEstadoPedido("PENDIENTE");
             Inventario inv = pi.getInsumo();
             double aDescontar = pi.getCantidad() * cantidadVendida;
 
-            // Actualizar total en inventario
             inv.setCantidad(inv.getCantidad() - aDescontar);
             inventarioRepository.save(inv);
 
-            // Descontar de lotes por caducidad más próxima, si mismo vencimiento el más antiguo
             List<Lote> lotes = loteRepository.findLotesDisponiblesByNombreYUnidad(
                 inv.getNombre(), inv.getUnidadMedida());
 
@@ -200,29 +208,24 @@ venta.setEstadoPedido("PENDIENTE");
     }
 
     public List<VentaDTO> obtenerPedidosPendientes() {
-    return ventaRepository
-        .findByEstadoPedidoOrderByFechaAsc("PENDIENTE")
-        .stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
-}
+        return ventaRepository
+            .findByEstadoPedidoOrderByFechaAsc("PENDIENTE")
+            .stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+    }
 
-@Transactional
-public VentaDTO marcarPedidoEntregado(Long id) {
-
-    Venta venta = ventaRepository.findById(id)
-        .orElseThrow(() ->
-            new RuntimeException("Pedido no encontrado con ID: " + id)
-        );
-
-    venta.setEstadoPedido("ENTREGADA");
-
-    return convertToDTO(ventaRepository.save(venta));
-}
+    @Transactional
+    public VentaDTO marcarPedidoEntregado(Long id) {
+        Venta venta = ventaRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + id));
+        venta.setEstadoPedido("ENTREGADA");
+        return convertToDTO(ventaRepository.save(venta));
+    }
 
     @Transactional
     public void cancelarVenta(Long id) {
-        Venta venta = ventaRepository.findById(id)
+        ventaRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + id));
         ventaRepository.deleteById(id);
     }

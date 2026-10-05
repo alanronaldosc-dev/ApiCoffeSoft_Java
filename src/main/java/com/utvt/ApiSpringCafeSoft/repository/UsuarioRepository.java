@@ -30,4 +30,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     // HU-011: Filtrar empleados activos o inactivos para mostrar en la tabla de la plantilla
     List<Usuario> findByUserTipoAndActivo(Integer userTipo, Boolean activo);
 
+    List<Usuario> findBySucursalId(Long sucursalId);
+    List<Usuario> findBySucursalIdAndUserTipo(Long sucursalId, Integer userTipo);
+    List<Usuario> findBySucursalIdAndActivo(Long sucursalId, Boolean activo);
+
 }
