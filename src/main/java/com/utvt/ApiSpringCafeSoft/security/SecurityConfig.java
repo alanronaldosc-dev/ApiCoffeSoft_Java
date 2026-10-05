@@ -46,6 +46,8 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            .httpBasic(httpBasic -> httpBasic.disable())  
+            .formLogin(formLogin -> formLogin.disable())
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -66,13 +68,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/proveedores/**").hasAnyRole("ADMIN", "EMPLEADO")
                 .requestMatchers("/api/categorias/**").hasAnyRole("ADMIN", "EMPLEADO")
                 .requestMatchers("/api/sucursales/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
                 .requestMatchers(HttpMethod.GET,    "/api/productos/**").authenticated()
                 .requestMatchers(HttpMethod.POST,   "/api/productos/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/productos/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasRole("ADMIN")
-                .requestMatchers("/api/cargas/**").hasAnyRole("ADMIN", "REPARTIDOR")
+                .requestMatchers("/api/cargas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers("/api/rutas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "REPARTIDOR")
                 .requestMatchers("/api/mermas/**").hasAnyRole("ADMIN", "REPARTIDOR")
                 .anyRequest().authenticated()
             )
