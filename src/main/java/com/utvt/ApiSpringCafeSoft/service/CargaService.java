@@ -1,5 +1,9 @@
 package com.utvt.ApiSpringCafeSoft.service;
-
+/**
+     * 
+     * (HU-006): agrega confirmacion de carga por repartidor
+     * 
+     */
 import com.utvt.ApiSpringCafeSoft.dto.CargaDTO;
 import com.utvt.ApiSpringCafeSoft.model.Carga;
 import com.utvt.ApiSpringCafeSoft.model.Inventario;
@@ -263,4 +267,4 @@ public class CargaService {
                 unidadMedida
         );
     }
-}
+}  
