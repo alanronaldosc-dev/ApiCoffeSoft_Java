@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.utvt.ApiSpringCafeSoft.security.JwtUtil;
+
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +37,9 @@ public class UsuarioController {
 
     @Autowired
     private UsuarioService usuarioService;
+    @Autowired
+    private JwtUtil jwtUtil;
+
 
     // ============================================
     // HU-011: CREAR USUARIO — Formulario único para dar de alta datos básicos
@@ -817,18 +822,13 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
     Map<String, Object> response = new HashMap<>();
 
     try {
-        String email = body.get("email");
+        String email    = body.get("email");
         String password = body.get("password");
 
         if (email == null || email.trim().isEmpty()
                 || password == null || password.trim().isEmpty()) {
-
             response.put("error", "Correo y contraseña son obligatorios");
-
-            return new ResponseEntity<>(
-                    response,
-                    HttpStatus.BAD_REQUEST
-            );
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         UsuarioDTO usuario = usuarioService.iniciarSesion(
@@ -836,23 +836,20 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
                 password
         );
 
+        // Generar token JWT
+        String token = jwtUtil.generateToken(usuario.getEmail(), usuario.getUserTipo());
+
         response.put("mensaje", "Inicio de sesión exitoso");
+        response.put("token", token);
         response.put("usuario", usuario);
 
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.OK
-        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
 
     } catch (RuntimeException e) {
-
         response.put("error", e.getMessage());
-
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.UNAUTHORIZED
-        );
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 }
+
     
 }

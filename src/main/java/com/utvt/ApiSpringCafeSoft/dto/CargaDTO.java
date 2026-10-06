@@ -15,7 +15,6 @@ public class CargaDTO {
 
     private Long id;
 
-    @NotNull(message = "El ID del repartidor es obligatorio")
     private Long repartidorId;
 
     @NotNull(message = "El ID del inventario es obligatorio")

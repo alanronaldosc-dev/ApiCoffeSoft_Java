@@ -39,41 +39,23 @@ public class CargaService {
     @Transactional
     public CargaDTO crearCarga(CargaDTO dto) {
 
-        if (dto.getRepartidorId() == null) {
-            throw new RuntimeException("El repartidor es obligatorio");
-        }
-
-        if (dto.getInventarioId() == null) {
-            throw new RuntimeException("El inventario es obligatorio");
-        }
-
         if (dto.getCantidad() == null || dto.getCantidad() <= 0) {
             throw new RuntimeException("La cantidad debe ser mayor a cero");
         }
 
-        Usuario repartidor = usuarioRepository.findById(dto.getRepartidorId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "No se encontró el usuario con ID: "
-                                        + dto.getRepartidorId()
-                        )
-                );
-
-        // Validar que realmente sea repartidor
-        if (repartidor.getUserTipo() == null ||
-                repartidor.getUserTipo() != 4) {
-
-            throw new RuntimeException(
-                    "El usuario seleccionado no tiene el rol de Repartidor"
-            );
-        }
-
-        // Validar que el repartidor esté activo
-        if (Boolean.FALSE.equals(repartidor.getActivo())) {
-
-            throw new RuntimeException(
-                    "El repartidor seleccionado está inactivo"
-            );
+        /* La carga queda SIN ASIGNAR hasta que se active una ruta */
+        Usuario repartidor = null;
+        if (dto.getRepartidorId() != null) {
+            repartidor = usuarioRepository.findById(dto.getRepartidorId())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "No se encontró el usuario con ID: "
+                                            + dto.getRepartidorId()
+                            )
+                    );
+            if (repartidor.getUserTipo() == null || repartidor.getUserTipo() != 4) {
+                throw new RuntimeException("El usuario seleccionado no tiene el rol de Repartidor");
+            }
         }
 
         Inventario inventario = inventarioRepository.findById(dto.getInventarioId())
@@ -115,8 +97,8 @@ public class CargaService {
         carga.setCantidadDisponible(dto.getCantidad());
         carga.setFechaHora(LocalDateTime.now());
 
-        // HU-005: carga registrada pero todavía no aceptada
-        carga.setEstado("PENDIENTE");
+        // La carga queda sin asignar hasta activar una ruta
+        carga.setEstado(repartidor != null ? "PENDIENTE" : "SIN ASIGNAR");
 
         Carga guardada = cargaRepository.save(carga);
 
@@ -209,6 +191,14 @@ public class CargaService {
                 );
 
         if (!"PENDIENTE".equalsIgnoreCase(carga.getEstado())) {
+
+            // Idempotente: si ya está en tránsito, devolverla tal cual
+            if ("CARGA EN TRÁNSITO".equalsIgnoreCase(carga.getEstado())) {
+                if (carga.getCantidadDisponible() == null) {
+                    carga.setCantidadDisponible(carga.getCantidad());
+                }
+                return convertirDTO(carga);
+            }
 
             throw new RuntimeException(
                     "La carga no puede aceptarse porque su estado actual es: "
