@@ -37,6 +37,7 @@ public interface CargaRepository extends JpaRepository<Carga, Long> {
             LocalDateTime inicio,
             LocalDateTime fin
     );
+    List<Carga> findByRepartidorIsNullAndEstadoOrderByFechaHoraDesc(String estado);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Carga> findWithLockById(Long id);

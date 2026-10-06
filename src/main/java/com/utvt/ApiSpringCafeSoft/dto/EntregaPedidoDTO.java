@@ -16,6 +16,8 @@ public class EntregaPedidoDTO {
     private String resultado;
     private LocalDateTime fecha;
     private String observaciones;
+    private Long clienteId;
+private String clienteNombre;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -41,4 +43,20 @@ public class EntregaPedidoDTO {
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+
+    public Long getClienteId() {
+    return clienteId;
+}
+
+public void setClienteId(Long clienteId) {
+    this.clienteId = clienteId;
+}
+
+public String getClienteNombre() {
+    return clienteNombre;
+}
+
+public void setClienteNombre(String clienteNombre) {
+    this.clienteNombre = clienteNombre;
+}
 }

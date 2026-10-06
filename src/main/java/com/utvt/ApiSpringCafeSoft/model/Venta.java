@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+
 @Entity
 @Table(name = "ventas")
 public class Venta {
@@ -42,10 +43,17 @@ public class Venta {
     @Column(nullable = false)
     private Double total;
 
-    @NotBlank(message = "El método de pago es obligatorio")
-    @Pattern(regexp = "^(efectivo|tarjeta)$", message = "El método de pago debe ser: efectivo o tarjeta")
-    @Column(name = "metodo_pago", nullable = false, length = 20)
-    private String metodoPago;
+@NotBlank(message = "El método de pago es obligatorio")
+@Pattern(
+    regexp = "^(efectivo|tarjeta|transferencia)$",
+    message = "El método de pago debe ser: efectivo, tarjeta o transferencia"
+)
+@Column(
+    name = "metodo_pago",
+    nullable = false,
+    length = 20
+)
+private String metodoPago;
 
     @NotNull(message = "El usuario es obligatorio")
     @ManyToOne(fetch = FetchType.EAGER)
@@ -74,6 +82,9 @@ public class Venta {
 
     @Column(name = "estado_pedido", length = 20)
     private String estadoPedido;
+
+    @Column(name = "cliente_ruta_id")
+private Long clienteRutaId;
 
     // ── NUEVO: relación con sucursal ──
     @ManyToOne(fetch = FetchType.EAGER)
@@ -133,6 +144,14 @@ public class Venta {
     public void setNombreCliente(String nombreCliente) { this.nombreCliente = nombreCliente; }
     public String getEstadoPedido() { return estadoPedido; }
     public void setEstadoPedido(String estadoPedido) { this.estadoPedido = estadoPedido; }
+
+    public Long getClienteRutaId() {
+    return clienteRutaId;
+}
+
+public void setClienteRutaId(Long clienteRutaId) {
+    this.clienteRutaId = clienteRutaId;
+}
 
     // ── NUEVO getter/setter ──
     public Sucursal getSucursal() { return sucursal; }
