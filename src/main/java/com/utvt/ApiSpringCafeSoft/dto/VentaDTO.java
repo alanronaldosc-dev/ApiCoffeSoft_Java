@@ -33,7 +33,10 @@ public class VentaDTO {
 
     @Schema(description = "Método de pago (efectivo o tarjeta)", example = "efectivo", required = true)
     @NotBlank(message = "El método de pago es obligatorio")
-    @Pattern(regexp = "^(efectivo|tarjeta)$", message = "El método de pago debe ser: efectivo o tarjeta")
+    @Pattern(
+    regexp = "^(efectivo|tarjeta|transferencia)$",
+    message = "El método de pago debe ser: efectivo, tarjeta o transferencia"
+)
     private String metodoPago;
 
     @Schema(description = "ID del usuario que realiza la venta", example = "1", required = true)
