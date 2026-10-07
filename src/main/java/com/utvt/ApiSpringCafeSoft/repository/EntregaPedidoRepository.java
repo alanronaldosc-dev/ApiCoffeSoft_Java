@@ -9,11 +9,20 @@ import java.util.List;
 
 @Repository
 public interface EntregaPedidoRepository extends JpaRepository<EntregaPedido, Long> {
+
     List<EntregaPedido> findByRepartidorIdAndFechaBetweenOrderByFechaAsc(
             Long repartidorId,
             LocalDateTime inicio,
             LocalDateTime fin
     );
 
-    boolean existsByVentaIdAndResultado(Long ventaId, String resultado);
+    boolean existsByVentaIdAndResultado(
+            Long ventaId,
+            String resultado
+    );
+
+    List<EntregaPedido> findByVentaClienteRutaIdAndResultadoOrderByFechaDesc(
+            Long clienteId,
+            String resultado
+    );
 }

@@ -25,6 +25,11 @@ import com.utvt.ApiSpringCafeSoft.model.Producto;
 import com.utvt.ApiSpringCafeSoft.model.VentaDetalle;
 import com.utvt.ApiSpringCafeSoft.repository.ClienteRepository;
 
+import com.utvt.ApiSpringCafeSoft.dto.HistorialClienteDTO;
+import com.utvt.ApiSpringCafeSoft.dto.PedidoHistorialDTO;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+
 import java.util.UUID;
 
 /**
@@ -447,4 +452,151 @@ dto.setClienteNombre(
             .map(this::convertirDTO)
             .toList();
 }
+
+public HistorialClienteDTO obtenerHistorialCliente(Long clienteId) {
+
+    Cliente cliente = clienteRepository
+            .findById(clienteId)
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Cliente no encontrado con ID: " + clienteId
+                    )
+            );
+
+    List<EntregaPedido> entregas =
+            entregaPedidoRepository
+                    .findByVentaClienteRutaIdAndResultadoOrderByFechaDesc(
+                            clienteId,
+                            RESULTADO_ENTREGADO
+                    );
+
+    HistorialClienteDTO historial =
+            new HistorialClienteDTO();
+
+    historial.setClienteId(cliente.getId());
+    historial.setClienteNombre(cliente.getNombre());
+    historial.setTotalPedidos(entregas.size());
+
+    if (entregas.isEmpty()) {
+
+        historial.setPromedioGarrafones(0.0);
+        historial.setFrecuenciaPromedioDias(0L);
+        historial.setDiasDesdeUltimoPedido(null);
+        historial.setPedidos(new ArrayList<>());
+
+        return historial;
+    }
+
+    double totalGarrafones =
+            entregas.stream()
+                    .mapToDouble(e ->
+                            e.getGarrafonesEntregados() != null
+                                    ? e.getGarrafonesEntregados()
+                                    : 0.0
+                    )
+                    .sum();
+
+    double promedio =
+            totalGarrafones / entregas.size();
+
+    promedio =
+            Math.round(promedio * 100.0) / 100.0;
+
+    historial.setPromedioGarrafones(promedio);
+
+    LocalDateTime ultimaFecha =
+            entregas.get(0).getFecha();
+
+    long diasDesdeUltimoPedido =
+            ChronoUnit.DAYS.between(
+                    ultimaFecha.toLocalDate(),
+                    LocalDate.now()
+            );
+
+    historial.setDiasDesdeUltimoPedido(
+            diasDesdeUltimoPedido
+    );
+
+    long frecuenciaPromedio = 0L;
+
+    if (entregas.size() > 1) {
+
+        long sumaDias = 0L;
+
+        for (int i = 0; i < entregas.size() - 1; i++) {
+
+            LocalDate fechaActual =
+                    entregas.get(i)
+                            .getFecha()
+                            .toLocalDate();
+
+            LocalDate fechaAnterior =
+                    entregas.get(i + 1)
+                            .getFecha()
+                            .toLocalDate();
+
+            sumaDias +=
+                    ChronoUnit.DAYS.between(
+                            fechaAnterior,
+                            fechaActual
+                    );
+        }
+
+        frecuenciaPromedio =
+                Math.round(
+                        (double) sumaDias /
+                                (entregas.size() - 1)
+                );
+    }
+
+    historial.setFrecuenciaPromedioDias(
+            frecuenciaPromedio
+    );
+
+    List<PedidoHistorialDTO> pedidos =
+            entregas.stream()
+                    .map(entrega -> {
+
+                        PedidoHistorialDTO dto =
+                                new PedidoHistorialDTO();
+
+                        dto.setEntregaId(
+                                entrega.getId()
+                        );
+
+                        dto.setVentaId(
+                                entrega.getVenta() != null
+                                        ? entrega.getVenta().getId()
+                                        : null
+                        );
+
+                        dto.setFecha(
+                                entrega.getFecha()
+                        );
+
+                        dto.setGarrafones(
+                                entrega.getGarrafonesEntregados()
+                        );
+
+                        dto.setMontoCobrado(
+                                entrega.getMontoCobrado()
+                        );
+
+                        dto.setMetodoCobro(
+                                entrega.getMetodoCobro()
+                        );
+
+                        dto.setResultado(
+                                entrega.getResultado()
+                        );
+
+                        return dto;
+                    })
+                    .toList();
+
+    historial.setPedidos(pedidos);
+
+    return historial;
+}
+
 }
