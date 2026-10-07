@@ -30,6 +30,9 @@ import com.utvt.ApiSpringCafeSoft.dto.PedidoHistorialDTO;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
+import com.utvt.ApiSpringCafeSoft.dto.ReporteEntregasDTO;
+import com.utvt.ApiSpringCafeSoft.dto.DetalleEntregaReporteDTO;
+
 import java.util.UUID;
 
 /**
@@ -597,6 +600,297 @@ public HistorialClienteDTO obtenerHistorialCliente(Long clienteId) {
     historial.setPedidos(pedidos);
 
     return historial;
+}
+
+// ============================================
+// HU-020 - REPORTE CONSOLIDADO DE ENTREGAS
+// ============================================
+
+public ReporteEntregasDTO generarReporteEntregas(
+        LocalDate fechaInicio,
+        LocalDate fechaFin,
+        Long repartidorId) {
+
+    if (fechaInicio == null || fechaFin == null) {
+        throw new RuntimeException(
+                "La fecha inicial y la fecha final son obligatorias"
+        );
+    }
+
+    if (fechaFin.isBefore(fechaInicio)) {
+        throw new RuntimeException(
+                "La fecha final no puede ser menor que la fecha inicial"
+        );
+    }
+
+    LocalDateTime inicio =
+            fechaInicio.atStartOfDay();
+
+    LocalDateTime fin =
+            fechaFin
+                    .plusDays(1)
+                    .atStartOfDay();
+
+    List<EntregaPedido> entregas;
+
+    Usuario repartidor = null;
+
+    if (repartidorId != null) {
+
+        repartidor =
+                obtenerRepartidor(
+                        repartidorId
+                );
+
+        entregas =
+                entregaPedidoRepository
+                        .findByRepartidorIdAndResultadoAndFechaBetweenOrderByFechaAsc(
+                                repartidorId,
+                                RESULTADO_ENTREGADO,
+                                inicio,
+                                fin
+                        );
+
+    } else {
+
+        entregas =
+                entregaPedidoRepository
+                        .findByResultadoAndFechaBetweenOrderByFechaAsc(
+                                RESULTADO_ENTREGADO,
+                                inicio,
+                                fin
+                        );
+    }
+
+    ReporteEntregasDTO reporte =
+            new ReporteEntregasDTO();
+
+    reporte.setFechaInicio(
+            fechaInicio
+    );
+
+    reporte.setFechaFin(
+            fechaFin
+    );
+
+    reporte.setRepartidorId(
+            repartidorId
+    );
+
+    reporte.setRepartidorNombre(
+            repartidor != null
+                    ? repartidor.getNombre()
+                    : "Todos"
+    );
+
+    reporte.setTotalEntregas(
+            entregas.size()
+    );
+
+    // ============================================
+    // TOTAL GARRAFONES
+    // ============================================
+
+    double totalGarrafones =
+            entregas.stream()
+                    .mapToDouble(
+                            e ->
+                                    e.getGarrafonesEntregados() != null
+                                            ? e.getGarrafonesEntregados()
+                                            : 0.0
+                    )
+                    .sum();
+
+    reporte.setTotalGarrafonesVendidos(
+            totalGarrafones
+    );
+
+    // ============================================
+    // TOTAL ENVASES RETORNADOS
+    // ============================================
+
+    double totalEnvases =
+            entregas.stream()
+                    .mapToDouble(
+                            e ->
+                                    e.getEnvasesVaciosRecibidos() != null
+                                            ? e.getEnvasesVaciosRecibidos()
+                                            : 0.0
+                    )
+                    .sum();
+
+    reporte.setTotalEnvasesRetornados(
+            totalEnvases
+    );
+
+    // ============================================
+    // TOTAL EFECTIVO COBRADO
+    // Solo cuenta cobros realizados en efectivo.
+    // ============================================
+
+    double totalEfectivo =
+            entregas.stream()
+                    .filter(
+                            e ->
+                                    e.getMetodoCobro() != null
+                                            && "EFECTIVO".equalsIgnoreCase(
+                                                    e.getMetodoCobro()
+                                            )
+                    )
+                    .mapToDouble(
+                            e ->
+                                    e.getMontoCobrado() != null
+                                            ? e.getMontoCobrado()
+                                            : 0.0
+                    )
+                    .sum();
+
+    reporte.setTotalEfectivoCobrado(
+            Math.round(
+                    totalEfectivo * 100.0
+            ) / 100.0
+    );
+
+    // ============================================
+    // PROMEDIO DE TIEMPO ENTRE ENTREGAS
+    // ============================================
+
+    double promedioMinutos =
+            calcularPromedioTiempoEntregas(
+                    entregas
+            );
+
+    reporte.setPromedioTiempoEntregaMinutos(
+            promedioMinutos
+    );
+
+    // ============================================
+    // DETALLE DE ENTREGAS
+    // ============================================
+
+    List<DetalleEntregaReporteDTO> detalle =
+            entregas.stream()
+                    .map(entrega -> {
+
+                        DetalleEntregaReporteDTO dto =
+                                new DetalleEntregaReporteDTO();
+
+                        dto.setEntregaId(
+                                entrega.getId()
+                        );
+
+                        dto.setVentaId(
+                                entrega.getVenta() != null
+                                        ? entrega.getVenta().getId()
+                                        : null
+                        );
+
+                        dto.setRepartidorId(
+                                entrega.getRepartidor() != null
+                                        ? entrega.getRepartidor().getId()
+                                        : null
+                        );
+
+                        dto.setRepartidorNombre(
+                                entrega.getRepartidor() != null
+                                        ? entrega.getRepartidor().getNombre()
+                                        : "Sin repartidor"
+                        );
+
+                        dto.setFecha(
+                                entrega.getFecha()
+                        );
+
+                        dto.setGarrafonesVendidos(
+                                entrega.getGarrafonesEntregados()
+                        );
+
+                        dto.setEnvasesRetornados(
+                                entrega.getEnvasesVaciosRecibidos()
+                        );
+
+                        dto.setMontoCobrado(
+                                entrega.getMontoCobrado()
+                        );
+
+                        dto.setMetodoCobro(
+                                entrega.getMetodoCobro()
+                        );
+
+                        dto.setResultado(
+                                entrega.getResultado()
+                        );
+
+                        return dto;
+                    })
+                    .toList();
+
+    reporte.setEntregas(
+            detalle
+    );
+
+    return reporte;
+}
+
+private double calcularPromedioTiempoEntregas(
+        List<EntregaPedido> entregas) {
+
+    if (entregas == null || entregas.size() < 2) {
+        return 0.0;
+    }
+
+    long totalMinutos = 0;
+    int intervalos = 0;
+
+    for (int i = 1; i < entregas.size(); i++) {
+
+        EntregaPedido anterior =
+                entregas.get(i - 1);
+
+        EntregaPedido actual =
+                entregas.get(i);
+
+        if (anterior.getFecha() == null
+                || actual.getFecha() == null) {
+            continue;
+        }
+
+        // Si el reporte contiene varios repartidores,
+        // no mezclamos tiempos entre repartidores distintos.
+        if (anterior.getRepartidor() == null
+                || actual.getRepartidor() == null
+                || !anterior.getRepartidor()
+                        .getId()
+                        .equals(
+                                actual.getRepartidor()
+                                        .getId()
+                        )) {
+            continue;
+        }
+
+        long minutos =
+                ChronoUnit.MINUTES.between(
+                        anterior.getFecha(),
+                        actual.getFecha()
+                );
+
+        if (minutos >= 0) {
+            totalMinutos += minutos;
+            intervalos++;
+        }
+    }
+
+    if (intervalos == 0) {
+        return 0.0;
+    }
+
+    double promedio =
+            (double) totalMinutos
+                    / intervalos;
+
+    return Math.round(
+            promedio * 100.0
+    ) / 100.0;
 }
 
 }

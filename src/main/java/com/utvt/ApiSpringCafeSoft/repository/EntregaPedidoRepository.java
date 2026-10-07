@@ -25,4 +25,18 @@ public interface EntregaPedidoRepository extends JpaRepository<EntregaPedido, Lo
             Long clienteId,
             String resultado
     );
+
+List<EntregaPedido> findByResultadoAndFechaBetweenOrderByFechaAsc(
+        String resultado,
+        LocalDateTime inicio,
+        LocalDateTime fin
+);
+
+List<EntregaPedido> findByRepartidorIdAndResultadoAndFechaBetweenOrderByFechaAsc(
+        Long repartidorId,
+        String resultado,
+        LocalDateTime inicio,
+        LocalDateTime fin
+);
+
 }
