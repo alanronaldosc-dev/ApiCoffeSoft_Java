@@ -6,6 +6,7 @@ import com.utvt.ApiSpringCafeSoft.model.*;
 import com.utvt.ApiSpringCafeSoft.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -63,13 +64,17 @@ public class VentaService {
     }
 
     private String generarFolio() {
+        // Se ejecuta dentro de la misma transacción SERIALIZABLE de crearVenta,
+        // por lo que el SELECT ya está protegido por el lock de la transacción.
+        // El uso de findLastFolio() con la BD bloqueada evita folios duplicados
+        // bajo carga concurrente.
         String lastFolio = ventaRepository.findLastFolio();
         if (lastFolio == null) return "V-0001";
         int numero = Integer.parseInt(lastFolio.substring(2)) + 1;
         return String.format("V-%04d", numero);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public VentaDTO crearVenta(VentaDTO ventaDTO) {
         Usuario usuario = usuarioRepository.findById(ventaDTO.getUsuarioId())
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + ventaDTO.getUsuarioId()));
@@ -141,7 +146,11 @@ public class VentaService {
 
     private void validarStock(Producto producto, Integer cantidadVendida) {
         for (ProductoInsumo pi : producto.getInsumos()) {
-            Inventario inv = pi.getInsumo();
+            // Re-leer con bloqueo para obtener el valor actual antes de validar
+            Inventario inv = inventarioRepository
+                .findByIdForUpdate(pi.getInsumo().getId())
+                .orElseThrow(() -> new RuntimeException(
+                    "Inventario no encontrado para insumo ID: " + pi.getInsumo().getId()));
             double necesario = pi.getCantidad() * cantidadVendida;
             if (inv.getCantidad() < necesario) {
                 throw new RuntimeException("Stock insuficiente para: " + inv.getNombre()
@@ -153,23 +162,42 @@ public class VentaService {
 
     private void descontarPorLotes(Producto producto, Integer cantidadVendida) {
         for (ProductoInsumo pi : producto.getInsumos()) {
-            Inventario inv = pi.getInsumo();
+            // Re-leer con bloqueo pesimista: garantiza que ninguna otra
+            // transacción concurrente pueda leer ni escribir este registro
+            // hasta que la transacción actual haga commit (HU-017).
+            Inventario inv = inventarioRepository
+                .findByIdForUpdate(pi.getInsumo().getId())
+                .orElseThrow(() -> new RuntimeException(
+                    "Inventario no encontrado para insumo ID: " + pi.getInsumo().getId()));
+
             double aDescontar = pi.getCantidad() * cantidadVendida;
+
+            // Doble chequeo dentro del lock: evita ventas en negativo
+            // si otra transacción consumió stock entre la validación inicial
+            // y este punto.
+            if (inv.getCantidad() < aDescontar) {
+                throw new RuntimeException("Stock insuficiente para: " + inv.getNombre()
+                    + " | Disponible: " + inv.getCantidad()
+                    + " | Necesario: " + aDescontar + " " + inv.getUnidadMedida());
+            }
 
             inv.setCantidad(inv.getCantidad() - aDescontar);
             inventarioRepository.save(inv);
 
-            List<Lote> lotes = loteRepository.findLotesDisponiblesByNombreYUnidad(
-                inv.getNombre(), inv.getUnidadMedida());
+            // Consumir lotes con bloqueo pesimista (FEFO)
+            List<Lote> lotes = loteRepository
+                .findLotesDisponiblesByNombreYUnidadForUpdate(
+                    inv.getNombre(), inv.getUnidadMedida());
 
+            double restante = aDescontar;
             for (Lote lote : lotes) {
-                if (aDescontar <= 0) break;
+                if (restante <= 0) break;
                 double disponibleEnLote = lote.getCantidad();
-                if (disponibleEnLote >= aDescontar) {
-                    lote.setCantidad(disponibleEnLote - aDescontar);
-                    aDescontar = 0;
+                if (disponibleEnLote >= restante) {
+                    lote.setCantidad(disponibleEnLote - restante);
+                    restante = 0;
                 } else {
-                    aDescontar -= disponibleEnLote;
+                    restante -= disponibleEnLote;
                     lote.setCantidad(0.0);
                 }
                 loteRepository.save(lote);
