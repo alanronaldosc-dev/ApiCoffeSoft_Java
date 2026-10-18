@@ -77,6 +77,13 @@ public class VentaDTO {
     private String estadoPedido;
 
 
+    private Long clienteFidelidadId;
+    private Integer puntosGenerados;
+    public Long getClienteFidelidadId(){return clienteFidelidadId;}
+    public void setClienteFidelidadId(Long id){this.clienteFidelidadId=id;}
+    public Integer getPuntosGenerados(){return puntosGenerados;}
+    public void setPuntosGenerados(Integer puntos){this.puntosGenerados=puntos;}
+
     // Constructor por defecto
     public VentaDTO() {}
 

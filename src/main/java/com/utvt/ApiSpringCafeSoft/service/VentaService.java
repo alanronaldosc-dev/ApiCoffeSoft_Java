@@ -31,6 +31,8 @@ public class VentaService {
     @Autowired private InventarioRepository inventarioRepository;
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private LoteRepository loteRepository;
+    @Autowired private ClienteRepository clienteRepository;
+    @Autowired private MovimientoPuntosRepository movimientoPuntosRepository;
 
     private VentaDTO convertToDTO(Venta venta) {
         VentaDTO dto = new VentaDTO();
@@ -45,6 +47,8 @@ public class VentaService {
         dto.setMontoEfectivo(venta.getMontoEfectivo());
         dto.setCambio(venta.getCambio());
         dto.setNombreCliente(venta.getNombreCliente());
+        dto.setClienteFidelidadId(venta.getClienteFidelidadId());
+        dto.setPuntosGenerados(movimientoPuntosRepository.findByVentaId(venta.getId()).map(MovimientoPuntos::getPuntos).orElse(0));
         dto.setEstadoPedido(venta.getEstadoPedido());
         dto.setUsuarioId(venta.getUsuario().getId());
         dto.setUsuarioNombre(venta.getUsuario().getNombre());
@@ -100,6 +104,12 @@ public class VentaService {
         venta.setObservaciones(ventaDTO.getObservaciones());
         venta.setCreatedAt(LocalDateTime.now());
         venta.setNombreCliente(ventaDTO.getNombreCliente());
+        venta.setClienteFidelidadId(ventaDTO.getClienteFidelidadId());
+        if (ventaDTO.getClienteFidelidadId()!=null) {
+            clienteRepository.findById(ventaDTO.getClienteFidelidadId())
+                .filter(c -> Boolean.TRUE.equals(c.getActivo()))
+                .orElseThrow(() -> new IllegalArgumentException("Cliente de fidelidad inexistente o inactivo"));
+        }
         venta.setEstadoPedido("PENDIENTE");
 
         // ── Asignar la sucursal del usuario que realiza la venta ──
@@ -147,7 +157,22 @@ public class VentaService {
             venta.setCambio(cambio);
         }
 
-        return convertToDTO(ventaRepository.save(venta));
+        Venta guardada=ventaRepository.save(venta);
+        if (guardada.getClienteFidelidadId()!=null) {
+            int puntos=guardada.getDetalles().stream()
+                .filter(d -> d.getProducto().getNombre()!=null &&
+                    d.getProducto().getNombre().toLowerCase(java.util.Locale.ROOT).contains("garrafón") ||
+                    d.getProducto().getNombre()!=null && d.getProducto().getNombre().toLowerCase(java.util.Locale.ROOT).contains("garrafon"))
+                .mapToInt(VentaDetalle::getCantidad).sum();
+            if (puntos>0) {
+                MovimientoPuntos mov=new MovimientoPuntos();
+                mov.setCliente(clienteRepository.findById(guardada.getClienteFidelidadId()).orElseThrow());
+                mov.setVenta(guardada);
+                mov.setPuntos(puntos);
+                movimientoPuntosRepository.save(mov);
+            }
+        }
+        return convertToDTO(guardada);
     }
 
     private void validarStock(Producto producto, Integer cantidadVendida) {
@@ -238,6 +263,7 @@ public class VentaService {
     public void cancelarVenta(Long id) {
         ventaRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + id));
+        movimientoPuntosRepository.findByVentaId(id).ifPresent(movimientoPuntosRepository::delete);
         ventaRepository.deleteById(id);
     }
 
