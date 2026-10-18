@@ -1,24 +1,28 @@
+
 package com.utvt.ApiSpringCafeSoft.service;
-/**
-     * 
-     * (HU-006): agrega confirmacion de carga por repartidor
-     * 
-     */
+
 import com.utvt.ApiSpringCafeSoft.dto.CargaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ItemGarrafonDTO;
+
 import com.utvt.ApiSpringCafeSoft.model.Carga;
 import com.utvt.ApiSpringCafeSoft.model.Inventario;
+import com.utvt.ApiSpringCafeSoft.model.Ruta;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
+
 import com.utvt.ApiSpringCafeSoft.repository.CargaRepository;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
+import com.utvt.ApiSpringCafeSoft.repository.RutaRepository;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,33 +38,52 @@ public class CargaService {
     @Autowired
     private InventarioRepository inventarioRepository;
 
-    /**
-     * HU-005
-     * Registra la carga inicial de garrafones para un repartidor.
-     */
+    @Autowired
+    private RutaRepository rutaRepository;
+
+    // ============================================
+    // HU-005: CREAR CARGA
+    // ============================================
+
     @Transactional
     public CargaDTO crearCarga(CargaDTO dto) {
 
-        if (dto.getCantidad() == null || dto.getCantidad() <= 0) {
-            throw new RuntimeException("La cantidad debe ser mayor a cero");
+        if (dto.getCantidad() == null ||
+                dto.getCantidad() <= 0) {
+
+            throw new RuntimeException(
+                    "La cantidad debe ser mayor a cero"
+            );
         }
 
-        /* La carga queda SIN ASIGNAR hasta que se active una ruta */
+        // VALIDAR REPARTIDOR
+
         Usuario repartidor = null;
+
         if (dto.getRepartidorId() != null) {
-            repartidor = usuarioRepository.findById(dto.getRepartidorId())
+
+            repartidor = usuarioRepository
+                    .findById(dto.getRepartidorId())
                     .orElseThrow(() ->
                             new RuntimeException(
                                     "No se encontró el usuario con ID: "
                                             + dto.getRepartidorId()
                             )
                     );
-            if (repartidor.getUserTipo() == null || repartidor.getUserTipo() != 4) {
-                throw new RuntimeException("El usuario seleccionado no tiene el rol de Repartidor");
+
+            if (repartidor.getUserTipo() == null ||
+                    repartidor.getUserTipo() != 4) {
+
+                throw new RuntimeException(
+                        "El usuario seleccionado no tiene el rol de Repartidor"
+                );
             }
         }
 
-        Inventario inventario = inventarioRepository.findById(dto.getInventarioId())
+        // VALIDAR INVENTARIO
+
+        Inventario inventario = inventarioRepository
+                .findById(dto.getInventarioId())
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "No se encontró el inventario con ID: "
@@ -68,7 +91,8 @@ public class CargaService {
                         )
                 );
 
-        // Validar stock disponible
+        // VALIDAR STOCK
+
         if (inventario.getCantidad() == null ||
                 inventario.getCantidad() < dto.getCantidad()) {
 
@@ -80,16 +104,15 @@ public class CargaService {
             );
         }
 
-        /*
-         * Se descuenta la cantidad del inventario porque los garrafones
-         * dejan de estar disponibles en planta y pasan a estar bajo
-         * responsabilidad del repartidor.
-         */
+        // DESCONTAR INVENTARIO
+
         inventario.setCantidad(
                 inventario.getCantidad() - dto.getCantidad()
         );
 
         inventarioRepository.save(inventario);
+
+        // CREAR CARGA
 
         Carga carga = new Carga();
 
@@ -99,33 +122,40 @@ public class CargaService {
         carga.setCantidadDisponible(dto.getCantidad());
         carga.setFechaHora(LocalDateTime.now());
 
-        // La carga queda sin asignar hasta activar una ruta
-        carga.setEstado(repartidor != null ? "PENDIENTE" : "SIN ASIGNAR");
+        // La ruta se asignará al aceptar
+        // o activar la ruta correspondiente.
+
+        carga.setRuta(null);
+
+        carga.setEstado(
+                repartidor != null
+                        ? "PENDIENTE"
+                        : "SIN ASIGNAR"
+        );
 
         Carga guardada = cargaRepository.save(carga);
 
         return convertirDTO(guardada);
     }
 
-    /**
-     * HU-015
-     * Registra varias cargas (varios tipos de garrafón)
-     * para un repartidor en una sola transacción.
-     *
-     * Permite que un repartidor inicie su ruta con
-     * cargas de distintos garrafones, por ejemplo
-     * 20 Bonafont y 5 Ciel.
-     */
+    // ============================================
+    // HU-015: CREAR CARGAS MÚLTIPLES
+    // ============================================
+
     @Transactional
     public List<CargaDTO> crearCargasMultiples(
             Long repartidorId,
             List<ItemGarrafonDTO> items) {
 
         if (repartidorId == null) {
-            throw new RuntimeException("El repartidor es obligatorio");
+
+            throw new RuntimeException(
+                    "El repartidor es obligatorio"
+            );
         }
 
-        Usuario repartidor = usuarioRepository.findById(repartidorId)
+        Usuario repartidor = usuarioRepository
+                .findById(repartidorId)
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "No se encontró el usuario con ID: "
@@ -133,11 +163,16 @@ public class CargaService {
                         )
                 );
 
-        if (repartidor.getUserTipo() == null || repartidor.getUserTipo() != 4) {
-            throw new RuntimeException("El usuario seleccionado no tiene el rol de Repartidor");
+        if (repartidor.getUserTipo() == null ||
+                repartidor.getUserTipo() != 4) {
+
+            throw new RuntimeException(
+                    "El usuario seleccionado no tiene el rol de Repartidor"
+            );
         }
 
         if (items == null || items.isEmpty()) {
+
             throw new RuntimeException(
                     "Debe seleccionar al menos un garrafón"
             );
@@ -147,9 +182,9 @@ public class CargaService {
 
         for (ItemGarrafonDTO item : items) {
 
-            if (item.getInventarioId() == null
-                    || item.getCantidad() == null
-                    || item.getCantidad() <= 0) {
+            if (item.getInventarioId() == null ||
+                    item.getCantidad() == null ||
+                    item.getCantidad() <= 0) {
 
                 throw new RuntimeException(
                         "Cada garrafón debe tener un inventario y una cantidad válida"
@@ -157,6 +192,7 @@ public class CargaService {
             }
 
             CargaDTO dto = new CargaDTO();
+
             dto.setRepartidorId(repartidorId);
             dto.setInventarioId(item.getInventarioId());
             dto.setCantidad(item.getCantidad());
@@ -167,23 +203,27 @@ public class CargaService {
         return creadas;
     }
 
-    /**
-     * Obtener todas las cargas.
-     */
+    // ============================================
+    // OBTENER TODAS LAS CARGAS
+    // ============================================
+
     public List<CargaDTO> obtenerTodas() {
 
-        return cargaRepository.findAll()
+        return cargaRepository
+                .findAll()
                 .stream()
                 .map(this::convertirDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Obtener una carga por ID.
-     */
+    // ============================================
+    // OBTENER CARGA POR ID
+    // ============================================
+
     public CargaDTO obtenerPorId(Long id) {
 
-        Carga carga = cargaRepository.findById(id)
+        Carga carga = cargaRepository
+                .findById(id)
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Carga no encontrada con ID: " + id
@@ -193,13 +233,15 @@ public class CargaService {
         return convertirDTO(carga);
     }
 
-    /**
-     * HU-006
-     * Obtener las cargas asignadas a un repartidor.
-     */
-    public List<CargaDTO> obtenerCargasPorRepartidor(Long repartidorId) {
+    // ============================================
+    // OBTENER CARGAS POR REPARTIDOR
+    // ============================================
 
-        Usuario repartidor = usuarioRepository.findById(repartidorId)
+    public List<CargaDTO> obtenerCargasPorRepartidor(
+            Long repartidorId) {
+
+        Usuario repartidor = usuarioRepository
+                .findById(repartidorId)
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Repartidor no encontrado con ID: "
@@ -216,17 +258,20 @@ public class CargaService {
         }
 
         return cargaRepository
-                .findByRepartidorIdOrderByFechaHoraDesc(repartidorId)
+                .findByRepartidorIdOrderByFechaHoraDesc(
+                        repartidorId
+                )
                 .stream()
                 .map(this::convertirDTO)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * HU-006
-     * Obtener únicamente las cargas pendientes del repartidor.
-     */
-    public List<CargaDTO> obtenerCargasPendientes(Long repartidorId) {
+    // ============================================
+    // OBTENER CARGAS PENDIENTES
+    // ============================================
+
+    public List<CargaDTO> obtenerCargasPendientes(
+            Long repartidorId) {
 
         return cargaRepository
                 .findByRepartidorIdAndEstadoOrderByFechaHoraDesc(
@@ -238,57 +283,171 @@ public class CargaService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * HU-006
-     * El repartidor acepta la carga.
-     */
-    @Transactional
-    public CargaDTO aceptarCarga(Long id) {
+    // ============================================
+    // HU-006: ACEPTAR CARGA SEGURA
+    // ============================================
 
-        Carga carga = cargaRepository.findWithLockById(id)
+    @Transactional
+    public CargaDTO aceptarCarga(
+            Long id,
+            String correoAutenticado) {
+
+        // ========================================
+        // 1. VALIDAR IDENTIDAD
+        // ========================================
+
+        if (correoAutenticado == null ||
+                correoAutenticado.isBlank()) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Usuario no autenticado"
+            );
+        }
+
+        // ========================================
+        // 2. OBTENER CARGA CON BLOQUEO
+        // ========================================
+
+        Carga carga = cargaRepository
+                .findWithLockById(id)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Carga no encontrada con ID: " + id
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Carga no encontrada"
                         )
                 );
 
-        if (!"PENDIENTE".equalsIgnoreCase(carga.getEstado())) {
+        // ========================================
+        // 3. VALIDAR REPARTIDOR ASIGNADO
+        // ========================================
 
-            // Idempotente: si ya está en tránsito, devolverla tal cual
-            if ("CARGA EN TRÁNSITO".equalsIgnoreCase(carga.getEstado())) {
-                if (carga.getCantidadDisponible() == null) {
-                    carga.setCantidadDisponible(carga.getCantidad());
-                }
-                return convertirDTO(carga);
-            }
+        Usuario repartidor = carga.getRepartidor();
 
-            throw new RuntimeException(
-                    "La carga no puede aceptarse porque su estado actual es: "
-                            + carga.getEstado()
+        if (repartidor == null ||
+                repartidor.getUserTipo() == null ||
+                repartidor.getUserTipo() != 4) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "La carga no tiene un repartidor válido"
             );
         }
 
-        if (carga.getRepartidor() == null ||
-                carga.getRepartidor().getUserTipo() == null ||
-                carga.getRepartidor().getUserTipo() != 4) {
+        // ========================================
+        // 4. EVITAR ACEPTACIÓN DE CARGAS AJENAS
+        // ========================================
 
-            throw new RuntimeException(
-                    "La carga no pertenece a un repartidor válido"
+        // IMPORTANTE:
+        // Si Usuario.java usa getEmail(),
+        // reemplaza getCorreo() por getEmail().
+
+        String correoRepartidor = repartidor.getEmail();
+
+        if (correoRepartidor == null ||
+                !correoRepartidor.equalsIgnoreCase(
+                        correoAutenticado.trim()
+                )) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "No tienes permiso para aceptar esta carga"
             );
         }
+
+        Long repartidorId = repartidor.getId();
+
+        // ========================================
+        // 5. EVITAR ACEPTACIONES REPETIDAS
+        // ========================================
+
+        if ("CARGA EN TRÁNSITO".equalsIgnoreCase(
+                carga.getEstado())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Esta carga ya fue aceptada"
+            );
+        }
+
+        if (!"PENDIENTE".equalsIgnoreCase(
+                carga.getEstado())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "La carga no está pendiente"
+            );
+        }
+
+        // ========================================
+        // 6. BUSCAR RUTA ACTIVA
+        // ========================================
+
+        Ruta rutaActiva = rutaRepository
+                .findByRepartidorId(repartidorId)
+                .stream()
+                .filter(ruta ->
+                        Boolean.TRUE.equals(
+                                ruta.getActiva()
+                        )
+                )
+                .max(
+                        Comparator.comparing(
+                                Ruta::getId
+                        )
+                )
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.CONFLICT,
+                                "El repartidor no tiene una ruta activa"
+                        )
+                );
+
+        // ========================================
+        // 7. VALIDAR RELACIÓN CON RUTA
+        // ========================================
+
+        if (carga.getRuta() == null) {
+
+            carga.setRuta(rutaActiva);
+
+        } else if (!carga.getRuta()
+                .getId()
+                .equals(rutaActiva.getId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "La carga ya pertenece a otra ruta"
+            );
+        }
+
+        // ========================================
+        // 8. INICIALIZAR CANTIDAD DISPONIBLE
+        // ========================================
 
         if (carga.getCantidadDisponible() == null) {
-            carga.setCantidadDisponible(carga.getCantidad());
+
+            carga.setCantidadDisponible(
+                    carga.getCantidad()
+            );
         }
+
+        // ========================================
+        // 9. CAMBIAR ESTADO A EN TRÁNSITO
+        // ========================================
 
         carga.setEstado("CARGA EN TRÁNSITO");
 
-        return convertirDTO(cargaRepository.save(carga));
+        Carga guardada =
+                cargaRepository.save(carga);
+
+        return convertirDTO(guardada);
     }
 
-    /**
-     * Convertir entidad a DTO.
-     */
+    // ============================================
+    // CONVERTIR ENTIDAD A DTO
+    // ============================================
+
     private CargaDTO convertirDTO(Carga carga) {
 
         String repartidorNombre = null;
@@ -297,28 +456,44 @@ public class CargaService {
         String unidadMedida = null;
 
         if (carga.getRepartidor() != null) {
-            repartidorNombre = carga.getRepartidor().getNombre();
+
+            repartidorNombre = carga
+                    .getRepartidor()
+                    .getNombre();
         }
 
         if (carga.getInventario() != null) {
 
-            inventarioNombre = carga.getInventario().getNombre();
-            tipoGarrafon = carga.getInventario().getTipo();
-            unidadMedida = carga.getInventario().getUnidadMedida();
+            inventarioNombre = carga
+                    .getInventario()
+                    .getNombre();
+
+            tipoGarrafon = carga
+                    .getInventario()
+                    .getTipo();
+
+            unidadMedida = carga
+                    .getInventario()
+                    .getUnidadMedida();
         }
 
         return new CargaDTO(
                 carga.getId(),
+
                 carga.getRepartidor() != null
                         ? carga.getRepartidor().getId()
                         : null,
+
                 carga.getInventario() != null
                         ? carga.getInventario().getId()
                         : null,
+
                 carga.getCantidad(),
+
                 carga.getCantidadDisponible() != null
                         ? carga.getCantidadDisponible()
                         : carga.getCantidad(),
+
                 carga.getFechaHora(),
                 carga.getEstado(),
                 repartidorNombre,
@@ -327,4 +502,4 @@ public class CargaService {
                 unidadMedida
         );
     }
-}  
+}

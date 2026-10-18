@@ -43,6 +43,10 @@ public class EntregaPedido {
     @Column(length = 500)
     private String observaciones;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+@JoinColumn(name = "ruta_id")
+private Ruta ruta;
+
     public EntregaPedido() {}
 
     public Long getId() { return id; }
@@ -74,4 +78,12 @@ public class EntregaPedido {
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+
+    public Ruta getRuta() {
+    return ruta;
+}
+
+public void setRuta(Ruta ruta) {
+    this.ruta = ruta;
+}
 }

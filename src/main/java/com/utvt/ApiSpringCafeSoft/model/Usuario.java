@@ -37,6 +37,9 @@ public class Usuario {
     @Column(name = "user_tipo", nullable = false)
     private Integer userTipo;
 
+    @Column(name = "traccar_device_id", length = 100, unique = true)
+    private String traccarDeviceId;
+
     @Column(name = "push_token")
     private String pushToken;
 
@@ -73,6 +76,8 @@ public class Usuario {
     public void setTelefono(String telefono) { this.telefono = telefono; }
     public Integer getUserTipo() { return userTipo; }
     public void setUserTipo(Integer userTipo) { this.userTipo = userTipo; }
+    public String getTraccarDeviceId() { return traccarDeviceId; }
+    public void setTraccarDeviceId(String traccarDeviceId) { this.traccarDeviceId = traccarDeviceId; }
     public String getPushToken() { return pushToken; }
     public void setPushToken(String pushToken) { this.pushToken = pushToken; }
     public LocalDateTime getCreatedAt() { return createdAt; }

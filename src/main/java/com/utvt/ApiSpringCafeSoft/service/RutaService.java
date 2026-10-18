@@ -4,6 +4,7 @@ import com.utvt.ApiSpringCafeSoft.model.Carga;
 import com.utvt.ApiSpringCafeSoft.model.Cliente;
 import com.utvt.ApiSpringCafeSoft.model.Ruta;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
+
 import com.utvt.ApiSpringCafeSoft.repository.CargaRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ClienteRepository;
 import com.utvt.ApiSpringCafeSoft.repository.RutaRepository;
@@ -51,7 +52,8 @@ public class RutaService {
         Usuario repartidor =
                 obtenerRepartidor(repartidorId);
 
-        Ruta ruta = new Ruta();
+        Ruta ruta =
+                new Ruta();
 
         ruta.setNombre(
                 nombre.trim()
@@ -103,7 +105,8 @@ public class RutaService {
                 .findById(id)
                 .orElseThrow(() ->
                         new RuntimeException(
-                                "Ruta no encontrada con ID: " + id
+                                "Ruta no encontrada con ID: "
+                                        + id
                         )
                 );
     }
@@ -123,7 +126,6 @@ public class RutaService {
         Ruta ruta =
                 obtenerPorId(id);
 
-        // No modificar una ruta que ya inició recorrido
         if (
                 "EN_TRANSITO".equalsIgnoreCase(
                         ruta.getEstado()
@@ -136,8 +138,8 @@ public class RutaService {
         }
 
         if (
-                nombre != null &&
-                !nombre.trim().isEmpty()
+                nombre != null
+                        && !nombre.trim().isEmpty()
         ) {
 
             ruta.setNombre(
@@ -172,10 +174,8 @@ public class RutaService {
                 clienteRepository
                         .findByRutaId(id);
 
-        for (
-                Cliente cliente :
-                clientesAnteriores
-        ) {
+        for (Cliente cliente :
+                clientesAnteriores) {
 
             cliente.setRuta(null);
             cliente.setOrdenEnRuta(null);
@@ -187,10 +187,6 @@ public class RutaService {
 
         Ruta rutaActualizada =
                 rutaRepository.save(ruta);
-
-        // ========================================
-        // ASIGNAR NUEVO ORDEN
-        // ========================================
 
         asignarClientes(
                 rutaActualizada,
@@ -205,7 +201,8 @@ public class RutaService {
     // ============================================
 
     @Transactional
-    public void eliminarRuta(Long id) {
+    public void eliminarRuta(
+            Long id) {
 
         Ruta ruta =
                 obtenerPorId(id);
@@ -225,7 +222,8 @@ public class RutaService {
                 clienteRepository
                         .findByRutaId(id);
 
-        for (Cliente cliente : clientes) {
+        for (Cliente cliente :
+                clientes) {
 
             cliente.setRuta(null);
             cliente.setOrdenEnRuta(null);
@@ -241,7 +239,7 @@ public class RutaService {
     }
 
     // ============================================
-    // ASIGNAR CLIENTES A LA RUTA
+    // ASIGNAR CLIENTES
     // ============================================
 
     private void asignarClientes(
@@ -249,16 +247,18 @@ public class RutaService {
             List<Long> clienteIds) {
 
         if (
-                clienteIds == null ||
-                clienteIds.isEmpty()
+                clienteIds == null
+                        || clienteIds.isEmpty()
         ) {
 
             return;
         }
 
-        int posicion = 1;
+        int posicion =
+                1;
 
-        for (Long clienteId : clienteIds) {
+        for (Long clienteId :
+                clienteIds) {
 
             Cliente cliente =
                     clienteRepository
@@ -287,25 +287,101 @@ public class RutaService {
     }
 
     // ============================================
-    // ACTIVAR RUTA
+    // TERMINAR RUTA ACTIVA
     // ============================================
 
-    /**
-     * Activa la ruta del repartidor.
-     *
-     * La carga ya no se vincula a la ruta:
-     * el repartidor puede llevar varias
-     * cargas (una por tipo de garrafón)
-     * y las acepta directamente en
-     * "Mis cargas".
-     */
     @Transactional
-    public Ruta desactivarRuta(Long rutaId) {
-        Ruta ruta = obtenerPorId(rutaId);
-        ruta.setActiva(false);
-        ruta.setEstado("CREADA");
-        return rutaRepository.save(ruta);
+    public Ruta terminarRutaActivaDelRepartidor(
+            Long repartidorId) {
+
+        if (repartidorId == null) {
+
+            throw new RuntimeException(
+                    "El repartidor es obligatorio"
+            );
+        }
+
+        obtenerRepartidor(
+                repartidorId
+        );
+
+        List<Ruta> rutasActivas =
+                rutaRepository
+                        .findByRepartidorId(
+                                repartidorId
+                        )
+                        .stream()
+                        .filter(ruta ->
+                                Boolean.TRUE.equals(
+                                        ruta.getActiva()
+                                )
+                        )
+                        .toList();
+
+        if (rutasActivas.isEmpty()) {
+
+            throw new RuntimeException(
+                    "No hay una ruta activa para este repartidor"
+            );
+        }
+
+        /*
+         * Debe existir solamente una ruta activa.
+         * Si existen datos antiguos inconsistentes,
+         * se toma la ruta más reciente.
+         */
+        Ruta ruta =
+                rutasActivas
+                        .stream()
+                        .max(
+                                Comparator.comparing(
+                                        Ruta::getId
+                                )
+                        )
+                        .orElseThrow();
+
+        ruta.setActiva(
+                false
+        );
+
+        ruta.setEstado(
+                "TERMINADA"
+        );
+
+        return rutaRepository.save(
+                ruta
+        );
     }
+
+    // ============================================
+    // DESACTIVAR RUTA
+    // ============================================
+
+    @Transactional
+    public Ruta desactivarRuta(
+            Long rutaId) {
+
+        Ruta ruta =
+                obtenerPorId(
+                        rutaId
+                );
+
+        ruta.setActiva(
+                false
+        );
+
+        ruta.setEstado(
+                "CREADA"
+        );
+
+        return rutaRepository.save(
+                ruta
+        );
+    }
+
+    // ============================================
+    // ACTIVAR RUTA
+    // ============================================
 
     @Transactional
     public Ruta activarRuta(
@@ -317,15 +393,47 @@ public class RutaService {
                 );
 
         // ========================================
-        // VALIDAR REPARTIDOR DE LA RUTA
+        // VALIDAR REPARTIDOR
         // ========================================
 
-        if (
-                ruta.getRepartidor() == null
-        ) {
+        if (ruta.getRepartidor() == null) {
 
             throw new RuntimeException(
                     "La ruta debe tener un repartidor asignado"
+            );
+        }
+
+        Long repartidorId =
+                ruta.getRepartidor()
+                        .getId();
+
+        obtenerRepartidor(
+                repartidorId
+        );
+
+        // ========================================
+        // VALIDAR QUE NO EXISTA OTRA RUTA ACTIVA
+        // ========================================
+
+        boolean otraRutaActiva =
+                rutaRepository
+                        .findByRepartidorId(
+                                repartidorId
+                        )
+                        .stream()
+                        .anyMatch(r ->
+                                !r.getId().equals(
+                                        ruta.getId()
+                                )
+                                        && Boolean.TRUE.equals(
+                                        r.getActiva()
+                                )
+                        );
+
+        if (otraRutaActiva) {
+
+            throw new RuntimeException(
+                    "El repartidor ya tiene una ruta activa"
             );
         }
 
@@ -347,6 +455,71 @@ public class RutaService {
         }
 
         // ========================================
+        // VINCULAR CARGAS A ESTA RUTA
+        // ========================================
+
+        List<Carga> cargasDelRepartidor =
+                cargaRepository
+                        .findByRepartidorIdOrderByFechaHoraDesc(
+                                repartidorId
+                        );
+
+        for (Carga carga :
+                cargasDelRepartidor) {
+
+            String estado =
+                    carga.getEstado();
+
+            if (estado == null) {
+                continue;
+            }
+
+            boolean disponibleParaRuta =
+                    "PENDIENTE".equalsIgnoreCase(
+                            estado
+                    )
+                            ||
+                    "CARGA EN TRÁNSITO".equalsIgnoreCase(
+                            estado
+                    );
+
+            /*
+             * Solamente tomamos cargas que todavía
+             * no pertenezcan a otra ruta.
+             */
+            if (
+                    disponibleParaRuta
+                            && carga.getRuta() == null
+            ) {
+
+                carga.setRuta(
+                        ruta
+                );
+
+                cargaRepository.save(
+                        carga
+                );
+            }
+        }
+
+        // ========================================
+        // VALIDAR QUE HAYA CARGAS
+        // ========================================
+
+        List<Carga> cargasRuta =
+                cargaRepository
+                        .findByRutaIdOrderByFechaHoraAsc(
+                                ruta.getId()
+                        );
+
+        if (cargasRuta.isEmpty()) {
+
+            throw new RuntimeException(
+                    "No hay cargas disponibles para esta ruta"
+            );
+        }
+
+        // ========================================
         // ACTIVAR RUTA
         // ========================================
 
@@ -364,15 +537,9 @@ public class RutaService {
     }
 
     // ============================================
-    // HU-015
     // CLIENTES DE UNA RUTA
     // ============================================
 
-    /**
-     * Obtiene los clientes asignados a una
-     * ruta en el orden establecido por
-     * el encargado.
-     */
     public List<Cliente> obtenerClientesRuta(
             Long rutaId) {
 
@@ -401,13 +568,6 @@ public class RutaService {
     // CARGAS DISPONIBLES
     // ============================================
 
-    /**
-     * Muestra cargas que todavía pueden vincularse
-     * con una ruta.
-     *
-     * SIN ASIGNAR = carga sin repartidor.
-     * PENDIENTE   = carga asignada pero no aceptada.
-     */
     public List<Carga> cargasDisponibles() {
 
         return cargaRepository
@@ -427,11 +587,12 @@ public class RutaService {
                                     .equalsIgnoreCase(
                                             estado
                                     )
-                            ||
+                                    ||
                             "PENDIENTE"
                                     .equalsIgnoreCase(
                                             estado
                                     );
+
                 })
                 .sorted(
                         Comparator.comparing(
@@ -445,15 +606,9 @@ public class RutaService {
     }
 
     // ============================================
-    // HU-015
-    // CLIENTES DE LA RUTA ACTIVA
+    // CLIENTES DE RUTA ACTIVA
     // ============================================
 
-    /**
-     * Obtiene los clientes de la ruta activa
-     * del repartidor y respeta el orden
-     * establecido por el encargado.
-     */
     public List<Cliente>
     clientesRutaActivaDelRepartidor(
             Long repartidorId) {
@@ -465,17 +620,9 @@ public class RutaService {
             );
         }
 
-        // ========================================
-        // VALIDAR QUE EXISTA EL REPARTIDOR
-        // ========================================
-
         obtenerRepartidor(
                 repartidorId
         );
-
-        // ========================================
-        // BUSCAR RUTA ACTIVA
-        // ========================================
 
         List<Ruta> rutasActivas =
                 rutaRepository
@@ -483,11 +630,10 @@ public class RutaService {
                                 repartidorId
                         )
                         .stream()
-                        .filter(
-                                ruta ->
-                                        Boolean.TRUE.equals(
-                                                ruta.getActiva()
-                                        )
+                        .filter(ruta ->
+                                Boolean.TRUE.equals(
+                                        ruta.getActiva()
+                                )
                         )
                         .toList();
 
@@ -498,34 +644,44 @@ public class RutaService {
             );
         }
 
-        /*
-         * Normalmente solo debe existir una ruta
-         * activa por repartidor.
-         */
         Ruta ruta =
-                rutasActivas.get(0);
-
-        System.out.println(
-            "RUTA ACTIVA encontrada: id=" + ruta.getId()
-            + " nombre=" + ruta.getNombre()
-        );
-
-        List<Cliente> clientesEncontrados = clienteRepository
-                .findByRutaId(ruta.getId())
-                .stream()
-                .sorted(
-                        Comparator.comparing(
-                                Cliente::getOrdenEnRuta,
-                                Comparator.nullsLast(
-                                        Comparator.naturalOrder()
+                rutasActivas
+                        .stream()
+                        .max(
+                                Comparator.comparing(
+                                        Ruta::getId
                                 )
                         )
-                )
-                .toList();
+                        .orElseThrow();
 
         System.out.println(
-            "Clientes encontrados para ruta " + ruta.getId()
-            + ": " + clientesEncontrados.size()
+                "RUTA ACTIVA encontrada: id="
+                        + ruta.getId()
+                        + " nombre="
+                        + ruta.getNombre()
+        );
+
+        List<Cliente> clientesEncontrados =
+                clienteRepository
+                        .findByRutaId(
+                                ruta.getId()
+                        )
+                        .stream()
+                        .sorted(
+                                Comparator.comparing(
+                                        Cliente::getOrdenEnRuta,
+                                        Comparator.nullsLast(
+                                                Comparator.naturalOrder()
+                                        )
+                                )
+                        )
+                        .toList();
+
+        System.out.println(
+                "Clientes encontrados para ruta "
+                        + ruta.getId()
+                        + ": "
+                        + clientesEncontrados.size()
         );
 
         return clientesEncontrados;
@@ -536,8 +692,8 @@ public class RutaService {
     // ============================================
 
     /**
-     * Se ejecuta cuando el repartidor acepta
-     * la carga.
+     * Mantiene compatibilidad con
+     * comportamiento anterior.
      */
     @Transactional
     public void marcarRutaEnTransito(
@@ -551,9 +707,8 @@ public class RutaService {
                 rutaRepository
                         .findAll()
                         .stream()
-                        .filter(
-                                ruta ->
-                                        ruta.getCarga() != null
+                        .filter(ruta ->
+                                ruta.getCarga() != null
                                         &&
                                         cargaId.equals(
                                                 ruta.getCarga()
@@ -562,7 +717,8 @@ public class RutaService {
                         )
                         .toList();
 
-        for (Ruta ruta : rutas) {
+        for (Ruta ruta :
+                rutas) {
 
             ruta.setEstado(
                     "EN_TRANSITO"
@@ -606,7 +762,7 @@ public class RutaService {
 
         if (
                 repartidor.getUserTipo() == null
-                ||
+                        ||
                 repartidor.getUserTipo() != 4
         ) {
 

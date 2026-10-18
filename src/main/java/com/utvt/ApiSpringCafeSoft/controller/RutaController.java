@@ -350,6 +350,49 @@ public class RutaController {
     // DESACTIVAR RUTA
     // ============================================
 
+
+    // ============================================
+// TERMINAR RUTA ACTIVA DEL REPARTIDOR
+// ============================================
+
+@PutMapping(
+        "/repartidor/{repartidorId}/terminar"
+)
+public ResponseEntity<?> terminarRuta(
+        @PathVariable Long repartidorId) {
+
+    try {
+
+        Ruta ruta =
+                rutaService
+                        .terminarRutaActivaDelRepartidor(
+                                repartidorId
+                        );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "mensaje",
+                        "Ruta terminada correctamente",
+                        "rutaId",
+                        ruta.getId(),
+                        "estado",
+                        ruta.getEstado()
+                )
+        );
+
+    } catch (RuntimeException e) {
+
+        return ResponseEntity
+                .badRequest()
+                .body(
+                        Map.of(
+                                "error",
+                                e.getMessage()
+                        )
+                );
+    }
+}
+
     @PutMapping("/{id}/desactivar")
     public ResponseEntity<?> desactivarRuta(
             @PathVariable Long id) {
