@@ -55,6 +55,11 @@ public class Cliente {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    // HU-023: saldo de fidelización persistido por cliente.
+    @Min(value = 0, message = "El saldo de puntos no puede ser negativo")
+    @Column(name = "saldo_puntos", nullable = false, columnDefinition = "integer default 0")
+    private Integer saldoPuntos = 0;
+
     public Cliente() {
     }
 
@@ -152,5 +157,13 @@ public class Cliente {
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
+    }
+
+    public Integer getSaldoPuntos() {
+        return saldoPuntos;
+    }
+
+    public void setSaldoPuntos(Integer saldoPuntos) {
+        this.saldoPuntos = saldoPuntos;
     }
 }

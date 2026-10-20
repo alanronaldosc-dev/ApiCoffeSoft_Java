@@ -18,6 +18,7 @@ public class ClienteService {
     public Cliente crearCliente(Cliente cliente) {
 
         cliente.setActivo(true);
+        cliente.setSaldoPuntos(0);
 
         return clienteRepository.save(cliente);
     }

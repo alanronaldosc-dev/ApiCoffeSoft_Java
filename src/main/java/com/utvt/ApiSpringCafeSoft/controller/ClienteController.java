@@ -1,7 +1,9 @@
 package com.utvt.ApiSpringCafeSoft.controller;
 
+import com.utvt.ApiSpringCafeSoft.dto.CotizacionCanjeDTO;
 import com.utvt.ApiSpringCafeSoft.model.Cliente;
 import com.utvt.ApiSpringCafeSoft.service.ClienteService;
+import com.utvt.ApiSpringCafeSoft.service.BeneficiosService;
 
 import jakarta.validation.Valid;
 
@@ -19,6 +21,17 @@ public class ClienteController {
 
     @Autowired
     private ClienteService clienteService;
+
+    @Autowired
+    private BeneficiosService beneficiosService;
+
+    // HU-023: calcula el descuento elegible sin consumir puntos.
+    @PostMapping("/{id}/beneficios/cotizaciones")
+    public ResponseEntity<CotizacionCanjeDTO> cotizarCanje(
+            @PathVariable Long id,
+            @Valid @RequestBody CotizacionCanjeDTO solicitud) {
+        return ResponseEntity.ok(beneficiosService.cotizar(id, solicitud));
+    }
 
     // ============================================
     // HU-011 - REGISTRAR CLIENTE

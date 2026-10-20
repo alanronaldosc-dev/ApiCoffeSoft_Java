@@ -16,7 +16,7 @@
     <artifactId>ApiSpringCafeSoft</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ApiSpringCafeSoft</name>
-    <description>API CRUD para CoffeeSoft con MySQL</description>
+    <description>API CRUD para CoffeeSoft con PostgreSQL y pruebas Selenium</description>
     
     <properties>
         <java.version>17</java.version>
@@ -35,14 +35,13 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         
-        <!-- MySQL Connector -->
+        <!-- PostgreSQL Connector -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        
         <!-- Validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -69,17 +68,19 @@
             <version>2.2.0</version>
         </dependency>
         
-        <!-- Spring Boot Starter Test -->
+        <!-- Spring Boot Starter Test (JUnit 5 incluido) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
         <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -99,9 +100,14 @@
             <scope>runtime</scope>
         </dependency>
 
-
+        <!-- 🚀 Selenium WebDriver -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>4.21.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-    
     
     <build>
         <plugins>
