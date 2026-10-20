@@ -56,6 +56,10 @@ public class Usuario {
             joinColumns = @JoinColumn(name = "id_usuario"))
     @Column(name = "permiso")
     private List<String> permisos = new ArrayList<>();
+        // ── Traccar: ID del dispositivo GPS vinculado ──
+    @Column(name = "traccar_device_id", length = 64)
+    private String traccarDeviceId;
+
 
     public Usuario() {}
 
@@ -86,4 +90,8 @@ public class Usuario {
 
     public List<String> getPermisos() { return permisos; }
     public void setPermisos(List<String> permisos) { this.permisos = permisos; }
+
+        public String getTraccarDeviceId() { return traccarDeviceId; }
+    public void setTraccarDeviceId(String traccarDeviceId) { this.traccarDeviceId = traccarDeviceId; }
+
 }
