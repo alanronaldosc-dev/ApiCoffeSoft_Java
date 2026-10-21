@@ -17,6 +17,9 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+
 /** HU-016: liquidación de efectivo y garrafones al cierre del turno. */
 @RestController
 @RequestMapping("/api/liquidaciones")
@@ -26,6 +29,24 @@ public class LiquidacionController {
 
     @Autowired
     private LiquidacionService liquidacionService;
+
+    @GetMapping("/repartidor/{repartidorId}/hoy")
+    @Operation(summary = "Verificar si ya se liquidó hoy al repartidor")
+    public ResponseEntity<?> liquidacionHoy(
+            @PathVariable Long repartidorId) {
+        try {
+            LiquidacionDTO liq = liquidacionService.obtenerLiquidacionHoy(repartidorId);
+            if (liq == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Sin liquidación hoy"));
+            }
+            return ResponseEntity.ok(liq);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @GetMapping("/repartidor/{repartidorId}/resumen")
     @Operation(summary = "Obtener resumen de liquidación de un repartidor")
@@ -55,6 +76,24 @@ public class LiquidacionController {
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/repartidor/{repartidorId}/pdf")
+    @Operation(summary = "Generar PDF de liquidacion del repartidor")
+    public ResponseEntity<byte[]> generarPdf(
+            @PathVariable Long repartidorId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fecha) {
+        try {
+            byte[] pdf = liquidacionService.generarPdfLiquidacion(repartidorId, fecha);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "liquidacion.pdf");
+            return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
         }
     }
 }
