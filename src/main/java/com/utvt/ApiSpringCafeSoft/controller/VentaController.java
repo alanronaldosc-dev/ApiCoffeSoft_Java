@@ -527,4 +527,35 @@ public class VentaController {
 
         return ResponseEntity.noContent().build();
     }
+    @Operation(
+    summary = "Clientes frecuentes",
+    description =
+        "Lista los clientes de ruta ordenados por número de compras " +
+        "en el periodo. Incluye un indicador 'esFrecuente' cuando el " +
+        "cliente alcanza o supera el mínimo de compras configurado."
+)
+@ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "✅ Listado obtenido correctamente"),
+    @ApiResponse(responseCode = "400", description = "❌ Periodo o parámetros inválidos"),
+    @ApiResponse(responseCode = "500", description = "❌ Error interno del servidor")
+})
+@GetMapping("/reporte/clientes-frecuentes")
+public ResponseEntity<?> obtenerClientesFrecuentes(
+        @Parameter(description = "Periodo: hoy, mes o mes_anterior", example = "mes")
+        @RequestParam(defaultValue = "mes") String periodo,
+        @Parameter(description = "Mínimo de compras para ser frecuente", example = "3")
+        @RequestParam(defaultValue = "3") int minimoCompras) {
+
+    try {
+        return ResponseEntity.ok(
+                ventaService.obtenerClientesFrecuentes(periodo, minimoCompras));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest()
+                .body(java.util.Map.of("mensaje", e.getMessage()));
+    } catch (RuntimeException e) {
+        return ResponseEntity.badRequest()
+                .body(java.util.Map.of("mensaje", e.getMessage()));
+    }
+}
+
 }

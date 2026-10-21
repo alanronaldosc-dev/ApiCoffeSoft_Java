@@ -15,6 +15,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     Venta findByFolio(String folio);
     List<Venta> findByUsuarioId(Long usuarioId);
     List<Venta> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin);
+    List<Venta> findByFechaBetweenAndSucursalId(LocalDateTime inicio, LocalDateTime fin, Long sucursalId);
     List<Venta> findByMetodoPago(String metodoPago);
     List<Venta> findByEstadoPedidoOrderByFechaAsc(String estadoPedido);
 
@@ -32,12 +33,22 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Object[]> getVentasPorMetodoPago(@Param("inicio") LocalDateTime inicio,
                                           @Param("fin") LocalDateTime fin);
 
-    // Filtrar por sucursal
+    // ── NUEVO: filtrar por sucursal ──
     List<Venta> findBySucursalId(Long sucursalId);
-
-    // 🔧 NUEVO: filtrar por fecha y sucursal
-    List<Venta> findByFechaBetweenAndSucursalId(LocalDateTime inicio, LocalDateTime fin, Long sucursalId);
 
     @Query("SELECT SUM(v.total) FROM Venta v WHERE v.sucursal.id = :sucursalId AND DATE(v.fecha) = DATE(:fecha)")
     Double sumTotalBySucursalAndFecha(@Param("sucursalId") Long sucursalId, @Param("fecha") LocalDateTime fecha);
+
+    /**
+ * HU-018: Clientes frecuentes.
+ *
+ * Devuelve todas las ventas de la sucursal en el rango de fechas
+ * que tienen un clienteRutaId asignado (ventas de ruta).
+ * Se usa para construir el ranking de frecuencia en el service.
+ */
+List<Venta> findByFechaBetweenAndSucursalIdAndClienteRutaIdIsNotNull(
+        LocalDateTime inicio,
+        LocalDateTime fin,
+        Long sucursalId);
+
 }
