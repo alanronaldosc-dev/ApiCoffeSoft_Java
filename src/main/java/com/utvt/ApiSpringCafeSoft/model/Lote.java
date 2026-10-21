@@ -13,10 +13,9 @@ public class Lote {
     private Long id;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "insumo_id", nullable = false)
+    @JoinColumn(name = "insumo_id", nullable = true)
     private Insumo insumo;
 
-    /** Nuevo: proveedor que entregó este lote */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proveedor_id")
     private Proveedor proveedor;
@@ -37,15 +36,42 @@ public class Lote {
     @Column(length = 255)
     private String observaciones;
 
+    @Column(name = "producto_id")
+    private Long productoId;
+
+    @Column(name = "producto_nombre", length = 100)
+    private String productoNombre;
+
+    @Column(name = "tipo_lote", length = 20, nullable = true)
+    private String tipoLote = "insumo";
+
+    // ── NUEVO: relación con sucursal ──
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sucursal_id", nullable = false)
+    private Sucursal sucursal;
+
     public Lote() {}
 
-    public Lote(Insumo insumo, Proveedor proveedor, Double cantidad, LocalDate fechaCaducidad, String observaciones) {
+    public Lote(Insumo insumo, Proveedor proveedor, Double cantidad,
+                LocalDate fechaCaducidad, String observaciones) {
         this.insumo = insumo;
         this.proveedor = proveedor;
         this.cantidad = cantidad;
         this.fechaCaducidad = fechaCaducidad;
         this.observaciones = observaciones;
         this.fechaEntrada = LocalDate.now();
+        this.tipoLote = "insumo";
+    }
+
+    public Lote(Long productoId, String productoNombre, Double cantidad,
+                LocalDate fechaCaducidad, String observaciones) {
+        this.productoId = productoId;
+        this.productoNombre = productoNombre;
+        this.cantidad = cantidad;
+        this.fechaCaducidad = fechaCaducidad;
+        this.observaciones = observaciones;
+        this.fechaEntrada = LocalDate.now();
+        this.tipoLote = "produccion";
     }
 
     public Long getId() { return id; }
@@ -62,4 +88,14 @@ public class Lote {
     public void setFechaEntrada(LocalDate fechaEntrada) { this.fechaEntrada = fechaEntrada; }
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+    public Long getProductoId() { return productoId; }
+    public void setProductoId(Long productoId) { this.productoId = productoId; }
+    public String getProductoNombre() { return productoNombre; }
+    public void setProductoNombre(String productoNombre) { this.productoNombre = productoNombre; }
+    public String getTipoLote() { return tipoLote; }
+    public void setTipoLote(String tipoLote) { this.tipoLote = tipoLote; }
+
+    // ── NUEVO getter/setter ──
+    public Sucursal getSucursal() { return sucursal; }
+    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
 }

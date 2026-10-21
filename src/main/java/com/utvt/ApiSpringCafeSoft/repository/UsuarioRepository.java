@@ -3,6 +3,7 @@ package com.utvt.ApiSpringCafeSoft.repository;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.util.Optional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +18,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     // HU-011: Buscar un perfil por su email (usado en login y validación de duplicados)
     Optional<Usuario> findByEmail(String email);
+    Optional<com.utvt.ApiSpringCafeSoft.model.Usuario> findByTraccarDeviceId(String traccarDeviceId);
 
     // HU-011: Filtrar usuarios por tipo (0=Admin, 1=Empleado, 2=Cliente)
     List<Usuario> findByUserTipo(Integer userTipo);
@@ -29,5 +31,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     // HU-011: Filtrar empleados activos o inactivos para mostrar en la tabla de la plantilla
     List<Usuario> findByUserTipoAndActivo(Integer userTipo, Boolean activo);
+
+    List<Usuario> findBySucursalId(Long sucursalId);
+    List<Usuario> findBySucursalIdAndUserTipo(Long sucursalId, Integer userTipo);
+    List<Usuario> findBySucursalIdAndActivo(Long sucursalId, Boolean activo);
 
 }
