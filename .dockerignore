@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.example
+target
+*.log
+*.jks
+*.keystore
+*.p12
+.idea
+.vscode
+docs

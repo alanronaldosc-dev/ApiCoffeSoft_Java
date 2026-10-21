@@ -31,7 +31,6 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = "*")
 @Tag(name = "👤 Usuarios", description = "API para la gestión completa de usuarios del sistema CoffeeSoft")
 public class UsuarioController {
 

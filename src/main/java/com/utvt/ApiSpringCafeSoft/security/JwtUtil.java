@@ -3,6 +3,8 @@ package com.utvt.ApiSpringCafeSoft.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
+import java.nio.charset.StandardCharsets;
 
 import java.security.Key;
 import java.util.Date;
@@ -10,11 +12,19 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET = "cafesoft-secret-key-2024-muy-larga-para-256bits!!";
     private static final long EXPIRATION_MS = 86400000;
 
+    private final Key signingKey;
+
+    public JwtUtil(@Value("${app.jwt.secret}") String secret) {
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalArgumentException("JWT_SECRET debe contener al menos 32 bytes.");
+        }
+        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes());
+        return signingKey;
     }
 
     public String generateToken(String email, Integer userTipo) {

@@ -37,4 +37,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     @Query("SELECT SUM(v.total) FROM Venta v WHERE v.sucursal.id = :sucursalId AND DATE(v.fecha) = DATE(:fecha)")
     Double sumTotalBySucursalAndFecha(@Param("sucursalId") Long sucursalId, @Param("fecha") LocalDateTime fecha);
+
+    List<Venta> findByFechaBetweenAndSucursalId(
+            LocalDateTime inicio,
+            LocalDateTime fin,
+            Long sucursalId
+    );
 }

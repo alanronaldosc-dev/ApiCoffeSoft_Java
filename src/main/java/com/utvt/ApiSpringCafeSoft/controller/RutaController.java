@@ -30,7 +30,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/rutas")
-@CrossOrigin(origins = "*")
 public class RutaController {
 
     @Autowired

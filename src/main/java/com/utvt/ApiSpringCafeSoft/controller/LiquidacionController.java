@@ -20,7 +20,6 @@ import java.util.Map;
 /** HU-016: liquidación de efectivo y garrafones al cierre del turno. */
 @RestController
 @RequestMapping("/api/liquidaciones")
-@CrossOrigin(origins = "*")
 @Tag(name = "HU-016 Liquidaciones", description = "Resumen financiero y cierre de turno")
 public class LiquidacionController {
 

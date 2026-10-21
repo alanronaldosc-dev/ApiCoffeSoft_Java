@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: aquasoft-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: PORT
+        value: "10000"
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:MaxRAMPercentage=60.0 -XX:+ExitOnOutOfMemoryError"
+      - key: DB_HOST
+        fromDatabase:
+          name: aquasoft-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: aquasoft-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: aquasoft-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: aquasoft-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: aquasoft-db
+          property: password
+      - key: DB_SSL_MODE
+        value: require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: SWAGGER_ENABLED
+        value: "false"
+databases:
+  - name: aquasoft-db
+    plan: free
+    region: oregon
+    databaseName: aquasoft
+    user: aquasoft
+    postgresMajorVersion: "16"
+    ipAllowList: []

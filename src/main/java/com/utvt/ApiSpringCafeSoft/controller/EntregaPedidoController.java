@@ -26,7 +26,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/ventas")
-@CrossOrigin(origins = "*")
 @Tag(
     name = "HU-015 Entregas",
     description = "Confirmación de entregas e incidencias del repartidor"

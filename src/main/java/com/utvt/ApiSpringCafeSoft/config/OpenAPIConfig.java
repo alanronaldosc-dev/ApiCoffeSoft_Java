@@ -46,13 +46,7 @@ public class OpenAPIConfig {
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
-                .servers(List.of(
-                        new Server()
-                                .url("http://localhost:8080")
-                                .description("🌐 Servidor de Desarrollo"),
-                        new Server()
-                                .url("http://78.14.95.237:8080")
-                                .description("🚀 Servidor de Producción (AWS EC2)")
-                ));
+                .servers(List.of(new Server().url("/")
+                        .description("Servidor actual (local o Render)")));
     }
 }
