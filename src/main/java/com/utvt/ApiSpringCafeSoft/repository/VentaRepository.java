@@ -32,8 +32,11 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Object[]> getVentasPorMetodoPago(@Param("inicio") LocalDateTime inicio,
                                           @Param("fin") LocalDateTime fin);
 
-    // ── NUEVO: filtrar por sucursal ──
+    // Filtrar por sucursal
     List<Venta> findBySucursalId(Long sucursalId);
+
+    // 🔧 NUEVO: filtrar por fecha y sucursal
+    List<Venta> findByFechaBetweenAndSucursalId(LocalDateTime inicio, LocalDateTime fin, Long sucursalId);
 
     @Query("SELECT SUM(v.total) FROM Venta v WHERE v.sucursal.id = :sucursalId AND DATE(v.fecha) = DATE(:fecha)")
     Double sumTotalBySucursalAndFecha(@Param("sucursalId") Long sucursalId, @Param("fecha") LocalDateTime fecha);
