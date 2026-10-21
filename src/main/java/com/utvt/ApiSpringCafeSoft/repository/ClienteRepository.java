@@ -15,4 +15,7 @@ public interface ClienteRepository
     List<Cliente> findByRutaId(Long rutaId);
 
     List<Cliente> findByRutaIsNull();
+
+    // Control de acceso: clientes de la ruta asignada a un repartidor
+    List<Cliente> findByRutaRepartidorId(Long repartidorId);
 }
