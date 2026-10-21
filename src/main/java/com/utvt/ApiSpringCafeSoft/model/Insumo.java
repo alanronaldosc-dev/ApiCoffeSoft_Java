@@ -25,7 +25,6 @@ public class Insumo {
     @Column(name = "unidad_medida", nullable = false, length = 20)
     private String unidadMedida;
 
-    /** Antes era String; ahora es relación con el catálogo de proveedores */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proveedor_id")
     private Proveedor proveedor;
@@ -34,6 +33,11 @@ public class Insumo {
     @Min(value = 0, message = "El precio no puede ser negativo")
     @Column(nullable = false)
     private Double precio;
+
+    // ── NUEVO: relación con sucursal ──
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sucursal_id", nullable = false)
+    private Sucursal sucursal;
 
     public Insumo() {}
 
@@ -57,6 +61,10 @@ public class Insumo {
     public void setProveedor(Proveedor proveedor) { this.proveedor = proveedor; }
     public Double getPrecio() { return precio; }
     public void setPrecio(Double precio) { this.precio = precio; }
+
+    // ── NUEVO getter/setter ──
+    public Sucursal getSucursal() { return sucursal; }
+    public void setSucursal(Sucursal sucursal) { this.sucursal = sucursal; }
 
     public String getProveedorNombre() {
         return proveedor != null ? proveedor.getNombreEmpresa() : null;

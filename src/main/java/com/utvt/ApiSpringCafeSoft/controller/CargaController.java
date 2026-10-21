@@ -1,6 +1,7 @@
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.CargaDTO;
+import com.utvt.ApiSpringCafeSoft.dto.RegistrarCargasMultipleDTO;
 import com.utvt.ApiSpringCafeSoft.service.CargaService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,8 +28,9 @@ public class CargaController {
     private CargaService cargaService;
 
     /**
-     * HU-005
-     * Registrar carga inicial de garrafones.
+     * 
+     * (HU-006): agrega confirmacion de carga por repartidor
+     * 
      */
     @PostMapping
     @Operation(
@@ -42,6 +44,30 @@ public class CargaController {
 
         return new ResponseEntity<>(
                 nuevaCarga,
+                HttpStatus.CREATED
+        );
+    }
+
+    /**
+     * HU-015
+     * Registrar varias cargas (varios tipos de garrafón)
+     * para un repartidor en una sola petición.
+     */
+    @PostMapping("/multiple")
+    @Operation(
+            summary = "Registrar múltiples cargas",
+            description = "Asigna varios tipos de garrafones a un repartidor en una sola petición"
+    )
+    public ResponseEntity<List<CargaDTO>> crearCargasMultiple(
+            @Valid @RequestBody RegistrarCargasMultipleDTO dto) {
+
+        List<CargaDTO> cargas = cargaService.crearCargasMultiples(
+                dto.getRepartidorId(),
+                dto.getItems()
+        );
+
+        return new ResponseEntity<>(
+                cargas,
                 HttpStatus.CREATED
         );
     }
