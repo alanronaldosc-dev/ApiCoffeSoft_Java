@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.utvt.ApiSpringCafeSoft.dto.HistorialClienteDTO;
+import com.utvt.ApiSpringCafeSoft.service.EntregaPedidoService;
+
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +22,9 @@ public class ClienteController {
 
     @Autowired
     private ClienteService clienteService;
+
+    @Autowired
+private EntregaPedidoService entregaPedidoService;
 
     // ============================================
     // HU-011 - REGISTRAR CLIENTE
@@ -108,4 +114,17 @@ public class ClienteController {
                 )
         );
     }
+
+    // ============================================
+// HU-019 - HISTORIAL Y FRECUENCIA DE PEDIDOS
+// ============================================
+
+@GetMapping("/{id}/historial")
+public ResponseEntity<HistorialClienteDTO> obtenerHistorialCliente(
+        @PathVariable Long id) {
+
+    return ResponseEntity.ok(
+            entregaPedidoService.obtenerHistorialCliente(id)
+    );
+}
 }
