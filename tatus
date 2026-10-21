@@ -1,0 +1,451 @@
+warning: in the working copy of 'src/main/java/com/utvt/ApiSpringCafeSoft/controller/UsuarioController.java', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/main/java/com/utvt/ApiSpringCafeSoft/controller/UsuarioController.java b/src/main/java/com/utvt/ApiSpringCafeSoft/controller/UsuarioController.java[m
+[1mindex 550c573..7a747a4 100644[m
+[1m--- a/src/main/java/com/utvt/ApiSpringCafeSoft/controller/UsuarioController.java[m
+[1m+++ b/src/main/java/com/utvt/ApiSpringCafeSoft/controller/UsuarioController.java[m
+[36m@@ -1,4 +1,4 @@[m
+[31m-package com.utvt.ApiSpringCafeSoft.controller;[m
+[32m+[m[32m﻿package com.utvt.ApiSpringCafeSoft.controller;[m
+ [m
+ import com.utvt.ApiSpringCafeSoft.dto.UsuarioDTO;[m
+ import com.utvt.ApiSpringCafeSoft.model.Usuario;[m
+[36m@@ -25,38 +25,38 @@[m [mimport java.util.Optional;[m
+ @RestController[m
+ @RequestMapping("/api/usuarios")[m
+ @CrossOrigin(origins = "*")[m
+[31m-@Tag(name = "👤 Usuarios", description = "API para la gestión completa de usuarios del sistema CoffeeSoft")[m
+[32m+[m[32m@Tag(name = "ðŸ‘¤ Usuarios", description = "API para la gestiÃ³n completa de usuarios del sistema CoffeeSoft")[m
+ public class UsuarioController {[m
+     [m
+     @Autowired[m
+     private UsuarioService usuarioService;[m
+ [m
+     // ============================================[m
+[31m-    // 📝 1. CREAR USUARIO - POST[m
+[32m+[m[32m    // ðŸ“ 1. CREAR USUARIO - POST[m
+     // ============================================[m
+     [m
+     @Operation([m
+[31m-        summary = "📝 Crear un nuevo usuario",[m
+[32m+[m[32m        summary = "ðŸ“ Crear un nuevo usuario",[m
+         description = """[m
+             Registra un nuevo usuario en el sistema con todos sus datos.[m
+             [m
+[31m-            ### 🔐 Seguridad:[m
+[31m-            - La contraseña se encripta automáticamente con BCrypt[m
+[32m+[m[32m            ### ðŸ” Seguridad:[m
+[32m+[m[32m            - La contraseÃ±a se encripta automÃ¡ticamente con BCrypt[m
+             - El email debe ser de Gmail o Hotmail[m
+[31m-            - El teléfono debe tener exactamente 10 dígitos[m
+[32m+[m[32m            - El telÃ©fono debe tener exactamente 10 dÃ­gitos[m
+             [m
+[31m-            ### 📋 Validaciones:[m
+[31m-            - Nombre: mínimo 2 caracteres, máximo 100[m
+[31m-            - Email: formato válido y dominio permitido[m
+[31m-            - Contraseña: mínimo 8 caracteres[m
+[31m-            - Teléfono: exactamente 10 dígitos numéricos[m
+[32m+[m[32m            ### ðŸ“‹ Validaciones:[m
+[32m+[m[32m            - Nombre: mÃ­nimo 2 caracteres, mÃ¡ximo 100[m
+[32m+[m[32m            - Email: formato vÃ¡lido y dominio permitido[m
+[32m+[m[32m            - ContraseÃ±a: mÃ­nimo 8 caracteres[m
+[32m+[m[32m            - TelÃ©fono: exactamente 10 dÃ­gitos numÃ©ricos[m
+             - Tipo de usuario: 0, 1 o 2[m
+             """[m
+     )[m
+     @ApiResponses(value = {[m
+         @ApiResponse([m
+             responseCode = "201", [m
+[31m-            description = "✅ Usuario creado exitosamente",[m
+[32m+[m[32m            description = "âœ… Usuario creado exitosamente",[m
+             content = @Content([m
+                 mediaType = "application/json",[m
+                 examples = @ExampleObject([m
+[36m@@ -66,7 +66,7 @@[m [mpublic class UsuarioController {[m
+                             "mensaje": "Usuario creado exitosamente",[m
+                             "usuario": {[m
+                                 "id": 1,[m
+[31m-                                "nombre": "Alan Hernández",[m
+[32m+[m[32m                                "nombre": "Alan HernÃ¡ndez",[m
+                                 "email": "alan@gmail.com",[m
+                                 "direccion": "Calle Emiliano Zapata #45",[m
+                                 "telefono": "7203533170",[m
+[36m@@ -79,34 +79,34 @@[m [mpublic class UsuarioController {[m
+         ),[m
+         @ApiResponse([m
+             responseCode = "400", [m
+[31m-            description = "❌ Datos inválidos o email ya registrado",[m
+[32m+[m[32m            description = "âŒ Datos invÃ¡lidos o email ya registrado",[m
+             content = @Content([m
+                 examples = @ExampleObject([m
+                     value = """[m
+                         {[m
+[31m-                            "error": "El email ya está registrado"[m
+[32m+[m[32m                            "error": "El email ya estÃ¡ registrado"[m
+                         }[m
+                         """[m
+                 )[m
+             )[m
+         ),[m
+[31m-        @ApiResponse(responseCode = "500", description = "❌ Error interno del servidor")[m
+[32m+[m[32m        @ApiResponse(responseCode = "500", description = "âŒ Error interno del servidor")[m
+     })[m
+     @PostMapping[m
+     public ResponseEntity<Map<String, Object>> crearUsuario([m
+             @Valid @RequestBody [m
+             @io.swagger.v3.oas.annotations.parameters.RequestBody([m
+[31m-                description = "📦 Datos del usuario a crear (todos los campos son obligatorios)",[m
+[32m+[m[32m                description = "ðŸ“¦ Datos del usuario a crear (todos los campos son obligatorios)",[m
+                 required = true,[m
+                 content = @Content([m
+                     mediaType = "application/json",[m
+                     examples = {[m
+                         @ExampleObject([m
+[31m-                            name = "👑 Usuario Administrador",[m
+[32m+[m[32m                            name = "ðŸ‘‘ Usuario Administrador",[m
+                             summary = "Crear un administrador",[m
+                             value = """[m
+                                 {[m
+[31m-                                    "nombre": "Alan Hernández",[m
+[32m+[m[32m                                    "nombre": "Alan HernÃ¡ndez",[m
+                                     "email": "alan@gmail.com",[m
+                                     "password": "admin123456",[m
+                                     "direccion": "Calle Emiliano Zapata #45, Colonia Centro",[m
+[36m@@ -116,11 +116,11 @@[m [mpublic class UsuarioController {[m
+                                 """[m
+                         ),[m
+                         @ExampleObject([m
+[31m-                            name = "👔 Usuario Empleado",[m
+[32m+[m[32m                            name = "ðŸ‘” Usuario Empleado",[m
+                             summary = "Crear un empleado",[m
+                             value = """[m
+                                 {[m
+[31m-                                    "nombre": "María González",[m
+[32m+[m[32m                                    "nombre": "MarÃ­a GonzÃ¡lez",[m
+                                     "email": "maria@gmail.com",[m
+                                     "password": "empleado123",[m
+                                     "direccion": "Avenida Morelos #123, Colonia Reforma",[m
+[36m@@ -130,14 +130,14 @@[m [mpublic class UsuarioController {[m
+                                 """[m
+                         ),[m
+                         @ExampleObject([m
+[31m-                            name = "👤 Usuario Cliente",[m
+[32m+[m[32m                            name = "ðŸ‘¤ Usuario Cliente",[m
+                             summary = "Crear un cliente",[m
+                             value = """[m
+                                 {[m
+[31m-                                    "nombre": "Carlos López",[m
+[32m+[m[32m                                    "nombre": "Carlos LÃ³pez",[m
+                                     "email": "carlos@gmail.com",[m
+                                     "password": "cliente12345",[m
+[31m-                                    "direccion": "Calle Hidalgo #78, Colonia Juárez",[m
+[32m+[m[32m                                    "direccion": "Calle Hidalgo #78, Colonia JuÃ¡rez",[m
+                                     "telefono": "7339876543",[m
+                                     "userTipo": 2[m
+                                 }[m
+[36m@@ -150,35 +150,35 @@[m [mpublic class UsuarioController {[m
+         try {[m
+             Usuario nuevoUsuario = usuarioService.crearUsuario(usuario);[m
+             Map<String, Object> response = new HashMap<>();[m
+[31m-            response.put("mensaje", "✅ Usuario creado exitosamente");[m
+[32m+[m[32m            response.put("mensaje", "âœ… Usuario creado exitosamente");[m
+             response.put("usuario", usuarioService.obtenerUsuarioPorId(nuevoUsuario.getId()));[m
+             return new ResponseEntity<>(response, HttpStatus.CREATED);[m
+         } catch (Exception e) {[m
+             Map<String, Object> errorResponse = new HashMap<>();[m
+[31m-            errorResponse.put("error", "❌ " + e.getMessage());[m
+[32m+[m[32m            errorResponse.put("error", "âŒ " + e.getMessage());[m
+             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);[m
+         }[m
+     }[m
+ [m
+     // ============================================[m
+[31m-    // 📋 2. OBTENER TODOS LOS USUARIOS - GET[m
+[32m+[m[32m    // ðŸ“‹ 2. OBTENER TODOS LOS USUARIOS - GET[m
+     // ============================================[m
+     [m
+     @Operation([m
+[31m-        summary = "📋 Obtener todos los usuarios",[m
+[32m+[m[32m        summary = "ðŸ“‹ Obtener todos los usuarios",[m
+         description = """[m
+             Retorna una lista con todos los usuarios registrados en el sistema.[m
+             [m
+[31m-            ### 📊 La respuesta incluye:[m
+[32m+[m[32m            ### ðŸ“Š La respuesta incluye:[m
+             - Todos los usuarios con sus datos completos[m
+             - Ordenados por ID (ascendente)[m
+[31m-            - Sin información de contraseñas (campo excluido)[m
+[32m+[m[32m            - Sin informaciÃ³n de contraseÃ±as (campo excluido)[m
+             """[m
+     )[m
+     @ApiResponses(value = {[m
+         @ApiResponse([m
+             responseCode = "200", [m
+[31m-            description = "✅ Lista de usuarios obtenida exitosamente",[m
+[32m+[m[32m            description = "âœ… Lista de usuarios obtenida exitosamente",[m
+             content = @Content([m
+                 mediaType = "application/json",[m
+                 examples = @ExampleObject([m
+[36m@@ -186,7 +186,7 @@[m [mpublic class UsuarioController {[m
+                         [[m
+                             {[m
+                                 "id": 1,[m
+[31m-                                "nombre": "Alan Hernández",[m
+[32m+[m[32m                                "nombre": "Alan HernÃ¡ndez",[m
+                                 "email": "alan@gmail.com",[m
+                                 "direccion": "Calle Emiliano Zapata #45",[m
+                                 "telefono": "7203533170",[m
+[36m@@ -194,7 +194,7 @@[m [mpublic class UsuarioController {[m
+                             },[m
+                             {[m
+                                 "id": 2,[m
+[31m-                                "nombre": "María González",[m
+[32m+[m[32m                                "nombre": "MarÃ­a GonzÃ¡lez",[m
+                                 "email": "maria@gmail.com",[m
+                                 "direccion": "Avenida Morelos #123",[m
+                                 "telefono": "7221234567",[m
+[36m@@ -205,7 +205,7 @@[m [mpublic class UsuarioController {[m
+                 )[m
+             )[m
+         ),[m
+[31m-        @ApiResponse(responseCode = "500", description = "❌ Error interno del servidor")[m
+[32m+[m[32m        @ApiResponse(responseCode = "500", description = "âŒ Error interno del servidor")[m
+     })[m
+     @GetMapping[m
+     public ResponseEntity<List<UsuarioDTO>> obtenerTodosLosUsuarios() {[m
+[36m@@ -214,25 +214,25 @@[m [mpublic class UsuarioController {[m
+     }[m
+ [m
+     // ============================================[m
+[31m-    // 🔍 3. OBTENER USUARIO POR ID - GET[m
+[32m+[m[32m    // ðŸ” 3. OBTENER USUARIO POR ID - GET[m
+     // ============================================[m
+     [m
+     @Operation([m
+[31m-        summary = "🔍 Obtener usuario por ID",[m
+[32m+[m[32m        summary = "ðŸ” Obtener usuario por ID",[m
+         description = """[m
+[31m-            Retorna los datos completos de un usuario específico usando su ID único.[m
+[32m+[m[32m            Retorna los datos completos de un usuario especÃ­fico usando su ID Ãºnico.[m
+             [m
+[31m-            ### 🔑 Parámetros:[m
+[31m-            - **id**: ID numérico del usuario (generado automáticamente)[m
+[32m+[m[32m            ### ðŸ”‘ ParÃ¡metros:[m
+[32m+[m[32m            - **id**: ID numÃ©rico del usuario (generado automÃ¡ticamente)[m
+             [m
+[31m-            ### 💡 Ejemplo de uso:[m
+[31m-            - `GET /api/usuarios/1` → Obtiene el usuario con ID 1[m
+[32m+[m[32m            ### ðŸ’¡ Ejemplo de uso:[m
+[32m+[m[32m            - `GET /api/usuarios/1` â†’ Obtiene el usuario con ID 1[m
+             """[m
+     )[m
+     @ApiResponses(value = {[m
+         @ApiResponse([m
+             responseCode = "200", [m
+[31m-            description = "✅ Usuario encontrado",[m
+[32m+[m[32m            description = "âœ… Usuario encontrado",[m
+             content = @Content([m
+                 examples = @ExampleObject([m
+                     value = """[m
+[36m@@ -240,7 +240,7 @@[m [mpublic class UsuarioController {[m
+                             "mensaje": "Usuario encontrado",[m
+                             "usuario": {[m
+                                 "id": 1,[m
+[31m-                                "nombre": "Alan Hernández",[m
+[32m+[m[32m                                "nombre": "Alan HernÃ¡ndez",[m
+                                 "email": "alan@gmail.com",[m
+                                 "direccion": "Calle Emiliano Zapata #45",[m
+                                 "telefono": "7203533170",[m
+[36m@@ -253,7 +253,7 @@[m [mpublic class UsuarioController {[m
+         ),[m
+         @ApiResponse([m
+             responseCode = "404", [m
+[31m-            description = "❌ Usuario no encontrado",[m
+[32m+[m[32m            description = "âŒ Usuario no encontrado",[m
+             content = @Content([m
+                 examples = @ExampleObject([m
+                     value = """[m
+[36m@@ -268,7 +268,7 @@[m [mpublic class UsuarioController {[m
+     @GetMapping("/{id}")[m
+     public ResponseEntity<Map<String, Object>> obtenerUsuarioPorId([m
+             @Parameter([m
+[31m-                description = "🆔 ID único del usuario (número entero)", [m
+[32m+[m[32m                description = "ðŸ†” ID Ãºnico del usuario (nÃºmero entero)",[m[41m [m
+                 example = "1", [m
+                 required = true,[m
+                 schema = @Schema(type = "integer", minimum = "1")[m
+[36m@@ -278,38 +278,38 @@[m [mpublic class UsuarioController {[m
+         [m
+         if (usuarioOpt.isPresent()) {[m
+             Map<String, Object> response = new HashMap<>();[m
+[31m-            response.put("mensaje", "✅ Usuario encontrado");[m
+[32m+[m[32m            response.put("mensaje", "âœ… Usuario encontrado");[m
+             response.put("usuario", usuarioOpt.get());[m
+             return new ResponseEntity<>(response, HttpStatus.OK);[m
+         } else {[m
+             Map<String, Object> errorResponse = new HashMap<>();[m
+[31m-            errorResponse.put("error", "❌ Usuario no encontrado con ID: " + id);[m
+[32m+[m[32m            errorResponse.put("error", "âŒ Usuario no encontrado con ID: " + id);[m
+             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);[m
+         }[m
+     }[m
+ [m
+     // ============================================[m
+[31m-    // 📧 4. OBTENER USUARIO POR EMAIL - GET[m
+[32m+[m[32m    // ðŸ“§ 4. OBTENER USUARIO POR EMAIL - GET[m
+     // ============================================[m
+     [m
+     @Operation([m
+[31m-        summary = "📧 Obtener usuario por email",[m
+[32m+[m[32m        summary = "ðŸ“§ Obtener usuario por email",[m
+         description = """[m
+[31m-            Retorna los datos de un usuario específico usando su email.[m
+[32m+[m[32m            Retorna los datos de un usuario especÃ­fico usando su email.[m
+             [m
+[31m-            ### 📧 Requisitos del email:[m
+[32m+[m[32m            ### ðŸ“§ Requisitos del email:[m
+             - Debe ser de Gmail (@gmail.com) o Hotmail (@hotmail.com)[m
+[31m-            - No distingue entre mayúsculas y minúsculas[m
+[32m+[m[32m            - No distingue entre mayÃºsculas y minÃºsculas[m
+             - Debe estar registrado en el sistema[m
+             [m
+[31m-            ### 💡 Ejemplo de uso:[m
+[32m+[m[32m            ### ðŸ’¡ Ejemplo de uso:[m
+             - `GET /api/usuarios/email/alan@gmail.com`[m
+             """[m
+     )[m
+     @ApiResponses(value = {[m
+         @ApiResponse([m
+             responseCode = "200", [m
+[31m-            description = "✅ Usuario encontrado",[m
+[32m+[m[32m            description = "âœ… Usuario encontrado",[m
+             content = @Content([m
+                 examples = @ExampleObject([m
+                     value = """[m
+[36m@@ -317,7 +317,7 @@[m [mpublic class UsuarioController {[m
+                             "mensaje": "Usuario encontrado",[m
+                             "usuario": {[m
+                                 "id": 1,[m
+[31m-                                "nombre": "Alan Hernández",[m
+[32m+[m[32m                                "nombre": "Alan HernÃ¡ndez",[m
+                                 "email": "alan@gmail.com",[m
+                                 "direccion": "Calle Emiliano Zapata #45",[m
+                                 "telefono": "7203533170",[m
+[36m@@ -330,7 +330,7 @@[m [mpublic class UsuarioController {[m
+         ),[m
+         @ApiResponse([m
+             responseCode = "404", [m
+[31m-            description = "❌ Usuario no encontrado",[m
+[32m+[m[32m            description = "âŒ Usuario no encontrado",[m
+             content = @Content([m
+                 examples = @ExampleObject([m
+                     value = """[m
+[36m@@ -345,7 +345,7 @@[m [mpublic class UsuarioController {[m
+     @GetMapping("/email/{email}")[m
+     public ResponseEntity<Map<String, Object>> obtenerUsuarioPorEmail([m
+             @Parameter([m
+[31m-                description = "📧 Email del usuario (debe ser Gmail o Hotmail)", [m
+[32m+[m[32m                description = "ðŸ“§ Email del usuario (debe ser Gmail o Hotmail)",[m[41m [m
+                 example = "alan@gmail.com", [m
+                 required = true,[m
+                 schema = @Schema(type = "string", format = "email", pattern = "^[A-Za-z0-9+_.-]+@(gmail\\.com|hotmail\\.com)$")[m
+[36m@@ -355,38 +355,38 @@[m [mpublic class UsuarioController {[m
+         [m
+         if (usuarioOpt.isPresent()) {[m
+             Map<String, Object> response = new HashMap<>();[m
+[31m-            response.put("mensaje", "✅ Usuario encontrado");[m
+[32m+[m[32m            response.put("mensaje", "âœ… Usuario encontrado");[m
+             response.put("usuario", usuarioOpt.get());[m
+             return new ResponseEntity<>(response, HttpStatus.OK);[m
+         } else {[m
+             Map<String, Object> errorResponse = new HashMap<>();[m
+[31m-            errorResponse.put("error", "❌ Usuario no encontrado con email: " + email);[m
+[32m+[m[32m            errorResponse.put("error", "âŒ Usuario no encontrado con email: " + email);[m
+             return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);[m
+         }[m
+     }[m
+ [m
+     // ============================================[m
+[31m-    // 👥 5. OBTENER POR TIPO - GET[m
+[32m+[m[32m    // ðŸ‘¥ 5. OBTENER POR TIPO - GET[m
+     // ============================================[m
+     [m
+     @Operation([m
+[31m-        summary = "👥 Obtener usuarios por tipo",[m
+[32m+[m[32m        summary = "ðŸ‘¥ Obtener usuarios por tipo",[m
+         description = """[m
+             Retorna todos los usuarios filtrados por su tipo de rol.[m
+             [m
+[31m-            ### 👤 Tipos de usuario:[m
+[32m+[m[32m            ### ðŸ‘¤ Tipos de usuario:[m
+             - **0**: Administrador (acceso total)[m
+             - **1**: Empleado (acceso limitado)[m
+[31m-            - **2**: Cliente (acceso básico)[m
+[32m+[m[32m            - **2**: Cliente (acceso bÃ¡sico)[m
+             [m
+[31m-            ### 💡 Ejemplo de uso:[m
+[31m-            - `GET /api/usuarios/tipo/0` → Obtiene todos los administradores[m
+[32m+[m[32m            ### ðŸ’¡ Ejemplo de uso:[m
+[32m+[m[32m            - `GET /api/usuarios/tipo/0` â†’ Obtiene todos los administradores[m
+             """[m
+     )[m
+     @ApiResponses(value = {[m
+         @ApiResponse([m
+             responseCode = "200", [m
+[31m-            description = "✅ Usuarios encontrados",[m
+[32m+[m[32m            description = "âœ… Usuarios encontrados",[m
+             content = @Content([m
+                 examples = @ExampleObject([m
+                     value = """[m
+[36m@@ -396,7 +396,7 @@[m [mpublic class UsuarioController {[m
+                             "usuarios": [[m
+                                 {[m
+                                     "id": 1,[m
+[31m-                                    "nombre": "Alan Hernández",[m
+[32m+[m[32m                                    "nombre": "Alan HernÃ¡ndez",[m
+                                     "email": "alan@gmail.com",[m
+                                     "direccion": "Calle Emiliano Zapata #45",[m
+                                     "telefono": "7203533170",[m
+[36m@@ -410,7 +410,7 @@[m [mpublic class UsuarioController {[m
+         ),[m
+         @ApiResponse([m
+             responseCode = "200", [m
+[31m-            description = "⚠️ No se encontraron usuarios con ese tipo",[m
+[32m+[m[32m            description = "âš ï¸ No se encontraron usuarios con ese tipo",[m
+             content = @Content([m
+                 examples = @ExampleObject([m
+                     value = """[m
+[36m@@ -427,7 +427,7 @@[m [mpublic class UsuarioController {[m
+     @GetMapping("/tipo/{userTipo}")[m
+     public ResponseEntity<Map<String, Object>> obtenerUsuariosPorTipo([m
+             @Parameter([m
+[31m-                description = "👤 Tipo de usuario: 0=Admin, 1=Empleado, 2=Cliente", [m
+[32m+[m[32m                description = "ðŸ‘¤ Tipo de usuario: 0=Admin, 1=Empleado, 2=Cliente",[m[41m [m
+                 example = "0", [m
+                 required = true,[m
+                 schema = @Schema(type = "integer", allowableValues = {"0", "1", "2"})[m
+[36m@@ -436,45 +436,45 @@[m [mpublic class UsuarioController {[m
+         List<UsuarioDTO> usuarios = usuarioService.obtenerUsuariosPorTipo(userTipo);[m
+         [m
+         Map<String, Object> response = new HashMap<>();[m
+[31m-        response.put("mensaje", "✅ Usuarios encontrados por tipo: " + userTipo);[m
+[32m+[m[32m        response.put("mensaje", "âœ… Usuarios encontrados por tipo: " + userTipo);[m
+         response.put("cantidad", usuarios.size());[m
+         response.put("usuarios", usuarios);[m
+         return new ResponseEntity<>(response, HttpStatus.OK);[m
+     }[m
+ [m
+     // ============================================[m
+[31m-    // 🔎 6. BUSCAR POR NOMBRE - GET[m
+[32m+[m[32m    // ðŸ”Ž 6. BUSCAR POR NOMBRE - GET[m
+     // ============================================[m
+     [m
+     @Operation([m
+[31m-        summary = "🔎 Buscar usuarios por nombre",[m
+[32m+[m[32m        summary = "ðŸ”Ž Buscar usuarios por nombre",[m
+         description = """[m
+             Retorna todos los usuarios cuyo nombre contenga la palabra buscada.[m
+             [m
+[31m-            ### 🔍 Características:[m
+[31m-            - Búsqueda parcial (contiene la palabra)[m
+[31m-            - No distingue entre mayúsculas y minúsculas[m
+[31m-

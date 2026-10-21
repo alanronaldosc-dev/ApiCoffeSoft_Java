@@ -33,7 +33,10 @@ public class VentaDTO {
 
     @Schema(description = "Método de pago (efectivo o tarjeta)", example = "efectivo", required = true)
     @NotBlank(message = "El método de pago es obligatorio")
-    @Pattern(regexp = "^(efectivo|tarjeta)$", message = "El método de pago debe ser: efectivo o tarjeta")
+    @Pattern(
+    regexp = "^(efectivo|tarjeta|transferencia)$",
+    message = "El método de pago debe ser: efectivo, tarjeta o transferencia"
+)
     private String metodoPago;
 
     @Schema(description = "ID del usuario que realiza la venta", example = "1", required = true)
@@ -59,6 +62,19 @@ public class VentaDTO {
 
     @Schema(description = "Cambio a devolver (solo si método es efectivo)", example = "36.00")
     private Double cambio;
+
+        @Schema(description = "ID de la sucursal donde se realizó la venta", example = "1")
+    private Long sucursalId;
+
+    @Schema(description = "Nombre de la sucursal", example = "Sucursal Centro")
+    private String sucursalNombre;
+
+    @Schema(description = "Nombre de la persona para quien es el pedido")
+    private String nombreCliente;
+
+
+    @Schema(description = "Estado actual del pedido")
+    private String estadoPedido;
 
 
     // Constructor por defecto
@@ -184,5 +200,34 @@ public class VentaDTO {
     public void setCambio(Double cambio) { 
         this.cambio = cambio; 
     }
+
+    public String getNombreCliente() {
+    return nombreCliente;
+    }
+
+    public void setNombreCliente(String nombreCliente) {
+        this.nombreCliente = nombreCliente;
+    }
+
+    public String getEstadoPedido() {
+        return estadoPedido;
+    }
+
+    public void setEstadoPedido(String estadoPedido) {
+        this.estadoPedido = estadoPedido;
+    }
+
+    public Long getSucursalId() { return sucursalId; }
+
+    public void setSucursalId(Long sucursalId) { 
+        this.sucursalId = sucursalId; 
+    }
+    public String getSucursalNombre() { 
+        return sucursalNombre; 
+    }
+    public void setSucursalNombre(String sucursalNombre) { 
+        this.sucursalNombre = sucursalNombre; 
+    }
+
 
 }

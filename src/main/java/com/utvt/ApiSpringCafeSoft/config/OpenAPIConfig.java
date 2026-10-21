@@ -51,8 +51,8 @@ public class OpenAPIConfig {
                                 .url("http://localhost:8080")
                                 .description("🌐 Servidor de Desarrollo"),
                         new Server()
-                                .url("https://api.coffeesoft.com")
-                                .description("🚀 Servidor de Producción")
+                                .url("http://78.14.95.237:8080")
+                                .description("🚀 Servidor de Producción (AWS EC2)")
                 ));
     }
 }

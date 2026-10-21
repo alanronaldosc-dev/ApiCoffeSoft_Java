@@ -16,22 +16,33 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.utvt.ApiSpringCafeSoft.security.JwtUtil;
+
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * HU-011: Controlador REST para registrar, consultar y actualizar perfiles de usuario.
+ * Expone los endpoints necesarios para gestionar administradores, empleados y clientes,
+ * manteniendo la plantilla del personal operativa y actualizada.
+ */
 @RestController
 @RequestMapping("/api/usuarios")
 @CrossOrigin(origins = "*")
 @Tag(name = "👤 Usuarios", description = "API para la gestión completa de usuarios del sistema CoffeeSoft")
 public class UsuarioController {
-    
+
     @Autowired
     private UsuarioService usuarioService;
+    @Autowired
+    private JwtUtil jwtUtil;
+
 
     // ============================================
+    // HU-011: CREAR USUARIO — Formulario único para dar de alta datos básicos
     // 📝 1. CREAR USUARIO - POST
     // ============================================
     
@@ -111,7 +122,8 @@ public class UsuarioController {
                                     "password": "admin123456",
                                     "direccion": "Calle Emiliano Zapata #45, Colonia Centro",
                                     "telefono": "7203533170",
-                                    "userTipo": 0
+                                    "userTipo": 0,
+                                    "sucursal": { "id": 1 }
                                 }
                                 """
                         ),
@@ -125,7 +137,8 @@ public class UsuarioController {
                                     "password": "empleado123",
                                     "direccion": "Avenida Morelos #123, Colonia Reforma",
                                     "telefono": "7221234567",
-                                    "userTipo": 1
+                                    "userTipo": 1,
+                                    "sucursal": { "id": 1 }
                                 }
                                 """
                         ),
@@ -139,7 +152,8 @@ public class UsuarioController {
                                     "password": "cliente12345",
                                     "direccion": "Calle Hidalgo #78, Colonia Juárez",
                                     "telefono": "7339876543",
-                                    "userTipo": 2
+                                    "userTipo": 2,
+                                    "sucursal": { "id": 1 }
                                 }
                                 """
                         )
@@ -161,6 +175,78 @@ public class UsuarioController {
     }
 
     // ============================================
+    // HU-011: OBTENER EMPLEADOS — Tabla visible para el administrador con empleados activos e inactivos
+    @Operation(
+        description = "Obtiene la lista simplificada de todos los empleados y su estado."
+)
+@GetMapping("/empleados")
+public ResponseEntity<Map<String, Object>> obtenerEmpleados() {
+
+    Map<String, Object> response = new HashMap<>();
+
+    List<UsuarioDTO> empleados = usuarioService.obtenerEmpleados();
+
+    response.put("cantidad", empleados.size());
+    response.put("empleados", empleados);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
+}
+    // ============================================
+    // HU-011: CAMBIAR ESTADO DE EMPLEADO — Mantiene la plantilla activa/inactiva actualizada
+    @Operation(
+        summary = "🔄 Cambiar estado de empleado",
+        description = "Activa o desactiva una cuenta de empleado."
+)
+@PutMapping("/empleados/{id}/estado")
+public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
+        @PathVariable Long id,
+        @RequestBody Map<String, Boolean> body) {
+
+    Map<String, Object> response = new HashMap<>();
+
+    try {
+
+        Boolean activo = body.get("activo");
+
+        if (activo == null) {
+            response.put("error", "El campo 'activo' es obligatorio");
+
+            return new ResponseEntity<>(
+                    response,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        UsuarioDTO empleado =
+                usuarioService.cambiarEstadoEmpleado(id, activo);
+
+        response.put(
+                "mensaje",
+                activo
+                        ? "Empleado activado correctamente"
+                        : "Empleado desactivado correctamente"
+        );
+
+        response.put("empleado", empleado);
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.OK
+        );
+
+    } catch (RuntimeException e) {
+
+        response.put("error", e.getMessage());
+
+        return new ResponseEntity<>(
+                response,
+                HttpStatus.BAD_REQUEST
+        );
+    }
+}
+
+    // ============================================
+    // HU-011: OBTENER TODOS — Lista completa de perfiles para el administrador
     // 📋 2. OBTENER TODOS LOS USUARIOS - GET
     // ============================================
     
@@ -214,6 +300,7 @@ public class UsuarioController {
     }
 
     // ============================================
+    // HU-011: CONSULTAR POR ID — Ver el perfil de un usuario específico
     // 🔍 3. OBTENER USUARIO POR ID - GET
     // ============================================
     
@@ -385,7 +472,7 @@ public class UsuarioController {
     )
     @ApiResponses(value = {
         @ApiResponse(
-            responseCode = "200", 
+            responseCode = "200",
             description = "✅ Usuarios encontrados",
             content = @Content(
                 examples = @ExampleObject(
@@ -393,30 +480,6 @@ public class UsuarioController {
                         {
                             "mensaje": "Usuarios encontrados por tipo: 0",
                             "cantidad": 2,
-                            "usuarios": [
-                                {
-                                    "id": 1,
-                                    "nombre": "Alan Hernández",
-                                    "email": "alan@gmail.com",
-                                    "direccion": "Calle Emiliano Zapata #45",
-                                    "telefono": "7203533170",
-                                    "userTipo": 0
-                                }
-                            ]
-                        }
-                        """
-                )
-            )
-        ),
-        @ApiResponse(
-            responseCode = "200", 
-            description = "⚠️ No se encontraron usuarios con ese tipo",
-            content = @Content(
-                examples = @ExampleObject(
-                    value = """
-                        {
-                            "mensaje": "Usuarios encontrados por tipo: 3",
-                            "cantidad": 0,
                             "usuarios": []
                         }
                         """
@@ -445,6 +508,21 @@ public class UsuarioController {
     // ============================================
     // 🔎 6. BUSCAR POR NOMBRE - GET
     // ============================================
+
+    @Operation(summary = "Obtener usuarios por sucursal")
+    @GetMapping("/sucursal/{sucursalId}")
+    public ResponseEntity<Map<String, Object>> obtenerPorSucursal(@PathVariable Long sucursalId) {
+        List<UsuarioDTO> usuarios = usuarioService.obtenerUsuariosPorSucursal(sucursalId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("sucursalId", sucursalId);
+        response.put("cantidad", usuarios.size());
+        response.put("usuarios", usuarios);
+        return ResponseEntity.ok(response);
+    }
+
+    // ============================================
+    // 🔎 BUSCAR POR NOMBRE - GET
+    // ============================================
     
     @Operation(
         summary = "🔎 Buscar usuarios por nombre",
@@ -461,43 +539,10 @@ public class UsuarioController {
             - `GET /api/usuarios/buscar?nombre=maria` → Encuentra "María", "Mariam", etc.
             """
     )
-    @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200", 
-            description = "✅ Resultados de búsqueda",
-            content = @Content(
-                examples = @ExampleObject(
-                    value = """
-                        {
-                            "mensaje": "Resultados de búsqueda para: Alan",
-                            "cantidad": 1,
-                            "usuarios": [
-                                {
-                                    "id": 1,
-                                    "nombre": "Alan Hernández",
-                                    "email": "alan@gmail.com",
-                                    "direccion": "Calle Emiliano Zapata #45",
-                                    "telefono": "7203533170",
-                                    "userTipo": 0
-                                }
-                            ]
-                        }
-                        """
-                )
-            )
-        )
-    })
     @GetMapping("/buscar")
     public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
-            @Parameter(
-                description = "🔤 Nombre o parte del nombre a buscar (mínimo 2 caracteres)", 
-                example = "Alan", 
-                required = true,
-                schema = @Schema(type = "string", minLength = 2)
-            )
             @RequestParam String nombre) {
         List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
-        
         Map<String, Object> response = new HashMap<>();
         response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
         response.put("cantidad", usuarios.size());
@@ -506,6 +551,7 @@ public class UsuarioController {
     }
 
     // ============================================
+    // HU-011: ACTUALIZAR PERFIL — Formulario único para editar datos básicos del usuario
     // ✏️ 7. ACTUALIZAR USUARIO - PUT
     // ============================================
     
@@ -637,6 +683,31 @@ public class UsuarioController {
     }
 
     // ============================================
+// 🔒 10. CAMBIAR ESTADO DE USUARIO (ACTIVO/INACTIVO) - PUT
+// ============================================
+
+@Operation(summary = "🔒 Cambiar estado del usuario (activo/inactivo)")
+@PutMapping("/{id}/estado")
+public ResponseEntity<Map<String, Object>> cambiarEstadoUsuario(
+        @PathVariable Long id,
+        @RequestBody Map<String, Boolean> body) {
+    try {
+        boolean activo = body.get("activo");
+        usuarioService.cambiarEstadoEmpleado(id, activo);
+        Map<String, Object> response = new HashMap<>();
+        response.put("mensaje", "✅ Estado actualizado correctamente");
+        response.put("id", id);
+        response.put("activo", activo);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    } catch (Exception e) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("error", "❌ " + e.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}
+
+
+    // ============================================
     // 🗑️ 8. ELIMINAR USUARIO - DELETE
     // ============================================
     
@@ -751,18 +822,13 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
     Map<String, Object> response = new HashMap<>();
 
     try {
-        String email = body.get("email");
+        String email    = body.get("email");
         String password = body.get("password");
 
         if (email == null || email.trim().isEmpty()
                 || password == null || password.trim().isEmpty()) {
-
             response.put("error", "Correo y contraseña son obligatorios");
-
-            return new ResponseEntity<>(
-                    response,
-                    HttpStatus.BAD_REQUEST
-            );
+            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
 
         UsuarioDTO usuario = usuarioService.iniciarSesion(
@@ -770,23 +836,20 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
                 password
         );
 
+        // Generar token JWT
+        String token = jwtUtil.generateToken(usuario.getEmail(), usuario.getUserTipo());
+
         response.put("mensaje", "Inicio de sesión exitoso");
+        response.put("token", token);
         response.put("usuario", usuario);
 
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.OK
-        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
 
     } catch (RuntimeException e) {
-
         response.put("error", e.getMessage());
-
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.UNAUTHORIZED
-        );
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 }
+
     
 }
