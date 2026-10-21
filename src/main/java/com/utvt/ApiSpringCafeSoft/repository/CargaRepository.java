@@ -32,6 +32,17 @@ public interface CargaRepository extends JpaRepository<Carga, Long> {
             String estado
     );
 
+    /**
+     * HU-015
+     * Cargas activas del repartidor para un tipo
+     * específico de garrafón (inventario).
+     */
+    List<Carga> findByRepartidorIdAndEstadoAndInventarioIdOrderByFechaHoraAsc(
+            Long repartidorId,
+            String estado,
+            Long inventarioId
+    );
+
     List<Carga> findByRepartidorIdAndFechaHoraBetweenOrderByFechaHoraAsc(
             Long repartidorId,
             LocalDateTime inicio,

@@ -1,5 +1,6 @@
 package com.utvt.ApiSpringCafeSoft.controller;
 
+import com.utvt.ApiSpringCafeSoft.model.Cliente;
 import com.utvt.ApiSpringCafeSoft.model.Ruta;
 import com.utvt.ApiSpringCafeSoft.service.RutaService;
 
@@ -23,8 +24,8 @@ import java.util.Map;
  * - Eliminar rutas
  * - Asignar repartidor
  * - Asignar clientes
- * - Activar una ruta con una carga
- * - Consultar cargas disponibles
+ * - Activar una ruta
+ * - Consultar los clientes de una ruta
  * - Consultar los clientes de la ruta activa del repartidor
  */
 @RestController
@@ -218,6 +219,37 @@ public class RutaController {
     }
 
     // ============================================
+    // HU-015
+    // CLIENTES DE UNA RUTA
+    // ============================================
+
+    @GetMapping("/{id}/clientes")
+    public ResponseEntity<?> clientesRuta(
+            @PathVariable Long id) {
+
+        try {
+
+            return ResponseEntity.ok(
+                    rutaService
+                            .obtenerClientesRuta(
+                                    id
+                            )
+            );
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(
+                            Map.of(
+                                    "error",
+                                    e.getMessage()
+                            )
+                    );
+        }
+    }
+
+    // ============================================
     // OBTENER RUTA POR ID
     // ============================================
 
@@ -315,35 +347,37 @@ public class RutaController {
     }
 
     // ============================================
+    // DESACTIVAR RUTA
+    // ============================================
+
+    @PutMapping("/{id}/desactivar")
+    public ResponseEntity<?> desactivarRuta(
+            @PathVariable Long id) {
+
+        try {
+            return ResponseEntity.ok(
+                    rutaService.desactivarRuta(id)
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============================================
     // ACTIVAR RUTA
     // ============================================
 
     @PutMapping("/{id}/activar")
     public ResponseEntity<?> activarRuta(
-            @PathVariable Long id,
-            @RequestBody Map<String, Long> body) {
+            @PathVariable Long id) {
 
         try {
 
-            Long cargaId =
-                    body.get("cargaId");
-
-            if (cargaId == null) {
-
-                return ResponseEntity
-                        .badRequest()
-                        .body(
-                                Map.of(
-                                        "error",
-                                        "La carga es obligatoria para activar la ruta"
-                                )
-                        );
-            }
-
             Ruta ruta =
                     rutaService.activarRuta(
-                            id,
-                            cargaId
+                            id
                     );
 
             return ResponseEntity.ok(ruta);

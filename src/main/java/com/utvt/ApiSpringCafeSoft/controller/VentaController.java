@@ -1,6 +1,8 @@
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
+import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
+import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
 import com.utvt.ApiSpringCafeSoft.service.VentaService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -344,6 +346,100 @@ public class VentaController {
                 ventaService.marcarPedidoEntregado(id);
 
         return ResponseEntity.ok(pedido);
+    }
+
+
+    // =========================================================
+    // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
+    // =========================================================
+
+    @Operation(
+        summary = "Reporte de ventas diarias y mensuales",
+        description =
+            "Genera el reporte de ventas de un periodo " +
+            "(hoy, mes o mes_anterior) para la sucursal " +
+            "del usuario autenticado. Incluye el número " +
+            "de ventas, el monto total y los desgloses " +
+            "por día y por método de pago."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description =
+                "✅ Reporte generado correctamente"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description =
+                "❌ Periodo no válido o usuario sin sucursal"
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "❌ Error interno del servidor"
+        )
+    })
+    @GetMapping("/reporte")
+    public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(
+
+            @Parameter(
+                description =
+                    "Periodo: hoy, mes o mes_anterior",
+                required = true,
+                example = "hoy"
+            )
+            @RequestParam(defaultValue = "hoy") String periodo) {
+
+        ReporteVentasDTO reporte =
+                ventaService.obtenerReporteVentas(periodo);
+
+        return ResponseEntity.ok(reporte);
+    }
+
+
+    // =========================================================
+    // HU-017: PRODUCTOS MÁS VENDIDOS
+    // =========================================================
+
+    @Operation(
+        summary = "Productos más vendidos",
+        description =
+            "Devuelve los productos ordenados por " +
+            "unidades vendidas (descendente) del periodo " +
+            "seleccionado (hoy, mes o mes_anterior) para " +
+            "la sucursal del usuario autenticado. " +
+            "Incluye unidades vendidas y monto recaudado."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description =
+                "✅ Ranking obtenido correctamente"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description =
+                "❌ Periodo no válido o usuario sin sucursal"
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "❌ Error interno del servidor"
+        )
+    })
+    @GetMapping("/reporte/top-productos")
+    public ResponseEntity<List<ProductoMasVendidoDTO>> obtenerProductosMasVendidos(
+
+            @Parameter(
+                description =
+                    "Periodo: hoy, mes o mes_anterior",
+                required = true,
+                example = "mes"
+            )
+            @RequestParam(defaultValue = "hoy") String periodo) {
+
+        List<ProductoMasVendidoDTO> productos =
+                ventaService.obtenerProductosMasVendidos(periodo);
+
+        return ResponseEntity.ok(productos);
     }
 
 

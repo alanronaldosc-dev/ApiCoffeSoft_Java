@@ -1,6 +1,8 @@
 package com.utvt.ApiSpringCafeSoft.dto;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /** HU-015: respuesta de una entrega o incidencia de reparto. */
 public class EntregaPedidoDTO {
@@ -11,6 +13,13 @@ public class EntregaPedidoDTO {
     private String repartidorNombre;
     private Double garrafonesEntregados;
     private Double envasesVaciosRecibidos;
+
+    /** HU-015: desglose de garrafones vendidos por tipo. */
+    private List<DetalleGarrafonDTO> garrafonesDetalle = new ArrayList<>();
+
+    /** HU-015: desglose de envases vacíos recibidos por tipo. */
+    private List<DetalleGarrafonDTO> envasesVaciosDetalle = new ArrayList<>();
+
     private String metodoCobro;
     private Double montoCobrado;
     private String resultado;
@@ -33,6 +42,10 @@ private String clienteNombre;
     public void setGarrafonesEntregados(Double garrafonesEntregados) { this.garrafonesEntregados = garrafonesEntregados; }
     public Double getEnvasesVaciosRecibidos() { return envasesVaciosRecibidos; }
     public void setEnvasesVaciosRecibidos(Double envasesVaciosRecibidos) { this.envasesVaciosRecibidos = envasesVaciosRecibidos; }
+    public List<DetalleGarrafonDTO> getGarrafonesDetalle() { return garrafonesDetalle; }
+    public void setGarrafonesDetalle(List<DetalleGarrafonDTO> garrafonesDetalle) { this.garrafonesDetalle = garrafonesDetalle; }
+    public List<DetalleGarrafonDTO> getEnvasesVaciosDetalle() { return envasesVaciosDetalle; }
+    public void setEnvasesVaciosDetalle(List<DetalleGarrafonDTO> envasesVaciosDetalle) { this.envasesVaciosDetalle = envasesVaciosDetalle; }
     public String getMetodoCobro() { return metodoCobro; }
     public void setMetodoCobro(String metodoCobro) { this.metodoCobro = metodoCobro; }
     public Double getMontoCobrado() { return montoCobrado; }

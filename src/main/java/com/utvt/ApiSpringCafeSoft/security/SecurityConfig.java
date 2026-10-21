@@ -27,17 +27,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://78.14.95.237:8080"
-        ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 
@@ -69,7 +66,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/categorias/**").hasAnyRole("ADMIN", "EMPLEADO")
                 .requestMatchers("/api/sucursales/**").hasAnyRole("ADMIN", "EMPLEADO")
                 .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
-                .requestMatchers("/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.GET, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(HttpMethod.POST, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.PUT, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.DELETE, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
                 .requestMatchers(HttpMethod.GET,    "/api/productos/**").authenticated()
                 .requestMatchers(HttpMethod.POST,   "/api/productos/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/productos/**").hasRole("ADMIN")
@@ -77,7 +77,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/cargas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/rutas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "REPARTIDOR")
+                .requestMatchers("/api/auditoria/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/mermas/**").hasAnyRole("ADMIN", "REPARTIDOR")
+                .requestMatchers(HttpMethod.GET, "/api/traccar/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.POST, "/api/traccar/**").hasRole("ADMIN")
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

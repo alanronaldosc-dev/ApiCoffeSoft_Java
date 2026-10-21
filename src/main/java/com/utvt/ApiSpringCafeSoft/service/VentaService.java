@@ -2,14 +2,25 @@ package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDetalleDTO;
+import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
+import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
 import com.utvt.ApiSpringCafeSoft.model.*;
 import com.utvt.ApiSpringCafeSoft.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -228,5 +239,229 @@ public class VentaService {
         ventaRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Venta no encontrada con ID: " + id));
         ventaRepository.deleteById(id);
+    }
+
+    // =========================================================
+    // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
+    // =========================================================
+
+    /**
+     * Genera el reporte de ventas del periodo seleccionado
+     * ("hoy", "mes" o "mes_anterior") para la sucursal del
+     * usuario autenticado (JWT).
+     *
+     * Criterio de aceptación 2: los totales y los desgloses
+     * se calculan a partir de la MISMA lista de ventas, por
+     * lo que siempre coinciden con las ventas registradas.
+     */
+    public ReporteVentasDTO obtenerReporteVentas(String periodo) {
+
+        // ── Usuario autenticado y su sucursal (JWT) ──
+        Usuario usuario = usuarioConSucursal();
+        Long sucursalId = usuario.getSucursal().getId();
+        String sucursalNombre = usuario.getSucursal().getNombre();
+
+        // ── Resolver el rango del periodo ──
+        RangoPeriodo rango = calcularRangoPeriodo(periodo);
+        String periodoNormalizado = rango.periodo;
+        LocalDateTime desde = rango.desde;
+        LocalDateTime hasta = rango.hasta;
+
+        // ── Ventas registradas del periodo en la sucursal ──
+        List<Venta> ventas =
+                ventaRepository.findByFechaBetweenAndSucursalId(desde, hasta, sucursalId);
+
+        // ── Totales del periodo ──
+        long numeroVentas = ventas.size();
+        double montoTotal = ventas.stream()
+                .mapToDouble(v -> v.getTotal() != null ? v.getTotal() : 0.0).sum();
+        double subtotal = ventas.stream()
+                .mapToDouble(v -> v.getSubtotal() != null ? v.getSubtotal() : 0.0).sum();
+        double impuestos = ventas.stream()
+                .mapToDouble(v -> v.getImpuestos() != null ? v.getImpuestos() : 0.0).sum();
+
+        // ── Desglose por día (orden cronológico) ──
+        Map<LocalDate, List<Venta>> porDia = ventas.stream()
+                .collect(Collectors.groupingBy(
+                        v -> v.getFecha().toLocalDate(),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+        List<ReporteVentasDTO.DesgloseDia> desgloseDia = porDia.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> new ReporteVentasDTO.DesgloseDia(
+                        e.getKey(),
+                        e.getValue().size(),
+                        e.getValue().stream()
+                                .mapToDouble(v -> v.getTotal() != null ? v.getTotal() : 0.0).sum()))
+                .collect(Collectors.toList());
+
+        // ── Desglose por método de pago (mayor monto primero) ──
+        Map<String, List<Venta>> porMetodo = ventas.stream()
+                .collect(Collectors.groupingBy(Venta::getMetodoPago));
+        List<ReporteVentasDTO.DesgloseMetodoPago> desglosePago = porMetodo.entrySet().stream()
+                .map(e -> new ReporteVentasDTO.DesgloseMetodoPago(
+                        e.getKey(),
+                        e.getValue().size(),
+                        e.getValue().stream()
+                                .mapToDouble(v -> v.getTotal() != null ? v.getTotal() : 0.0).sum()))
+                .sorted((a, b) -> Double.compare(b.getMontoTotal(), a.getMontoTotal()))
+                .collect(Collectors.toList());
+
+        ReporteVentasDTO reporte = new ReporteVentasDTO();
+        reporte.setPeriodo(periodoNormalizado);
+        reporte.setPeriodoEtiqueta(rango.etiqueta);
+        reporte.setDesde(desde);
+        reporte.setHasta(hasta);
+        reporte.setSucursalId(sucursalId);
+        reporte.setSucursalNombre(sucursalNombre);
+        reporte.setNumeroVentas(numeroVentas);
+        reporte.setMontoTotal(montoTotal);
+        reporte.setSubtotal(subtotal);
+        reporte.setImpuestos(impuestos);
+        reporte.setDesglosePorDia(desgloseDia);
+        reporte.setDesglosePorMetodoPago(desglosePago);
+        return reporte;
+    }
+
+    // =========================================================
+    // HU-017: PRODUCTOS MÁS VENDIDOS
+    // =========================================================
+
+    /**
+     * Ranking de productos ordenado por unidades vendidas
+     * (descendente) en el periodo seleccionado, para la
+     * sucursal del usuario autenticado.
+     *
+     * Los datos se calculan a partir de las MISMAS ventas
+     * del periodo y la sucursal que el reporte de ventas,
+     * por lo que siempre corresponden al periodo
+     * seleccionado.
+     */
+    public List<ProductoMasVendidoDTO> obtenerProductosMasVendidos(String periodo) {
+
+        Usuario usuario = usuarioConSucursal();
+        Long sucursalId = usuario.getSucursal().getId();
+
+        RangoPeriodo rango = calcularRangoPeriodo(periodo);
+
+        List<Venta> ventas = ventaRepository
+                .findByFechaBetweenAndSucursalId(rango.desde, rango.hasta, sucursalId);
+
+        // ── Acumular unidades y monto por producto ──
+        Map<Long, ProductoMasVendidoDTO> porProducto = new LinkedHashMap<>();
+        for (Venta venta : ventas) {
+            for (VentaDetalle detalle : venta.getDetalles()) {
+                Producto producto = detalle.getProducto();
+                ProductoMasVendidoDTO fila = porProducto.computeIfAbsent(
+                        producto.getId(),
+                        k -> new ProductoMasVendidoDTO(
+                                producto.getId(),
+                                producto.getNombre(),
+                                0L,
+                                0.0));
+                fila.setUnidadesVendidas(
+                        fila.getUnidadesVendidas()
+                                + (detalle.getCantidad() != null ? detalle.getCantidad() : 0));
+                fila.setMontoTotal(
+                        fila.getMontoTotal()
+                                + (detalle.getSubtotal() != null ? detalle.getSubtotal() : 0.0));
+            }
+        }
+
+        // ── Ordenar por unidades vendidas (mayor primero) ──
+        Comparator<ProductoMasVendidoDTO> porUnidades =
+                Comparator.comparingLong(ProductoMasVendidoDTO::getUnidadesVendidas).reversed();
+        Comparator<ProductoMasVendidoDTO> porMonto =
+                Comparator.comparingDouble(ProductoMasVendidoDTO::getMontoTotal).reversed();
+
+        return porProducto.values().stream()
+                .sorted(porUnidades.thenComparing(porMonto))
+                .collect(Collectors.toList());
+    }
+
+    // ── Helpers compartidos por los reportes ──
+
+    /**
+     * Devuelve el usuario autenticado (JWT) y valida
+     * que tenga una sucursal asignada.
+     */
+    private Usuario usuarioConSucursal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()
+                || auth.getPrincipal() == null
+                || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new RuntimeException("No hay un usuario autenticado");
+        }
+        String email = auth.getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        if (usuario.getSucursal() == null) {
+            throw new IllegalArgumentException(
+                    "Tu cuenta no tiene una sucursal asignada. Contacta al administrador.");
+        }
+        return usuario;
+    }
+
+    /**
+     * Resuelve el rango de fechas y la etiqueta del
+     * periodo: "hoy", "mes" o "mes_anterior".
+     */
+    private RangoPeriodo calcularRangoPeriodo(String periodo) {
+        LocalDate hoy = LocalDate.now();
+
+        DateTimeFormatter fmtDia =
+                DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es"));
+        DateTimeFormatter fmtMes =
+                DateTimeFormatter.ofPattern("MMMM 'de' yyyy", new Locale("es"));
+
+        String periodoNormalizado =
+                periodo == null ? "hoy" : periodo.trim().toLowerCase();
+
+        LocalDate desdeFecha;
+        LocalDate hastaFecha;
+        String etiqueta;
+
+        switch (periodoNormalizado) {
+            case "hoy":
+                desdeFecha = hoy;
+                hastaFecha = hoy;
+                etiqueta = hoy.format(fmtDia);
+                break;
+            case "mes":
+                desdeFecha = hoy.withDayOfMonth(1);
+                hastaFecha = hoy.withDayOfMonth(hoy.lengthOfMonth());
+                etiqueta = hoy.format(fmtMes);
+                break;
+            case "mes_anterior":
+                YearMonth mesAnterior = YearMonth.now().minusMonths(1);
+                desdeFecha = mesAnterior.atDay(1);
+                hastaFecha = mesAnterior.atEndOfMonth();
+                etiqueta = mesAnterior.format(fmtMes);
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        "Periodo no válido. Usa: hoy, mes o mes_anterior.");
+        }
+
+        return new RangoPeriodo(
+                periodoNormalizado,
+                etiqueta,
+                desdeFecha.atStartOfDay(),
+                hastaFecha.atTime(23, 59, 59, 999999999));
+    }
+
+    /** Rango de fechas y etiqueta de un periodo de reporte. */
+    private static class RangoPeriodo {
+        final String periodo;
+        final String etiqueta;
+        final LocalDateTime desde;
+        final LocalDateTime hasta;
+
+        RangoPeriodo(String periodo, String etiqueta, LocalDateTime desde, LocalDateTime hasta) {
+            this.periodo = periodo;
+            this.etiqueta = etiqueta;
+            this.desde = desde;
+            this.hasta = hasta;
+        }
     }
 }

@@ -28,12 +28,20 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
+        System.out.println("=== JwtFilter ===");
+        System.out.println("URI: " + request.getRequestURI());
+        System.out.println("Method: " + request.getMethod());
+        System.out.println("Auth header presente: " + (authHeader != null));
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
+            boolean valid = jwtUtil.validateToken(token);
+            System.out.println("Token válido: " + valid);
 
-            if (jwtUtil.validateToken(token)) {
+            if (valid) {
                 String email     = jwtUtil.extractEmail(token);
                 Integer userTipo = jwtUtil.extractUserTipo(token);
+                System.out.println("Email: " + email + ", userTipo: " + userTipo);
 
                 String rol = switch (userTipo) {
                     case 0 -> "ROLE_ADMIN";
