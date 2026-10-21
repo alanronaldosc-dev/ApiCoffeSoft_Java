@@ -20,10 +20,14 @@ import com.utvt.ApiSpringCafeSoft.repository.CargaRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ClienteRepository;
 import com.utvt.ApiSpringCafeSoft.repository.EntregaGarrafonDetalleRepository;
 import com.utvt.ApiSpringCafeSoft.repository.EntregaPedidoRepository;
+import com.utvt.ApiSpringCafeSoft.repository.MovimientoPuntosRepository;
+import com.utvt.ApiSpringCafeSoft.model.MovimientoPuntos;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.VentaRepository;
+import com.utvt.ApiSpringCafeSoft.repository.RutaRepository;
+import com.utvt.ApiSpringCafeSoft.model.Ruta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +60,8 @@ public class EntregaPedidoService {
     @Autowired private InventarioRepository inventarioRepository;
     @Autowired private ProductoRepository productoRepository;
     @Autowired private ClienteRepository clienteRepository;
+    @Autowired private MovimientoPuntosRepository movimientoPuntosRepository;
+    @Autowired private RutaRepository rutaRepository;
 
     /**
      * HU-015
@@ -324,6 +330,55 @@ public class EntregaPedidoService {
                 ventaRepository.save(venta);
 
         // ============================================
+        // PAGO CON PUNTOS: validar saldo y descontar
+        // ============================================
+        String metodo = dto.getMetodoCobro() != null
+                ? dto.getMetodoCobro().toUpperCase()
+                : "";
+
+        if ("PUNTOS".equals(metodo)) {
+            long saldo = movimientoPuntosRepository.saldo(cliente.getId());
+            if (saldo < Math.round(total)) {
+                throw new RuntimeException(
+                        "Puntos insuficientes. Saldo: " + saldo
+                                + ", requeridos: " + Math.round(total)
+                );
+            }
+        }
+
+        // ============================================
+        // GENERAR PUNTOS (1 punto por garrafón)
+        // Solo se acreditan si el pago NO fue con puntos.
+        // Si el pago fue con puntos, se descuentan.
+        // ============================================
+        if ("PUNTOS".equals(metodo)) {
+            try {
+                if (movimientoPuntosRepository.findByVentaId(ventaGuardada.getId()).isEmpty()) {
+                    MovimientoPuntos mp = new MovimientoPuntos();
+                    mp.setCliente(cliente);
+                    mp.setVenta(ventaGuardada);
+                    mp.setPuntos(-(int) Math.round(total));
+                    movimientoPuntosRepository.save(mp);
+                }
+            } catch (Exception e) {
+                System.out.println("Error descontando puntos: " + e.getMessage());
+            }
+        } else {
+            try {
+                if (movimientoPuntosRepository.findByVentaId(ventaGuardada.getId()).isEmpty()) {
+                    MovimientoPuntos mp = new MovimientoPuntos();
+                    mp.setCliente(cliente);
+                    mp.setVenta(ventaGuardada);
+                    mp.setPuntos((int) Math.round(totalGarrafones));
+                    movimientoPuntosRepository.save(mp);
+                }
+            } catch (Exception e) {
+                // no bloquear la venta si falla el registro de puntos
+                System.out.println("Error registrando puntos: " + e.getMessage());
+            }
+        }
+
+        // ============================================
         // CONFIRMAR ENTREGA
         // ============================================
 
@@ -481,6 +536,19 @@ public class EntregaPedidoService {
         EntregaPedido entrega = new EntregaPedido();
         entrega.setVenta(venta);
         entrega.setRepartidor(repartidor);
+
+        try {
+            Ruta rutaEnCurso = rutaRepository
+                    .findByRepartidorId(repartidor.getId())
+                    .stream()
+                    .filter(r -> "EN_TRANSITO".equalsIgnoreCase(r.getEstado()))
+                    .findFirst()
+                    .orElse(null);
+            entrega.setRuta(rutaEnCurso);
+        } catch (Exception e) {
+            // no bloquear la entrega
+        }
+
         entrega.setGarrafonesEntregados(
                 nvl(dto.getGarrafonesEntregados())
         );
@@ -810,6 +878,12 @@ public class EntregaPedidoService {
         dto.setClienteNombre(
                 entrega.getVenta() != null
                         ? entrega.getVenta().getNombreCliente()
+                        : null
+        );
+
+        dto.setRutaId(
+                entrega.getRuta() != null
+                        ? entrega.getRuta().getId()
                         : null
         );
 

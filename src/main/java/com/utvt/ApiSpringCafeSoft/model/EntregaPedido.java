@@ -22,6 +22,10 @@ public class EntregaPedido {
     @JoinColumn(name = "repartidor_id", nullable = false)
     private Usuario repartidor;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ruta_id")
+    private Ruta ruta;
+
     @Column(name = "garrafones_entregados", nullable = false)
     private Double garrafonesEntregados = 0.0;
 
@@ -53,6 +57,8 @@ public class EntregaPedido {
 
     public Usuario getRepartidor() { return repartidor; }
     public void setRepartidor(Usuario repartidor) { this.repartidor = repartidor; }
+    public Ruta getRuta() { return ruta; }
+    public void setRuta(Ruta ruta) { this.ruta = ruta; }
 
     public Double getGarrafonesEntregados() { return garrafonesEntregados; }
     public void setGarrafonesEntregados(Double garrafonesEntregados) { this.garrafonesEntregados = garrafonesEntregados; }

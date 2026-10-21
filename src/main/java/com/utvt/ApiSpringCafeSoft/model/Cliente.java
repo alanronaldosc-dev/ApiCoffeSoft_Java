@@ -1,5 +1,7 @@
 package com.utvt.ApiSpringCafeSoft.model;
 
+import com.utvt.ApiSpringCafeSoft.validation.UrlGoogleMaps;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -22,6 +24,9 @@ public class Cliente {
     @Column(nullable = false)
     private String domicilio;
 
+    @UrlGoogleMaps(
+        message = "El enlace debe ser una URL de Google Maps: https://maps.google.com/... o https://goo.gl/maps/..."
+    )
     @Column(name = "link_google_maps")
     private String linkGoogleMaps;
 

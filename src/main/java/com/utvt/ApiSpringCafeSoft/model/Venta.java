@@ -45,8 +45,8 @@ public class Venta {
 
 @NotBlank(message = "El método de pago es obligatorio")
 @Pattern(
-    regexp = "^(efectivo|tarjeta|transferencia)$",
-    message = "El método de pago debe ser: efectivo, tarjeta o transferencia"
+    regexp = "^(efectivo|tarjeta|transferencia|puntos)$",
+    message = "El método de pago debe ser: efectivo, tarjeta, transferencia o puntos"
 )
 @Column(
     name = "metodo_pago",
