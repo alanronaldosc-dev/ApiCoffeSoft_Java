@@ -25,12 +25,25 @@ public class ClienteController {
     @Autowired
     private BeneficiosService beneficiosService;
 
+    @Autowired
+    private com.utvt.ApiSpringCafeSoft.repository.MovimientoPuntosRepository puntosRepository;
+
     // HU-023: calcula el descuento elegible sin consumir puntos.
     @PostMapping("/{id}/beneficios/cotizaciones")
     public ResponseEntity<CotizacionCanjeDTO> cotizarCanje(
             @PathVariable Long id,
             @Valid @RequestBody CotizacionCanjeDTO solicitud) {
         return ResponseEntity.ok(beneficiosService.cotizar(id, solicitud));
+    }
+
+    // HU-026: consulta de solo lectura; nunca se acepta un saldo enviado por el cliente.
+    @GetMapping("/{id}/puntos")
+    public ResponseEntity<Map<String,Object>> consultarPuntos(@PathVariable Long id) {
+        Cliente cliente = clienteService.obtenerClientePorId(id);
+        return ResponseEntity.ok(Map.of("clienteId", cliente.getId(), "nombre", cliente.getNombre(),
+            "saldo", puntosRepository.saldo(id), "movimientos", puntosRepository.findByClienteIdOrderByFechaDesc(id)
+                .stream().map(m -> Map.of("ventaId", m.getVenta().getId(), "puntos", m.getPuntos(), "fecha", m.getFecha().toString())).toList()));
+    }
     }
 
     // ============================================

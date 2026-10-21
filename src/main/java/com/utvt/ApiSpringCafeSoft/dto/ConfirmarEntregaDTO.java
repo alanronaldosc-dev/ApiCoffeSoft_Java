@@ -20,7 +20,7 @@ public class ConfirmarEntregaDTO {
     private Double envasesVaciosRecibidos;
 
     @NotBlank(message = "El método de cobro es obligatorio")
-    @Pattern(regexp = "^(EFECTIVO|TRANSFERENCIA)$", message = "El método de cobro debe ser EFECTIVO o TRANSFERENCIA")
+    @Pattern(regexp = "^(EFECTIVO|TRANSFERENCIA|PUNTOS)$", message = "El método de cobro debe ser EFECTIVO, TRANSFERENCIA o PUNTOS")
     private String metodoCobro;
 
     @NotNull(message = "El monto cobrado es obligatorio")
