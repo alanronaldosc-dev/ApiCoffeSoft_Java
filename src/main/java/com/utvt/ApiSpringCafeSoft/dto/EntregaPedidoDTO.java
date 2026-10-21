@@ -28,6 +28,7 @@ public class EntregaPedidoDTO {
     private Long clienteId;
 private String clienteNombre;
 
+private Long rutaId;
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getVentaId() { return ventaId; }
@@ -71,5 +72,13 @@ public String getClienteNombre() {
 
 public void setClienteNombre(String clienteNombre) {
     this.clienteNombre = clienteNombre;
+}
+
+public Long getRutaId() {
+    return rutaId;
+}
+
+public void setRutaId(Long rutaId) {
+    this.rutaId = rutaId;
 }
 }

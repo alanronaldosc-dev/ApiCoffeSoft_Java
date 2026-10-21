@@ -60,6 +60,7 @@ public class Usuario {
     @Column(name = "permiso")
     private List<String> permisos = new ArrayList<>();
 
+
     public Usuario() {}
 
     public Long getId() { return id; }

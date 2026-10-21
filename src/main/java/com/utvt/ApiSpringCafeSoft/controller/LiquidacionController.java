@@ -18,6 +18,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
+
 /**
  * HU-016:
  * liquidación por cierre de ruta.
@@ -33,6 +38,22 @@ public class LiquidacionController {
 
     @Autowired
     private LiquidacionService liquidacionService;
+
+    @GetMapping("/repartidor/{repartidorId}/hoy")
+    @Operation(summary = "Consultar liquidacion de hoy")
+    public ResponseEntity<?> liquidacionHoy(@PathVariable Long repartidorId) {
+        try {
+            LiquidacionDTO liq = liquidacionService.obtenerLiquidacionHoy(repartidorId);
+            return liq == null ? ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Sin liquidacion hoy")) : ResponseEntity.ok(liq);
+        } catch (RuntimeException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
+    }
+
+    @GetMapping("/repartidor/{repartidorId}/resumen")
+    @Operation(summary = "Resumen de liquidacion por repartidor y fecha")
+    public ResponseEntity<?> resumenRepartidor(@PathVariable Long repartidorId, @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        try { return ResponseEntity.ok(liquidacionService.obtenerResumen(repartidorId, fecha)); }
+        catch (RuntimeException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
+    }
 
     // ============================================
     // RESUMEN DE UNA RUTA
@@ -114,6 +135,24 @@ public class LiquidacionController {
                     error,
                     HttpStatus.BAD_REQUEST
             );
+        }
+    }
+
+    @GetMapping("/repartidor/{repartidorId}/pdf")
+    @Operation(summary = "Generar PDF de liquidacion del repartidor")
+    public ResponseEntity<byte[]> generarPdf(
+            @PathVariable Long repartidorId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fecha) {
+        try {
+            byte[] pdf = liquidacionService.generarPdfLiquidacion(repartidorId, fecha);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "liquidacion.pdf");
+            return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
         }
     }
 }

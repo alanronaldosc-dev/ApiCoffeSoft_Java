@@ -3,6 +3,8 @@ package com.utvt.ApiSpringCafeSoft.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "rutas")
 public class Ruta {
@@ -33,6 +35,10 @@ public class Ruta {
     @JoinColumn(name = "carga_id")
     private Carga carga;
 
+    // Fecha y hora en que la ruta fue asignada/activada para el repartidor
+    @Column(name = "fecha_asignacion")
+    private LocalDateTime fechaAsignacion;
+
     public Ruta() {}
 
     public Long getId() { return id; }
@@ -49,4 +55,6 @@ public class Ruta {
     public void setActiva(Boolean activa) { this.activa = activa; }
     public Carga getCarga() { return carga; }
     public void setCarga(Carga carga) { this.carga = carga; }
+    public LocalDateTime getFechaAsignacion() { return fechaAsignacion; }
+    public void setFechaAsignacion(LocalDateTime fechaAsignacion) { this.fechaAsignacion = fechaAsignacion; }
 }

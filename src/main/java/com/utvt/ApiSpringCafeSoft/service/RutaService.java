@@ -167,31 +167,42 @@ public class RutaService {
         }
 
         // ========================================
-        // DESASIGNAR CLIENTES ANTERIORES
+        // REASIGNAR CLIENTES SOLO SI SE ENVÍA
+        // UNA LISTA (null = no modificar)
         // ========================================
 
-        List<Cliente> clientesAnteriores =
-                clienteRepository
-                        .findByRutaId(id);
+        if (clienteIds != null) {
 
-        for (Cliente cliente :
-                clientesAnteriores) {
+            List<Cliente> clientesAnteriores =
+                    clienteRepository
+                            .findByRutaId(id);
 
-            cliente.setRuta(null);
-            cliente.setOrdenEnRuta(null);
+            for (
+                    Cliente cliente :
+                    clientesAnteriores
+            ) {
 
-            clienteRepository.save(
-                    cliente
+                cliente.setRuta(null);
+                cliente.setOrdenEnRuta(null);
+
+                clienteRepository.save(
+                        cliente
+                );
+            }
+
+            Ruta rutaActualizada =
+                    rutaRepository.save(ruta);
+
+            asignarClientes(
+                    rutaActualizada,
+                    clienteIds
             );
+
+            return rutaActualizada;
         }
 
         Ruta rutaActualizada =
                 rutaRepository.save(ruta);
-
-        asignarClientes(
-                rutaActualizada,
-                clienteIds
-        );
 
         return rutaActualizada;
     }
@@ -531,6 +542,10 @@ public class RutaService {
                 "ACTIVA"
         );
 
+        ruta.setFechaAsignacion(
+                java.time.LocalDateTime.now()
+        );
+
         return rutaRepository.save(
                 ruta
         );
@@ -635,6 +650,12 @@ public class RutaService {
                                         ruta.getActiva()
                                 )
                         )
+                        .sorted(
+                                Comparator.comparing(
+                                        Ruta::getId,
+                                        Comparator.reverseOrder()
+                                )
+                        )
                         .toList();
 
         if (rutasActivas.isEmpty()) {
@@ -644,46 +665,16 @@ public class RutaService {
             );
         }
 
-        Ruta ruta =
-                rutasActivas
-                        .stream()
-                        .max(
-                                Comparator.comparing(
-                                        Ruta::getId
-                                )
-                        )
-                        .orElseThrow();
-
-        System.out.println(
-                "RUTA ACTIVA encontrada: id="
-                        + ruta.getId()
-                        + " nombre="
-                        + ruta.getNombre()
-        );
-
-        List<Cliente> clientesEncontrados =
-                clienteRepository
-                        .findByRutaId(
-                                ruta.getId()
-                        )
-                        .stream()
-                        .sorted(
-                                Comparator.comparing(
-                                        Cliente::getOrdenEnRuta,
-                                        Comparator.nullsLast(
-                                                Comparator.naturalOrder()
-                                        )
-                                )
-                        )
-                        .toList();
-
-        System.out.println(
-                "Clientes encontrados para ruta "
-                        + ruta.getId()
-                        + ": "
-                        + clientesEncontrados.size()
-        );
-
+        // Preferir la ruta activa mas reciente que tenga clientes.
+        Ruta ruta = rutasActivas.stream()
+                .filter(r -> !clienteRepository.findByRutaId(r.getId()).isEmpty())
+                .findFirst()
+                .orElse(rutasActivas.get(0));
+        List<Cliente> clientesEncontrados = clienteRepository.findByRutaId(ruta.getId())
+                .stream()
+                .sorted(Comparator.comparing(Cliente::getOrdenEnRuta,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
         return clientesEncontrados;
     }
 
@@ -783,5 +774,81 @@ public class RutaService {
         }
 
         return repartidor;
+    }
+
+    public List<Ruta> rutasAsignadasDelRepartidor(Long repartidorId) {
+        if (repartidorId == null) {
+            throw new RuntimeException("El repartidor es obligatorio");
+        }
+        obtenerRepartidor(repartidorId);
+        return rutaRepository.findByRepartidorId(repartidorId)
+                .stream()
+                .filter(r -> Boolean.TRUE.equals(r.getActiva())
+                        && "ACTIVA".equalsIgnoreCase(r.getEstado()))
+                .sorted(java.util.Comparator.comparing(Ruta::getId))
+                .toList();
+    }
+
+    @Transactional
+    public Ruta aceptarRuta(Long rutaId, Long repartidorId) {
+        Ruta ruta = obtenerPorId(rutaId);
+        if (ruta.getRepartidor() == null
+                || !ruta.getRepartidor().getId().equals(repartidorId)) {
+            throw new RuntimeException("La ruta no pertenece a este repartidor");
+        }
+        if (!"ACTIVA".equalsIgnoreCase(ruta.getEstado())) {
+            throw new RuntimeException("La ruta no esta disponible para aceptar");
+        }
+        boolean hayEnCurso = rutaRepository.findByRepartidorId(repartidorId)
+                .stream()
+                .anyMatch(r -> "EN_TRANSITO".equalsIgnoreCase(r.getEstado()));
+        if (hayEnCurso) {
+            throw new RuntimeException("Ya tienes una ruta en curso. Terminala primero.");
+        }
+        ruta.setEstado("EN_TRANSITO");
+        ruta.setActiva(true);
+        return rutaRepository.save(ruta);
+    }
+
+    public Ruta rutaEnCursoDelRepartidor(Long repartidorId) {
+        if (repartidorId == null) {
+            throw new RuntimeException("El repartidor es obligatorio");
+        }
+        obtenerRepartidor(repartidorId);
+        return rutaRepository.findByRepartidorId(repartidorId)
+                .stream()
+                .filter(r -> "EN_TRANSITO".equalsIgnoreCase(r.getEstado()))
+                .max(java.util.Comparator.comparing(Ruta::getId))
+                .orElse(null);
+    }
+
+    public List<Cliente> clientesRutaEnCursoDelRepartidor(Long repartidorId) {
+        Ruta ruta = rutaEnCursoDelRepartidor(repartidorId);
+        if (ruta == null) {
+            throw new RuntimeException("No hay ruta en curso");
+        }
+        return clienteRepository.findByRutaId(ruta.getId())
+                .stream()
+                .sorted(java.util.Comparator.comparing(Cliente::getOrdenEnRuta,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                .toList();
+    }
+
+    // ============================================
+    // TERMINAR RUTA EN CURSO
+    // ============================================
+    @Transactional
+    public Ruta terminarRuta(Long repartidorId) {
+        if (repartidorId == null) {
+            throw new RuntimeException("El repartidor es obligatorio");
+        }
+        obtenerRepartidor(repartidorId);
+        Ruta ruta = rutaEnCursoDelRepartidor(repartidorId);
+        if (ruta == null) {
+            throw new RuntimeException("No hay ruta en curso para terminar");
+        }
+        ruta.setEstado("TERMINADA");
+        ruta.setActiva(false);
+        return rutaRepository.save(ruta);
     }
 }

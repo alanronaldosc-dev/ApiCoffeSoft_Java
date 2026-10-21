@@ -25,6 +25,7 @@ import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.VentaRepository;
+import com.utvt.ApiSpringCafeSoft.repository.RutaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +62,7 @@ public class EntregaPedidoService {
     private ClienteRepository clienteRepository;
     @Autowired
     private MovimientoPuntosRepository movimientoPuntosRepository;
+    @Autowired private RutaRepository rutaRepository;
     // =====================================================
     // REGISTRAR VENTA EN RUTA
     // =====================================================
@@ -332,19 +334,28 @@ public class EntregaPedidoService {
                 ventaRepository.save(
                         venta
                 );
-        // HU-025: 1 punto por cada garrafón vendido en ruta.
-        // Misma transacción de la venta; venta_id es único para evitar duplicados.
-        int puntosRuta = garrafonesPorTipo.stream()
-                .mapToInt(linea -> (int) Math.round(linea.getCantidad()))
-                .sum();
-        if (puntosRuta > 0 && movimientoPuntosRepository.findByVentaId(ventaGuardada.getId()).isEmpty()) {
+        // Una venta genera un solo movimiento: credito por garrafones o debito por canje.
+        String metodo = dto.getMetodoCobro() == null ? "" : dto.getMetodoCobro().trim().toUpperCase();
+        int puntosMovimiento;
+        if ("PUNTOS".equals(metodo)) {
+            long costoPuntos = Math.round(total);
+            long saldo = movimientoPuntosRepository.saldo(cliente.getId());
+            if (saldo < costoPuntos) {
+                throw new IllegalArgumentException("Puntos insuficientes. Saldo: " + saldo + ", requeridos: " + costoPuntos);
+            }
+            puntosMovimiento = -Math.toIntExact(costoPuntos);
+        } else {
+            puntosMovimiento = Math.toIntExact(Math.round(totalGarrafones));
+        }
+        if (puntosMovimiento != 0 && movimientoPuntosRepository.findByVentaId(ventaGuardada.getId()).isEmpty()) {
             MovimientoPuntos movimiento = new MovimientoPuntos();
             movimiento.setCliente(cliente);
             movimiento.setVenta(ventaGuardada);
-            movimiento.setPuntos(puntosRuta);
+            movimiento.setPuntos(puntosMovimiento);
             movimientoPuntosRepository.save(movimiento);
         }
 
+        // CONFIRMAR ENTREGA
         // =================================================
         // CONFIRMAR ENTREGA
         // =================================================
@@ -510,9 +521,12 @@ public class EntregaPedidoService {
          * Guardamos la ruta para poder
          * liquidarla después.
          */
-        entrega.setRuta(
-                ruta
-        );
+        if (ruta == null) {
+            ruta = rutaRepository.findByRepartidorId(repartidor.getId()).stream()
+                .filter(r -> "EN_TRANSITO".equalsIgnoreCase(r.getEstado()))
+                .findFirst().orElse(null);
+        }
+        entrega.setRuta(ruta);
         entrega.setGarrafonesEntregados(
                 nvl(
                         dto.getGarrafonesEntregados()
@@ -1159,6 +1173,17 @@ public class EntregaPedidoService {
                         ? entrega.getVenta().getNombreCliente()
                         : null
         );
+
+        dto.setRutaId(
+                entrega.getRuta() != null
+                        ? entrega.getRuta().getId()
+                        : null
+        );
+
+        // ========================================
+        // HU-015: DESGLOSE POR TIPO DE GARRAFÓN
+        // ========================================
+
         List<EntregaGarrafonDetalle> detalles =
                 entregaGarrafonDetalleRepository
                         .findByEntregaPedidoId(

@@ -479,4 +479,71 @@ public ResponseEntity<?> terminarRuta(
                     );
         }
     }
+
+    // ============================================
+    // RUTAS ASIGNADAS DEL REPARTIDOR
+    // ============================================
+    @GetMapping("/repartidor/{repartidorId}/asignadas")
+    public ResponseEntity<?> rutasAsignadas(@PathVariable Long repartidorId) {
+        try {
+            return ResponseEntity.ok(
+                    rutaService.rutasAsignadasDelRepartidor(repartidorId)
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============================================
+    // ACEPTAR UNA RUTA
+    // ============================================
+    @PutMapping("/{rutaId}/aceptar")
+    public ResponseEntity<?> aceptarRuta(@PathVariable Long rutaId,
+                                        @RequestBody(required = false) Map<String, Object> body) {
+        try {
+            Long repartidorId = null;
+            if (body != null && body.get("repartidorId") != null) {
+                repartidorId = Long.valueOf(body.get("repartidorId").toString());
+            }
+            if (repartidorId == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "repartidorId es obligatorio"));
+            }
+            Ruta ruta = rutaService.aceptarRuta(rutaId, repartidorId);
+            return ResponseEntity.ok(ruta);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============================================
+    // RUTA EN CURSO DEL REPARTIDOR
+    // ============================================
+    @GetMapping("/repartidor/{repartidorId}/en-curso")
+    public ResponseEntity<?> rutaEnCurso(@PathVariable Long repartidorId) {
+        try {
+            Ruta ruta = rutaService.rutaEnCursoDelRepartidor(repartidorId);
+            if (ruta == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "No hay ruta en curso"));
+            }
+            return ResponseEntity.ok(ruta);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ============================================
+    // CLIENTES DE LA RUTA EN CURSO
+    // ============================================
+    @GetMapping("/repartidor/{repartidorId}/en-curso/clientes")
+    public ResponseEntity<?> clientesRutaEnCurso(@PathVariable Long repartidorId) {
+        try {
+            return ResponseEntity.ok(
+                    rutaService.clientesRutaEnCursoDelRepartidor(repartidorId)
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }
