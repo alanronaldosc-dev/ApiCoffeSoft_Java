@@ -56,4 +56,7 @@ public interface CargaRepository extends JpaRepository<Carga, Long> {
     @Modifying
     @Query("DELETE FROM Carga c WHERE c.inventario.id = :inventarioId")
     void deleteByInventarioId(@Param("inventarioId") Long inventarioId);
+    @Query("SELECT COALESCE(SUM(COALESCE(c.cantidadDisponible, c.cantidad)), 0) FROM Carga c " +
+           "WHERE UPPER(c.estado) IN ('CARGA EN TRÁNSITO', 'CARGA EN TRANSITO')")
+    Double sumarGarrafonesEnTransito();
 }
