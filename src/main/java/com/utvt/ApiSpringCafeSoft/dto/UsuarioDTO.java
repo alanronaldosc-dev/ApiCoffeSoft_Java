@@ -34,6 +34,9 @@ public class UsuarioDTO {
             example = "[\"productos\", \"ventas\", \"insumos\"]")
     private List<String> permisos = new ArrayList<>();
 
+    @Schema(description = "Identificador unico del dispositivo en Traccar", example = "86730947")
+    private String traccarDeviceId;
+
     // ── NUEVO: sucursal ──
     @Schema(description = "ID de la sucursal a la que pertenece el usuario", example = "1")
     private Long sucursalId;
@@ -71,6 +74,8 @@ public class UsuarioDTO {
         this.sucursalNombre = sucursalNombre;
     }
 
+    public String getTraccarDeviceId() { return traccarDeviceId; }
+    public void setTraccarDeviceId(String traccarDeviceId) { this.traccarDeviceId = traccarDeviceId; }
     public Boolean getActivo() { return activo; }
     public void setActivo(Boolean activo) { this.activo = activo; }
     public Long getId() { return id; }

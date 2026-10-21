@@ -36,4 +36,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findBySucursalIdAndUserTipo(Long sucursalId, Integer userTipo);
     List<Usuario> findBySucursalIdAndActivo(Long sucursalId, Boolean activo);
 
+    boolean existsByTraccarDeviceIdAndIdNot(String traccarDeviceId, Long id);
 }

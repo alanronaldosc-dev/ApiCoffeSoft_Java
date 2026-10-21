@@ -852,4 +852,16 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
 }
 
     
+    // Hito 1.4: acceso restringido a administradores por SecurityConfig.
+    @PutMapping("/{id}/traccar-device")
+    public ResponseEntity<?> vincularDispositivoTraccar(
+            @PathVariable Long id, @RequestBody Map<String, String> body) {
+        try {
+            UsuarioDTO dto = usuarioService.asignarDispositivoTraccar(id, body.get("traccarDeviceId"));
+            return ResponseEntity.ok(Map.of("mensaje", "Dispositivo Traccar vinculado", "usuario", dto));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
 }
