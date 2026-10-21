@@ -5,6 +5,7 @@ package com.utvt.ApiSpringCafeSoft.service;
      * 
      */
 import com.utvt.ApiSpringCafeSoft.dto.CargaDTO;
+import com.utvt.ApiSpringCafeSoft.dto.ItemGarrafonDTO;
 import com.utvt.ApiSpringCafeSoft.model.Carga;
 import com.utvt.ApiSpringCafeSoft.model.Inventario;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -103,6 +105,66 @@ public class CargaService {
         Carga guardada = cargaRepository.save(carga);
 
         return convertirDTO(guardada);
+    }
+
+    /**
+     * HU-015
+     * Registra varias cargas (varios tipos de garrafón)
+     * para un repartidor en una sola transacción.
+     *
+     * Permite que un repartidor inicie su ruta con
+     * cargas de distintos garrafones, por ejemplo
+     * 20 Bonafont y 5 Ciel.
+     */
+    @Transactional
+    public List<CargaDTO> crearCargasMultiples(
+            Long repartidorId,
+            List<ItemGarrafonDTO> items) {
+
+        if (repartidorId == null) {
+            throw new RuntimeException("El repartidor es obligatorio");
+        }
+
+        Usuario repartidor = usuarioRepository.findById(repartidorId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "No se encontró el usuario con ID: "
+                                        + repartidorId
+                        )
+                );
+
+        if (repartidor.getUserTipo() == null || repartidor.getUserTipo() != 4) {
+            throw new RuntimeException("El usuario seleccionado no tiene el rol de Repartidor");
+        }
+
+        if (items == null || items.isEmpty()) {
+            throw new RuntimeException(
+                    "Debe seleccionar al menos un garrafón"
+            );
+        }
+
+        List<CargaDTO> creadas = new ArrayList<>();
+
+        for (ItemGarrafonDTO item : items) {
+
+            if (item.getInventarioId() == null
+                    || item.getCantidad() == null
+                    || item.getCantidad() <= 0) {
+
+                throw new RuntimeException(
+                        "Cada garrafón debe tener un inventario y una cantidad válida"
+                );
+            }
+
+            CargaDTO dto = new CargaDTO();
+            dto.setRepartidorId(repartidorId);
+            dto.setInventarioId(item.getInventarioId());
+            dto.setCantidad(item.getCantidad());
+
+            creadas.add(crearCarga(dto));
+        }
+
+        return creadas;
     }
 
     /**

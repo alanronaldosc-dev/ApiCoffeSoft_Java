@@ -291,23 +291,25 @@ public class RutaService {
     // ============================================
 
     /**
-     * Vincula una carga con una ruta.
+     * Activa la ruta del repartidor.
      *
-     * La carga puede:
-     *
-     * 1. No tener repartidor.
-     *    Se asigna el repartidor de la ruta.
-     *
-     * 2. Ya pertenecer al mismo repartidor.
-     *    Se permite utilizar.
-     *
-     * 3. Pertenecer a otro repartidor.
-     *    Se rechaza.
+     * La carga ya no se vincula a la ruta:
+     * el repartidor puede llevar varias
+     * cargas (una por tipo de garrafón)
+     * y las acepta directamente en
+     * "Mis cargas".
      */
     @Transactional
+    public Ruta desactivarRuta(Long rutaId) {
+        Ruta ruta = obtenerPorId(rutaId);
+        ruta.setActiva(false);
+        ruta.setEstado("CREADA");
+        return rutaRepository.save(ruta);
+    }
+
+    @Transactional
     public Ruta activarRuta(
-            Long rutaId,
-            Long cargaId) {
+            Long rutaId) {
 
         Ruta ruta =
                 obtenerPorId(
@@ -345,111 +347,8 @@ public class RutaService {
         }
 
         // ========================================
-        // VALIDAR CARGA
-        // ========================================
-
-        if (cargaId == null) {
-
-            throw new RuntimeException(
-                    "La carga es obligatoria para activar la ruta"
-            );
-        }
-
-        Carga carga =
-                cargaRepository
-                        .findById(cargaId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Carga no encontrada con ID: "
-                                                + cargaId
-                                )
-                        );
-
-        // ========================================
-        // EVITAR CARGAS YA EN RECORRIDO
-        // ========================================
-
-        if (
-                "CARGA EN TRÁNSITO"
-                        .equalsIgnoreCase(
-                                carga.getEstado()
-                        )
-        ) {
-
-            throw new RuntimeException(
-                    "La carga ya está en tránsito"
-            );
-        }
-
-        // ========================================
-        // VALIDAR REPARTIDOR DE LA CARGA
-        // ========================================
-
-        if (
-                carga.getRepartidor() != null
-        ) {
-
-            Long repartidorCarga =
-                    carga
-                            .getRepartidor()
-                            .getId();
-
-            Long repartidorRuta =
-                    ruta
-                            .getRepartidor()
-                            .getId();
-
-            if (
-                    !repartidorCarga.equals(
-                            repartidorRuta
-                    )
-            ) {
-
-                throw new RuntimeException(
-                        "La carga pertenece a otro repartidor"
-                );
-            }
-
-        } else {
-
-            // La carga estaba SIN ASIGNAR.
-            carga.setRepartidor(
-                    ruta.getRepartidor()
-            );
-        }
-
-        // ========================================
-        // CANTIDAD DISPONIBLE
-        // ========================================
-
-        if (
-                carga.getCantidadDisponible() == null
-        ) {
-
-            carga.setCantidadDisponible(
-                    carga.getCantidad()
-            );
-        }
-
-        // ========================================
-        // CARGA PENDIENTE DE ACEPTACIÓN
-        // ========================================
-
-        carga.setEstado(
-                "PENDIENTE"
-        );
-
-        cargaRepository.save(
-                carga
-        );
-
-        // ========================================
         // ACTIVAR RUTA
         // ========================================
-
-        ruta.setCarga(
-                carga
-        );
 
         ruta.setActiva(
                 true
@@ -462,6 +361,40 @@ public class RutaService {
         return rutaRepository.save(
                 ruta
         );
+    }
+
+    // ============================================
+    // HU-015
+    // CLIENTES DE UNA RUTA
+    // ============================================
+
+    /**
+     * Obtiene los clientes asignados a una
+     * ruta en el orden establecido por
+     * el encargado.
+     */
+    public List<Cliente> obtenerClientesRuta(
+            Long rutaId) {
+
+        Ruta ruta =
+                obtenerPorId(
+                        rutaId
+                );
+
+        return clienteRepository
+                .findByRutaId(
+                        ruta.getId()
+                )
+                .stream()
+                .sorted(
+                        Comparator.comparing(
+                                Cliente::getOrdenEnRuta,
+                                Comparator.nullsLast(
+                                        Comparator.naturalOrder()
+                                )
+                        )
+                )
+                .toList();
     }
 
     // ============================================
@@ -572,14 +505,13 @@ public class RutaService {
         Ruta ruta =
                 rutasActivas.get(0);
 
-        // ========================================
-        // OBTENER CLIENTES EN ORDEN
-        // ========================================
+        System.out.println(
+            "RUTA ACTIVA encontrada: id=" + ruta.getId()
+            + " nombre=" + ruta.getNombre()
+        );
 
-        return clienteRepository
-                .findByRutaId(
-                        ruta.getId()
-                )
+        List<Cliente> clientesEncontrados = clienteRepository
+                .findByRutaId(ruta.getId())
                 .stream()
                 .sorted(
                         Comparator.comparing(
@@ -590,6 +522,13 @@ public class RutaService {
                         )
                 )
                 .toList();
+
+        System.out.println(
+            "Clientes encontrados para ruta " + ruta.getId()
+            + ": " + clientesEncontrados.size()
+        );
+
+        return clientesEncontrados;
     }
 
     // ============================================

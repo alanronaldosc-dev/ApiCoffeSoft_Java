@@ -1,14 +1,25 @@
 package com.utvt.ApiSpringCafeSoft.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * HU-015
  * Datos enviados por el repartidor al realizar
  * una venta durante su ruta.
+ *
+ * La venta puede incluir uno o varios tipos de
+ * garrafón, siempre que cada garrafón lleno
+ * esté asignado en la carga del repartidor.
+ *
+ * Los envases vacíos se reciben por tipo de
+ * garrafón y se regresan al inventario de planta.
  */
 public class RegistrarVentaRutaDTO {
 
@@ -18,19 +29,19 @@ public class RegistrarVentaRutaDTO {
     @NotNull(message = "El repartidor es obligatorio")
     private Long repartidorId;
 
-    @NotNull(message = "La cantidad de garrafones es obligatoria")
-    @DecimalMin(
-        value = "0.01",
-        message = "Debe vender al menos un garrafón"
-    )
-    private Double garrafonesEntregados;
+    /**
+     * Garrafones llenos entregados, agrupados
+     * por tipo de garrafón (inventario).
+     */
+    @Valid
+    private List<ItemGarrafonDTO> garrafones = new ArrayList<>();
 
-    @NotNull(message = "Los envases vacíos son obligatorios")
-    @DecimalMin(
-        value = "0.0",
-        message = "Los envases vacíos no pueden ser negativos"
-    )
-    private Double envasesVaciosRecibidos;
+    /**
+     * Envases vacíos recibidos, agrupados
+     * por tipo de garrafón (inventario).
+     */
+    @Valid
+    private List<ItemGarrafonDTO> envasesVacios = new ArrayList<>();
 
     @NotNull(message = "El precio por garrafón es obligatorio")
     @DecimalMin(
@@ -49,9 +60,6 @@ public class RegistrarVentaRutaDTO {
 
     private String observaciones;
 
-    public RegistrarVentaRutaDTO() {
-    }
-
     public Long getClienteId() {
         return clienteId;
     }
@@ -68,20 +76,20 @@ public class RegistrarVentaRutaDTO {
         this.repartidorId = repartidorId;
     }
 
-    public Double getGarrafonesEntregados() {
-        return garrafonesEntregados;
+    public List<ItemGarrafonDTO> getGarrafones() {
+        return garrafones;
     }
 
-    public void setGarrafonesEntregados(Double garrafonesEntregados) {
-        this.garrafonesEntregados = garrafonesEntregados;
+    public void setGarrafones(List<ItemGarrafonDTO> garrafones) {
+        this.garrafones = garrafones;
     }
 
-    public Double getEnvasesVaciosRecibidos() {
-        return envasesVaciosRecibidos;
+    public List<ItemGarrafonDTO> getEnvasesVacios() {
+        return envasesVacios;
     }
 
-    public void setEnvasesVaciosRecibidos(Double envasesVaciosRecibidos) {
-        this.envasesVaciosRecibidos = envasesVaciosRecibidos;
+    public void setEnvasesVacios(List<ItemGarrafonDTO> envasesVacios) {
+        this.envasesVacios = envasesVacios;
     }
 
     public Double getPrecioUnitario() {

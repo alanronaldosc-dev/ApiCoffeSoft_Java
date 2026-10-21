@@ -4,14 +4,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+// CORS gestionado por SecurityConfig (JwtFilter + corsConfigurationSource)
+// Este bean no aplica reglas adicionales para evitar conflictos con Spring Security.
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins("*")          // permite cualquier origen
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*");
-    }
+    // Vacío intencionalmente — ver SecurityConfig.corsConfigurationSource()
 }
