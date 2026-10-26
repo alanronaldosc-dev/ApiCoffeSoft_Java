@@ -19,7 +19,7 @@ public class Producto {
     private String nombre;
 
     @NotNull(message = "El precio es obligatorio")
-    @Min(value = 0, message = "El precio no puede ser negativo")
+    @DecimalMin(value = "0.0", inclusive = true, message = "El precio no puede ser negativo")
     @Column(nullable = false)
     private Double precio;
 
