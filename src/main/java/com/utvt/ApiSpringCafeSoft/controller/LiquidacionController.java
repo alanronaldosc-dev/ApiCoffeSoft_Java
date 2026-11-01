@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
@@ -29,6 +30,20 @@ public class LiquidacionController {
 
     @Autowired
     private LiquidacionService liquidacionService;
+
+    @GetMapping("/repartidor/{repartidorId}")
+    @Operation(summary = "Listar liquidaciones de un repartidor")
+    public ResponseEntity<?> listarLiquidaciones(
+            @PathVariable Long repartidorId) {
+        try {
+            List<LiquidacionDTO> lista = liquidacionService.listarLiquidaciones(repartidorId);
+            return ResponseEntity.ok(lista);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @GetMapping("/repartidor/{repartidorId}/hoy")
     @Operation(summary = "Verificar si ya se liquidó hoy al repartidor")
@@ -92,8 +107,10 @@ public class LiquidacionController {
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("attachment", "liquidacion.pdf");
             return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            System.out.println("ERROR PDF: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(e.getMessage().getBytes());
         }
     }
 }

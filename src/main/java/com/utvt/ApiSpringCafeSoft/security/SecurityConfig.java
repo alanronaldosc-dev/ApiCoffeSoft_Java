@@ -78,6 +78,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/rutas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "REPARTIDOR")
                 .requestMatchers("/api/mermas/**").hasAnyRole("ADMIN", "REPARTIDOR")
+                // Agregar junto a las demás reglas, antes de .anyRequest().authenticated()
+                .requestMatchers(HttpMethod.GET,    "/api/promociones/**").authenticated()
+                .requestMatchers(HttpMethod.POST,   "/api/promociones/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/api/promociones/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/promociones/**").hasRole("ADMIN")
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
