@@ -31,6 +31,7 @@ public class VentaService {
     @Autowired private InventarioRepository inventarioRepository;
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private LoteRepository loteRepository;
+    @Autowired private BeneficiosService beneficiosService;
 
     private VentaDTO convertToDTO(Venta venta) {
         VentaDTO dto = new VentaDTO();
@@ -85,11 +86,27 @@ public class VentaService {
         Usuario usuario = usuarioRepository.findById(ventaDTO.getUsuarioId())
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + ventaDTO.getUsuarioId()));
 
+        // HU-023: validar y consumir el canje dentro de la transacción de la venta.
+        double subtotalCalculado = 0.0;
         // Validar stock antes de procesar
         for (VentaDetalleDTO detalleDTO : ventaDTO.getDetalles()) {
             Producto producto = productoRepository.findByIdWithInsumos(detalleDTO.getProductoId());
             if (producto == null) throw new RuntimeException("Producto no encontrado con ID: " + detalleDTO.getProductoId());
             validarStock(producto, detalleDTO.getCantidad());
+            double precioUnitario = detalleDTO.getPrecioUnitario() != null
+                    ? detalleDTO.getPrecioUnitario() : producto.getPrecio();
+            subtotalCalculado += precioUnitario * detalleDTO.getCantidad();
+        }
+        double totalCalculado = subtotalCalculado * 1.16;
+        Integer saldoPuntosRestante = null;
+        if (ventaDTO.getPuntosCanjeados() != null && ventaDTO.getPuntosCanjeados() > 0) {
+            saldoPuntosRestante = beneficiosService.consumir(
+                    ventaDTO.getClienteId(),
+                    ventaDTO.getPuntosCanjeados(),
+                    ventaDTO.getDescuento(),
+                    totalCalculado);
+        } else if (ventaDTO.getPuntosCanjeados() != null && ventaDTO.getPuntosCanjeados() < 0) {
+            throw new IllegalArgumentException("Los puntos canjeados no pueden ser negativos");
         }
 
         Venta venta = new Venta();
@@ -147,7 +164,11 @@ public class VentaService {
             venta.setCambio(cambio);
         }
 
-        return convertToDTO(ventaRepository.save(venta));
+        VentaDTO respuesta = convertToDTO(ventaRepository.save(venta));
+        respuesta.setClienteId(ventaDTO.getClienteId());
+        respuesta.setPuntosCanjeados(ventaDTO.getPuntosCanjeados());
+        respuesta.setSaldoPuntosRestante(saldoPuntosRestante);
+        return respuesta;
     }
 
     private void validarStock(Producto producto, Integer cantidadVendida) {

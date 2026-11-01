@@ -80,8 +80,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "REPARTIDOR")
                 .requestMatchers("/api/auditoria/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/mermas/**").hasAnyRole("ADMIN", "REPARTIDOR")
+
+                // Agregar junto a las demás reglas, antes de .anyRequest().authenticated()
+                .requestMatchers(HttpMethod.GET,    "/api/promociones/**").authenticated()
+                .requestMatchers(HttpMethod.POST,   "/api/promociones/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/api/promociones/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/promociones/**").hasRole("ADMIN")
+
                 .requestMatchers(HttpMethod.GET, "/api/traccar/**").hasAnyRole("ADMIN", "EMPLEADO")
                 .requestMatchers(HttpMethod.POST, "/api/traccar/**").hasRole("ADMIN")
+
 
                 .anyRequest().authenticated()
             )
