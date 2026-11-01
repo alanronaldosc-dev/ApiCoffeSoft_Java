@@ -21,9 +21,11 @@ public interface ClienteRepository
 
     List<Cliente> findByRutaIsNull();
 
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Cliente c WHERE c.id = :id")
     Optional<Cliente> findWithLockById(@Param("id") Long id);
+
 
     // Control de acceso: clientes de la ruta asignada a un repartidor
     List<Cliente> findByRutaRepartidorId(Long repartidorId);

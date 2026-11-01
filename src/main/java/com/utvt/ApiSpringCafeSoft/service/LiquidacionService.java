@@ -109,6 +109,7 @@ public class LiquidacionService {
         return dto;
     }
 
+
     public List<LiquidacionDTO> listarLiquidaciones(Long repartidorId) {
         Usuario repartidor = obtenerRepartidor(repartidorId);
         return liquidacionRepository
@@ -506,6 +507,66 @@ private void agregarCeldaTabla(PdfPTable table, String texto,
     c.setBorderColor(colorBorde);
     table.addCell(c);
 }
+
+    public LiquidacionDTO obtenerLiquidacionHoy(Long repartidorId) {
+        Usuario repartidor = obtenerRepartidor(repartidorId);
+        LocalDate hoy = LocalDate.now();
+        return liquidacionRepository
+                .findByRepartidorIdAndFechaOperacion(repartidor.getId(), hoy)
+                .map(this::convertirDTO)
+                .orElse(null);
+    }
+
+    public byte[] generarPdfLiquidacion(Long repartidorId, LocalDate fecha) {
+        Usuario repartidor = obtenerRepartidor(repartidorId);
+        LocalDate fechaConsulta = fecha != null ? fecha : LocalDate.now();
+        LocalDateTime inicio = fechaConsulta.atStartOfDay();
+        LocalDateTime fin = fechaConsulta.plusDays(1).atStartOfDay();
+
+        List<EntregaPedido> entregas = entregaPedidoRepository
+                .findByRepartidorIdAndFechaBetweenOrderByFechaAsc(repartidorId, inicio, fin);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document();
+        try {
+            PdfWriter.getInstance(document, baos);
+            document.open();
+            document.add(new Paragraph("Registro de Liquidacion - AquaSoft"));
+            document.add(new Paragraph("Repartidor: " + repartidor.getNombre()));
+            document.add(new Paragraph("Fecha: " + fechaConsulta));
+            document.add(new Paragraph(" "));
+
+            PdfPTable table = new PdfPTable(6);
+            table.addCell("Folio");
+            table.addCell("Cliente");
+            table.addCell("Garrafones");
+            table.addCell("Regresados");
+            table.addCell("Total");
+            table.addCell("Metodo Pago");
+
+            double totalGeneral = 0;
+            for (EntregaPedido e : entregas) {
+                Venta v = e.getVenta();
+                String folio = v != null ? v.getFolio() : "-";
+                String cliente = v != null ? v.getNombreCliente() : "-";
+                table.addCell(folio);
+                table.addCell(cliente);
+                table.addCell(String.valueOf(e.getGarrafonesEntregados()));
+                table.addCell(String.valueOf(e.getEnvasesVaciosRecibidos()));
+                table.addCell(String.valueOf(e.getMontoCobrado()));
+                table.addCell(e.getMetodoCobro() != null ? e.getMetodoCobro() : "-");
+                totalGeneral += nvl(e.getMontoCobrado());
+            }
+            document.add(table);
+            document.add(new Paragraph(" "));
+            document.add(new Paragraph("Total obtenido: " + totalGeneral));
+            document.close();
+        } catch (Exception ex) {
+            throw new RuntimeException("Error generando PDF: " + ex.getMessage());
+        }
+        return baos.toByteArray();
+    }
+
 
     @Transactional
     public LiquidacionDTO registrarLiquidacion(RegistrarLiquidacionDTO request) {
