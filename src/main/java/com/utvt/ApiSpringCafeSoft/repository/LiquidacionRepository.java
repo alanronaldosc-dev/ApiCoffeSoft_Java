@@ -10,6 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface LiquidacionRepository extends JpaRepository<Liquidacion, Long> {
-    Optional<Liquidacion> findByRepartidorIdAndFechaOperacion(Long repartidorId, LocalDate fechaOperacion);
+    List<Liquidacion> findByRepartidorIdAndFechaOperacionOrderByFechaCierreDesc(Long repartidorId, LocalDate fechaOperacion);
     List<Liquidacion> findByRepartidorIdOrderByFechaOperacionDesc(Long repartidorId);
 }

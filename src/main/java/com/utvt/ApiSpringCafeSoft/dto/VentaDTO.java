@@ -76,6 +76,16 @@ public class VentaDTO {
     @Schema(description = "Estado actual del pedido")
     private String estadoPedido;
 
+    @Schema(description = "ID del cliente que canjea puntos")
+    private Long clienteId;
+
+    @Schema(description = "Puntos consumidos en la venta")
+    @Min(value = 0, message = "Los puntos canjeados no pueden ser negativos")
+    private Integer puntosCanjeados;
+
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "Saldo de puntos después de la venta")
+    private Integer saldoPuntosRestante;
+
 
     // Constructor por defecto
     public VentaDTO() {}
@@ -215,6 +225,30 @@ public class VentaDTO {
 
     public void setEstadoPedido(String estadoPedido) {
         this.estadoPedido = estadoPedido;
+    }
+
+    public Long getClienteId() {
+        return clienteId;
+    }
+
+    public void setClienteId(Long clienteId) {
+        this.clienteId = clienteId;
+    }
+
+    public Integer getPuntosCanjeados() {
+        return puntosCanjeados;
+    }
+
+    public void setPuntosCanjeados(Integer puntosCanjeados) {
+        this.puntosCanjeados = puntosCanjeados;
+    }
+
+    public Integer getSaldoPuntosRestante() {
+        return saldoPuntosRestante;
+    }
+
+    public void setSaldoPuntosRestante(Integer saldoPuntosRestante) {
+        this.saldoPuntosRestante = saldoPuntosRestante;
     }
 
     public Long getSucursalId() { return sucursalId; }
