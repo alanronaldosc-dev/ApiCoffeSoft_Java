@@ -113,10 +113,6 @@ public class LiquidacionController {
             System.out.println("ERROR PDF: " + e.getClass().getName() + " - " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage().getBytes());
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-
         }
     }
 }
