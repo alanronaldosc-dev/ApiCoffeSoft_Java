@@ -43,6 +43,16 @@ Hotspots fue bloqueada porque el workspace no está conectado a un proyecto
 SonarQube Server/Cloud. Por eso no se reportan conteos de vulnerabilidades,
 code smells o cobertura como si provinieran de un escaneo SonarQube completo.
 
+En una revisión local posterior de las clases incluidas en el endurecimiento
+JWT, la vista Problems mostró observaciones de calidad en
+`UsuarioController.java` (inyección de dependencias por campos y literales
+repetidos), además de solicitudes de revisión para CORS permisivo y la
+desactivación de CSRF en la configuración stateless. También señaló las
+anotaciones de nulabilidad ausentes en los parámetros del filtro JWT. Estas
+observaciones locales no son resultados de un análisis SonarQube Server/Cloud
+ni un Quality Gate; CORS y CSRF requieren revisión en el contexto de la
+configuración completa y los clientes antes de cambiar su comportamiento.
+
 ## Hallazgo de revisión de seguridad manual
 
 La revisión del código Java existente identificó un problema de **control de
