@@ -29,6 +29,10 @@ public class CafeUserDetailsService implements UserDetailsService {
 
         if (Integer.valueOf(0).equals(usuario.getUserTipo())) {
             user.roles("ADMIN");
+        } else if (Integer.valueOf(2).equals(usuario.getUserTipo())) {
+            user.roles("CLIENT");
+        } else if (Integer.valueOf(4).equals(usuario.getUserTipo())) {
+            user.roles("DELIVERY");
         } else {
             user.roles("USER");
         }

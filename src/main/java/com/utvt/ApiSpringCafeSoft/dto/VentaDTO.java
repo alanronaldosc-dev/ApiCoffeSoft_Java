@@ -1,5 +1,6 @@
 package com.utvt.ApiSpringCafeSoft.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -28,25 +29,43 @@ public class VentaDTO {
     @Schema(description = "Descuento aplicado", example = "10.00")
     private Double descuento;
 
+    @Schema(description = "Puntos de fidelidad canjeados", example = "50")
+    @NotNull
+    @Min(0)
+    private Integer puntosCanjeados = 0;
+
+    @Schema(description = "Saldo de puntos después de la venta", example = "450")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private Integer saldoPuntosRestante;
+
     @Schema(description = "Total de la venta", example = "164.00")
     private Double total;
 
-    @Schema(description = "Método de pago (efectivo o tarjeta)", example = "efectivo", required = true)
+    @Schema(description = "Método de pago (efectivo o tarjeta)", example = "efectivo",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "El método de pago es obligatorio")
     @Pattern(regexp = "^(efectivo|tarjeta)$", message = "El método de pago debe ser: efectivo o tarjeta")
     private String metodoPago;
 
-    @Schema(description = "ID del usuario que realiza la venta", example = "1", required = true)
+    @Schema(description = "ID del usuario que realiza la venta", example = "1",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "El ID del usuario es obligatorio")
     private Long usuarioId;
 
     @Schema(description = "Nombre del usuario (solo lectura)")
     private String usuarioNombre;
 
+    @Schema(description = "ID del cliente asociado a la venta", example = "12")
+    private Long clienteId;
+
+    @Schema(description = "ID de la promoción que se desea aplicar", example = "3")
+    private Long promocionId;
+
     @Schema(description = "Observaciones de la venta", example = "Venta con descuento especial")
     private String observaciones;
 
-    @Schema(description = "Lista de productos vendidos", required = true)
+    @Schema(description = "Lista de productos vendidos",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     @Valid
     @NotEmpty(message = "Debe haber al menos un producto")
     private List<VentaDetalleDTO> detalles = new ArrayList<>();
@@ -149,6 +168,38 @@ private String estadoPedido;
 
     public void setUsuarioNombre(String usuarioNombre) {
         this.usuarioNombre = usuarioNombre;
+    }
+
+    public Long getClienteId() {
+        return clienteId;
+    }
+
+    public void setClienteId(Long clienteId) {
+        this.clienteId = clienteId;
+    }
+
+    public Long getPromocionId() {
+        return promocionId;
+    }
+
+    public void setPromocionId(Long promocionId) {
+        this.promocionId = promocionId;
+    }
+
+    public Integer getPuntosCanjeados() {
+        return puntosCanjeados;
+    }
+
+    public void setPuntosCanjeados(Integer puntosCanjeados) {
+        this.puntosCanjeados = puntosCanjeados;
+    }
+
+    public Integer getSaldoPuntosRestante() {
+        return saldoPuntosRestante;
+    }
+
+    public void setSaldoPuntosRestante(Integer saldoPuntosRestante) {
+        this.saldoPuntosRestante = saldoPuntosRestante;
     }
 
     public String getObservaciones() {

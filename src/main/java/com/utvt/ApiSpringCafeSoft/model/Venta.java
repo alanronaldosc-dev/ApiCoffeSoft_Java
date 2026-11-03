@@ -3,6 +3,7 @@ package com.utvt.ApiSpringCafeSoft.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +38,10 @@ public class Venta {
     @Column(nullable = false)
     private Double descuento;
 
+    @Min(value = 0, message = "Los puntos canjeados no pueden ser negativos")
+    @Column(name = "puntos_canjeados", nullable = false, columnDefinition = "integer default 0")
+    private Integer puntosCanjeados = 0;
+
     @NotNull(message = "El total es obligatorio")
     @Min(value = 0, message = "El total no puede ser negativo")
     @Column(nullable = false)
@@ -51,6 +56,14 @@ public class Venta {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", referencedColumnName = "id_usuario", nullable = false)
     private Usuario usuario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cliente_id")
+    private Usuario cliente;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promocion_id")
+    private Promocion promocion;
 
     @Size(max = 500, message = "Las observaciones no pueden exceder los 500 caracteres")
     @Column(length = 500)
@@ -81,11 +94,16 @@ private String estadoPedido;
     public Double getCambio() { return cambio; }
     public void setCambio(Double cambio) { this.cambio = cambio; }
 
+    public Integer getPuntosCanjeados() { return puntosCanjeados; }
+    public void setPuntosCanjeados(Integer puntosCanjeados) {
+        this.puntosCanjeados = puntosCanjeados;
+    }
+
 
     // Constructor por defecto
     public Venta() {
-        this.fecha = LocalDateTime.now();
-        this.createdAt = LocalDateTime.now();
+        this.fecha = LocalDateTime.now(ZoneId.systemDefault());
+        this.createdAt = LocalDateTime.now(ZoneId.systemDefault());
         this.descuento = 0.0;
     }
 
@@ -93,14 +111,14 @@ private String estadoPedido;
     public Venta(String folio, Double subtotal, Double impuestos, Double descuento, 
                  Double total, String metodoPago, Usuario usuario) {
         this.folio = folio;
-        this.fecha = LocalDateTime.now();
+        this.fecha = LocalDateTime.now(ZoneId.systemDefault());
         this.subtotal = subtotal;
         this.impuestos = impuestos;
         this.descuento = descuento != null ? descuento : 0.0;
         this.total = total;
         this.metodoPago = metodoPago;
         this.usuario = usuario;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 
     // Getters y Setters
@@ -174,6 +192,22 @@ private String estadoPedido;
 
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
+    }
+
+    public Usuario getCliente() {
+        return cliente;
+    }
+
+    public void setCliente(Usuario cliente) {
+        this.cliente = cliente;
+    }
+
+    public Promocion getPromocion() {
+        return promocion;
+    }
+
+    public void setPromocion(Promocion promocion) {
+        this.promocion = promocion;
     }
 
     public String getObservaciones() {

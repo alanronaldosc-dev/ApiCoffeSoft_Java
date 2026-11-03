@@ -13,11 +13,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_USER = "USER";
+
     @Bean
     public SecurityFilterChain apiSecurityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         return http
+                // This API is stateless and authenticates explicit Bearer tokens, not cookies.
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS))
@@ -26,7 +30,25 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
-                        .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/clientes")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_USER)
+                        .requestMatchers(HttpMethod.GET, "/api/clientes/*/puntos")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_USER)
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/clientes/*/beneficios/cotizaciones")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_USER)
+                        .requestMatchers(HttpMethod.GET, "/api/promociones/aplicables")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_USER)
+                        .requestMatchers(HttpMethod.POST, "/api/ventas")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_USER)
+                        .requestMatchers(
+                                "/api/promociones/**",
+                                "/api/clientes/segmentos",
+                                "/api/clientes/segmentos/**").hasRole(ROLE_ADMIN)
+                        .requestMatchers("/api/clientes/**")
+                        .hasAnyRole(ROLE_ADMIN, ROLE_USER)
+                        .requestMatchers("/api/usuarios/**").hasRole(ROLE_ADMIN)
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",

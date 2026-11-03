@@ -1,5 +1,6 @@
 package com.utvt.ApiSpringCafeSoft.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
@@ -67,6 +68,11 @@ public class Usuario {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @Min(0)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column(name = "saldo_puntos", nullable = false, columnDefinition = "integer default 0")
+    private Integer saldoPuntos = 0;
+
     public Usuario() {}
 
     public Long getId() { return id; }
@@ -114,6 +120,14 @@ public class Usuario {
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
+    }
+
+    public Integer getSaldoPuntos() {
+        return saldoPuntos;
+    }
+
+    public void setSaldoPuntos(Integer saldoPuntos) {
+        this.saldoPuntos = saldoPuntos;
     }
 
     public List<String> getPermisos() {
