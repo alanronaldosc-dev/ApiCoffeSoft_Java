@@ -52,21 +52,65 @@ usuarios expone operaciones de lectura y administración de cuentas, y se
 reportan rutas de ventas para crear o modificar registros sin controles de
 acceso. Además, el flujo de registro acepta el tipo privilegiado de usuario.
 
-Referencias principales: `controller/UsuarioController.java` (líneas 31-32,
-101-104, 288-290, 804-813 y 864-905), `controller/VentaController.java`
-(líneas 67-69 y 419-420), y `service/UsuarioService.java` (líneas 50 y 69-73).
-Este es un hallazgo de la revisión de seguridad, **no un resultado confirmado
-por SonarQube**. Debe corregirse en una historia de seguridad/autenticación
-antes de afirmar que la API está protegida.
+Referencias al estado base revisado: `controller/UsuarioController.java`
+(líneas 31-32, 101-104, 288-290, 804-813 y 864-905),
+`controller/VentaController.java` (líneas 67-69 y 419-420), y
+`service/UsuarioService.java` (líneas 50 y 69-73). Este es un hallazgo de la
+revisión de seguridad, **no un resultado confirmado por SonarQube**. Esta rama
+mitiga parcialmente el acceso anónimo con JWT, pero no cierra la autorización
+por rol en los demás controladores.
 
-## Bloqueo de compilación
+## Endurecimiento agregado en esta rama
 
-La compilación Maven (`mvnw.cmd -DskipTests package`) falla en
-`UsuarioController.java:543` por un paréntesis de cierre extra y contiene
-también una declaración duplicada de `buscarUsuariosPorNombre`. La compilación
-debe corregirse antes de usar un análisis Sonar Maven que dependa de bytecode.
-Este defecto está fuera de las clases de promociones, que no existen en el
-repositorio.
+- Se agregó autenticación stateless con JWT Bearer y expiración configurable.
+- Todos los endpoints bajo `/api/**` requieren token, excepto login y registro
+  público.
+- Las operaciones `/api/usuarios/**` requieren rol administrador, excepto
+  login y registro. El registro sin administrador autenticado fuerza el tipo
+  cliente (`userTipo=2`) y elimina permisos recibidos del cliente.
+- El login ahora devuelve `token` además del DTO de usuario.
+- Se agregaron pruebas de token, acceso a rutas y restricción del rol durante
+  el registro.
+- Se eliminó una declaración duplicada/mal formada de búsqueda de usuarios
+  que impedía compilar el backend.
+
+**Límite importante:** las rutas generales de la API requieren autenticación,
+pero esta rama todavía no define una matriz de autorización por rol para cada
+controlador fuera de usuarios. Por lo tanto, no se debe concluir que cada
+operación de ventas, inventario o administración tenga ya el permiso mínimo
+necesario. La corrección y el despliegue también requieren configurar `JWT_SECRET`
+en el entorno; no se incluye una clave en el repositorio.
+
+Ejemplo PowerShell para crear una clave aleatoria solo en la sesión actual (no
+la guardes en Git):
+
+```powershell
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+$env:JWT_SECRET = [Convert]::ToBase64String($bytes)
+```
+
+La variable debe configurarse también de forma segura en el entorno de
+despliegue antes de iniciar la API.
+
+La cuenta administradora inicial debe provisionarse mediante un proceso
+controlado de base de datos/operaciones. Después de ese bootstrap, solo un
+administrador autenticado puede crear cuentas con tipos privilegiados desde
+la API.
+
+## Compilación y pruebas
+
+El estado inicial de esta rama tenía un paréntesis de cierre extra y una
+declaración duplicada de `buscarUsuariosPorNombre` en
+`UsuarioController.java`; se eliminaron para poder compilar el API.
+
+| Validación | Resultado |
+|---|---|
+| `mvnw.cmd -DskipTests package` | Aprobada tras corregir el error de sintaxis preexistente. |
+| Pruebas focalizadas (`JwtServiceTest`, `SecurityConfigTest`, `UsuarioControllerSecurityTest`) | 8 pruebas aprobadas, 0 fallidas. |
+| Pruebas completas del proyecto | Pendientes; requieren validar dependencias externas/configuración de base de datos. |
+| Análisis SonarQube Server/Cloud y Quality Gate | Pendiente por falta de organización/proyecto SonarCloud configurado. |
 
 ## Configuración y siguientes pasos
 
@@ -74,13 +118,16 @@ La configuración se encuentra en `sonar-project.properties`. Para completar
 HU-034 se requiere:
 
 1. Identificar e incorporar el backend que implementa promociones y
-   segmentación, o crear esa implementación en una historia aparte.
-2. Corregir el error de compilación existente.
-3. Configurar SonarQube Server/Cloud y vincular el proyecto con el análisis de
-   Maven/Java.
+   segmentación; el usuario indicó que compartirá el repositorio/rama correctos.
+2. Terminar y probar la matriz de autorización por rol para los controladores
+   existentes, sin bloquear los flujos legítimos de los clientes.
+3. Crear la organización/proyecto SonarCloud, configurar el token como secreto
+   y vincular el análisis Maven/Java. No se debe compartir el token en el chat
+   ni guardarlo en el repositorio.
 4. Ejecutar el análisis en la rama HU-034, revisar Security Hotspots,
    vulnerabilidades, code smells y Quality Gate, y adjuntar el reporte real.
 
-**Conclusión:** HU-034 queda parcialmente preparada en una rama dedicada, pero
-el escaneo de seguridad de la API de promociones no puede darse por completado
-hasta disponer del código objetivo y de una instancia SonarQube conectada.
+**Conclusión:** HU-034 tiene endurecimiento JWT inicial y pruebas focalizadas,
+pero no está terminada. Falta analizar el código real de promociones,
+configurar SonarCloud, obtener un Quality Gate y cerrar la autorización
+específica por roles.

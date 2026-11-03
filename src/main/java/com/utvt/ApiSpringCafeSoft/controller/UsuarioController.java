@@ -2,6 +2,7 @@ package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.UsuarioDTO;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
+import com.utvt.ApiSpringCafeSoft.security.JwtService;
 import com.utvt.ApiSpringCafeSoft.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -35,6 +37,9 @@ public class UsuarioController {
 
     @Autowired
     private UsuarioService usuarioService;
+
+    @Autowired
+    private JwtService jwtService;
 
     // ============================================
     // HU-011: CREAR USUARIO — Formulario único para dar de alta datos básicos
@@ -152,8 +157,17 @@ public class UsuarioController {
                     }
                 )
             ) 
-            Usuario usuario) {
+            Usuario usuario,
+            Authentication authentication) {
         try {
+            boolean administradorAutenticado = authentication != null
+                    && authentication.getAuthorities().stream()
+                    .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+            if (!administradorAutenticado) {
+                usuario.setUserTipo(2);
+                usuario.setPermisos(new java.util.ArrayList<>());
+            }
+
             Usuario nuevoUsuario = usuarioService.crearUsuario(usuario);
             Map<String, Object> response = new HashMap<>();
             response.put("mensaje", "✅ Usuario creado exitosamente");
@@ -525,33 +539,6 @@ public ResponseEntity<Map<String, Object>> cambiarEstadoEmpleado(
     // 🔎 6. BUSCAR POR NOMBRE - GET
     // ============================================
     
-    @Operation(
-        summary = "🔎 Buscar usuarios por nombre",
-        description = """
-            Retorna todos los usuarios cuyo nombre contenga la palabra buscada.
-            
-            ### 🔍 Características:
-            - Búsqueda parcial (contiene la palabra)
-            - No distingue entre mayúsculas y minúsculas
-            - Útil para autocompletado y búsquedas rápidas
-            
-            ### 💡 Ejemplos:
-            - `GET /api/usuarios/buscar?nombre=Al` → Encuentra "Alan", "Alejandro", etc.
-            - `GET /api/usuarios/buscar?nombre=maria` → Encuentra "María", "Mariam", etc.
-            """
-    )
-    )
-@GetMapping("/buscar")
-public ResponseEntity<Map<String, Object>> buscarUsuariosPorNombre(
-        @RequestParam String nombre) {
-    List<UsuarioDTO> usuarios = usuarioService.buscarUsuariosPorNombre(nombre);
-    
-    Map<String, Object> response = new HashMap<>();
-    response.put("mensaje", "✅ Resultados de búsqueda para: " + nombre);
-    response.put("cantidad", usuarios.size());
-    response.put("usuarios", usuarios);
-    return new ResponseEntity<>(response, HttpStatus.OK);
-}
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200", 
@@ -889,6 +876,7 @@ public ResponseEntity<Map<String, Object>> iniciarSesion(
 
         response.put("mensaje", "Inicio de sesión exitoso");
         response.put("usuario", usuario);
+        response.put("token", jwtService.generateToken(usuario.getEmail()));
 
         return new ResponseEntity<>(
                 response,
