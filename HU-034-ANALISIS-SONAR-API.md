@@ -29,29 +29,31 @@ funcionalidad antes de emitir una conclusión de seguridad sobre ella.
 
 ## Estado del análisis SonarQube
 
-Se agregó `sonar-project.properties` para preparar el análisis de las fuentes
-Java y las pruebas Maven. **No se obtuvo un análisis SonarQube de servidor ni un
-Quality Gate**: en este entorno no hay SonarScanner CLI ni instancia local de
-SonarQube disponible. SonarQube for IDE indicó que el workspace no está
-vinculado a un proyecto remoto y que requiere Connected Mode para devolver
-Security Hotspots y vulnerabilidades de taint de servidor/nube.
+Se ejecutó un análisis de servidor con SonarQube Community Build
+26.10.0.133078, instalado localmente en `http://localhost:9000`. El proyecto
+`cafesoft-api-hu034` analizó 58 fuentes Java y 4,351 líneas de código. El
+Quality Gate reportó **PASSED**, pero eso no significa que el código esté libre
+de vulnerabilidades: el análisis encontró issues abiertos que se detallan
+abajo. No es un análisis de SonarQube Cloud ni cubre una API de promociones que
+no existe en este repositorio.
 
-Se solicitaron análisis de archivo desde SonarQube for IDE para las 49 fuentes
-Java del repositorio. Estos análisis no proporcionaron un reporte consolidado
-ni una lista verificable de hallazgos Sonar; la recuperación de Security
-Hotspots fue bloqueada porque el workspace no está conectado a un proyecto
-SonarQube Server/Cloud. Por eso no se reportan conteos de vulnerabilidades,
-code smells o cobertura como si provinieran de un escaneo SonarQube completo.
+| Métrica del proyecto | Resultado |
+|---|---:|
+| Quality Gate | PASSED |
+| Bugs | 0 |
+| Vulnerabilidades abiertas | 10 (4 CRITICAL, 6 MAJOR) |
+| Security Hotspots reportados | 0 |
+| Code smells abiertos | 29 |
+| Duplicación | 7.2% |
+| Cobertura | 0.0%; no se importó reporte de cobertura |
 
-En una revisión local posterior de las clases incluidas en el endurecimiento
-JWT, la vista Problems mostró observaciones de calidad en
-`UsuarioController.java` (inyección de dependencias por campos y literales
-repetidos), además de solicitudes de revisión para CORS permisivo y la
-desactivación de CSRF en la configuración stateless. También señaló las
-anotaciones de nulabilidad ausentes en los parámetros del filtro JWT. Estas
-observaciones locales no son resultados de un análisis SonarQube Server/Cloud
-ni un Quality Gate; CORS y CSRF requieren revisión en el contexto de la
-configuración completa y los clientes antes de cambiar su comportamiento.
+El proyecto `cafesoft-react-hu033` también se analizó desde esta instancia y
+obtuvo Quality Gate PASSED con 0 bugs, 0 vulnerabilidades, 0 Security Hotspots
+y 0 code smells en sus dos archivos objetivo.
+
+La instancia y sus proyectos están en esta máquina, no en la nube. El token de
+análisis temporal se revocó al terminar. No se guardaron tokens en los
+repositorios.
 
 ## Hallazgo de revisión de seguridad manual
 
@@ -69,6 +71,16 @@ Referencias al estado base revisado: `controller/UsuarioController.java`
 revisión de seguridad, **no un resultado confirmado por SonarQube**. Esta rama
 mitiga parcialmente el acceso anónimo con JWT, pero no cierra la autorización
 por rol en los demás controladores.
+
+El análisis Sonar actual además señala tres vulnerabilidades críticas por
+recepción directa de entidades persistentes desde el request body en
+`UsuarioController.java` (alta y actualización de usuarios) y
+`ProveedorController.java` (alta de proveedor), una vulnerabilidad crítica
+relacionada con la configuración de CSRF y seis hallazgos mayores de CORS
+permisivo. Los hallazgos de CORS
+aparecen en `WebConfig.java` y varios controladores con `@CrossOrigin("*")`.
+Se deben revisar y corregir antes de declarar segura la API. El escaneo no
+detectó vulnerabilidades de inyección en este análisis.
 
 ## Endurecimiento agregado en esta rama
 
@@ -119,25 +131,33 @@ declaración duplicada de `buscarUsuariosPorNombre` en
 |---|---|
 | `mvnw.cmd -DskipTests package` | Aprobada tras corregir el error de sintaxis preexistente. |
 | Pruebas focalizadas (`JwtServiceTest`, `SecurityConfigTest`, `UsuarioControllerSecurityTest`) | 8 pruebas aprobadas, 0 fallidas. |
-| Pruebas completas del proyecto | Pendientes; requieren validar dependencias externas/configuración de base de datos. |
-| Análisis SonarQube Server/Cloud y Quality Gate | Pendiente por falta de organización/proyecto SonarCloud configurado. |
+| `mvnw.cmd test` completo | Bloqueado al iniciar el contexto de pruebas existente por autenticación fallida de PostgreSQL. |
+| SonarQube Community Build para `cafesoft-api-hu034` | Ejecutado; Quality Gate PASSED con 10 vulnerabilidades y 29 code smells abiertos. |
+| Pruebas de API de promociones/segmentación | No aplicables: no existen esos endpoints/clases en este repositorio. |
 
 ## Configuración y siguientes pasos
 
-La configuración se encuentra en `sonar-project.properties`. Para completar
-HU-034 se requiere:
+La configuración base se encuentra en `sonar-project.properties`; el escaneo
+Maven usó explícitamente la clave `cafesoft-api-hu034`. Para completar HU-034 se
+requiere:
 
-1. Identificar e incorporar el backend que implementa promociones y
-   segmentación; el usuario indicó que compartirá el repositorio/rama correctos.
-2. Terminar y probar la matriz de autorización por rol para los controladores
-   existentes, sin bloquear los flujos legítimos de los clientes.
-3. Crear la organización/proyecto SonarCloud, configurar el token como secreto
-   y vincular el análisis Maven/Java. No se debe compartir el token en el chat
-   ni guardarlo en el repositorio.
-4. Ejecutar el análisis en la rama HU-034, revisar Security Hotspots,
-   vulnerabilidades, code smells y Quality Gate, y adjuntar el reporte real.
+1. Localizar e incorporar el backend que implementa promociones y
+   segmentación. Se buscaron clases, endpoints y todas las ramas/historial
+   disponibles de este repositorio; no se encontró ese código. El archivo
+   `ProductoInsumoDTO.java` seleccionado corresponde a una relación producto-
+   insumo, no a promociones.
+2. Revisar y corregir las vulnerabilidades y code smells del API que sí se
+   analizó, empezando por las tres vulnerabilidades críticas de binding de
+   entidades y definiendo los orígenes CORS permitidos para producción.
+3. Completar la autorización por rol para los controladores existentes y
+   agregar cobertura de pruebas; la cobertura Sonar actual es 0.0%.
+4. Ejecutar Sonar sobre el código real de promociones y adjuntar el resultado
+   de ese proyecto. El servidor local ya está disponible para repetir análisis
+   en esta máquina; SonarQube Cloud requiere que la usuaria autorice la
+   conexión con GitHub.
 
-**Conclusión:** HU-034 tiene endurecimiento JWT inicial y pruebas focalizadas,
-pero no está terminada. Falta analizar el código real de promociones,
-configurar SonarCloud, obtener un Quality Gate y cerrar la autorización
-específica por roles.
+**Conclusión:** el análisis de Sonar del API Java disponible sí se ejecutó y
+obtuvo Quality Gate PASSED, pero HU-034 **no está terminada**. El repositorio no
+contiene la API de promociones/segmentación, el análisis encontró 10
+vulnerabilidades y 29 code smells, la matriz de roles está incompleta y las
+pruebas completas están bloqueadas por la configuración local de PostgreSQL.
