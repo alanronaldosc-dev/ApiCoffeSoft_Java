@@ -21,77 +21,43 @@ import java.util.Map;
 @RequestMapping("/api/promociones")
 @Tag(
     name = "Promociones",
-    description = "Gestión y consulta de promociones"
+    description = "Gestion de promociones y auditoria"
 )
 public class PromocionController {
 
     @Autowired
     private PromocionService promocionService;
 
-    // =====================================================
-    // CONSULTAR TODAS LAS PROMOCIONES
-    // =====================================================
-
-    @Operation(
-        summary = "Consultar todas las promociones"
-    )
+    // Consultar todas.
+    @Operation(summary = "Consultar todas las promociones")
     @GetMapping({"", "/"})
     public ResponseEntity<List<PromocionDTO>> obtenerTodas() {
-
         return ResponseEntity.ok(
             promocionService.obtenerTodas()
         );
     }
 
-    // =====================================================
-    // HU-039: CONSULTAR PROMOCIONES POR ESTADO
-    // =====================================================
-
-    @Operation(
-        summary = "Filtrar promociones por estado",
-        description =
-            "Permite consultar promociones vigentes, " +
-            "vencidas, programadas o desactivadas."
-    )
+    // HU-039: consultar por estado.
+    @Operation(summary = "Filtrar promociones por estado")
     @GetMapping("/estado")
-    public ResponseEntity<?> consultarPorEstado(
+    public ResponseEntity<List<PromocionDTO>> consultarPorEstado(
         @RequestParam(defaultValue = "TODAS") String estado
     ) {
-
-        try {
-
-            List<PromocionDTO> promociones =
-                promocionService.obtenerPorEstado(estado);
-
-            return ResponseEntity.ok(promociones);
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity.badRequest().body(
-                Map.of("mensaje", e.getMessage())
-            );
-        }
+        return ResponseEntity.ok(
+            promocionService.obtenerPorEstado(estado)
+        );
     }
 
-    // =====================================================
-    // CONSULTAR PROMOCIONES VIGENTES
-    // =====================================================
-
-    @Operation(
-        summary = "Consultar promociones vigentes"
-    )
+    // Consultar vigentes.
+    @Operation(summary = "Consultar promociones vigentes")
     @GetMapping("/vigentes")
     public ResponseEntity<List<PromocionDTO>> obtenerVigentes() {
-
         return ResponseEntity.ok(
             promocionService.obtenerVigentes()
         );
     }
 
-    // =====================================================
-    // CONSULTAR VIGENTES POR SUCURSAL
-    // =====================================================
-
+    // Consultar vigentes por sucursal.
     @Operation(
         summary = "Consultar promociones vigentes por sucursal"
     )
@@ -99,179 +65,82 @@ public class PromocionController {
     public ResponseEntity<List<PromocionDTO>> obtenerVigentesPorSucursal(
         @PathVariable Long sucursalId
     ) {
-
         return ResponseEntity.ok(
-            promocionService.obtenerVigentesPorSucursal(
-                sucursalId
-            )
+            promocionService.obtenerVigentesPorSucursal(sucursalId)
         );
     }
 
-    // =====================================================
-    // CONSULTAR PROMOCIÓN POR ID
-    // =====================================================
-
-    @Operation(
-        summary = "Consultar promoción por ID"
-    )
+    // Consultar por ID.
+    @Operation(summary = "Consultar promocion por ID")
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(
+    public ResponseEntity<PromocionDTO> obtenerPorId(
         @PathVariable Long id
     ) {
-
-        try {
-
-            return ResponseEntity.ok(
-                promocionService.obtenerPorId(id)
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("mensaje", e.getMessage()));
-        }
+        return ResponseEntity.ok(
+            promocionService.obtenerPorId(id)
+        );
     }
 
-    // =====================================================
-    // VALIDAR APLICACIÓN DE PROMOCIÓN
-    // =====================================================
-
-    @Operation(
-        summary = "Validar si una promoción puede aplicarse"
-    )
+    // Validar aplicacion.
+    @Operation(summary = "Validar aplicacion de promocion")
     @GetMapping("/{id}/validar")
-    public ResponseEntity<?> validarAplicacion(
+    public ResponseEntity<PromocionDTO> validarAplicacion(
         @PathVariable Long id
     ) {
-
-        try {
-
-            return ResponseEntity.ok(
-                promocionService.validarAplicacion(id)
-            );
-
-        } catch (IllegalStateException e) {
-
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("mensaje", e.getMessage()));
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("mensaje", e.getMessage()));
-        }
+        return ResponseEntity.ok(
+            promocionService.validarAplicacion(id)
+        );
     }
 
-    // =====================================================
-    // CREAR PROMOCIÓN
-    // =====================================================
-
-    @Operation(
-        summary = "Crear una nueva promoción"
-    )
+    // Crear promocion.
+    @Operation(summary = "Crear promocion")
     @PostMapping({"", "/"})
-    public ResponseEntity<?> crearPromocion(
+    public ResponseEntity<PromocionDTO> crearPromocion(
         @Valid @RequestBody PromocionDTO dto
     ) {
-
-        try {
-
-            PromocionDTO nueva =
-                promocionService.crearPromocion(dto);
-
-            return ResponseEntity.status(HttpStatus.CREATED)
-                .body(nueva);
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity.badRequest()
-                .body(Map.of("mensaje", e.getMessage()));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(promocionService.crearPromocion(dto));
     }
 
-    // =====================================================
-    // ACTUALIZAR PROMOCIÓN
-    // =====================================================
-
-    @Operation(
-        summary = "Actualizar una promoción existente"
-    )
+    // Actualizar promocion.
+    @Operation(summary = "Actualizar promocion")
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarPromocion(
+    public ResponseEntity<PromocionDTO> actualizarPromocion(
         @PathVariable Long id,
         @Valid @RequestBody PromocionDTO dto
     ) {
-
-        try {
-
-            PromocionDTO actualizada =
-                promocionService.actualizarPromocion(
-                    id,
-                    dto
-                );
-
-            return ResponseEntity.ok(actualizada);
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity.badRequest()
-                .body(Map.of("mensaje", e.getMessage()));
-        }
+        return ResponseEntity.ok(
+            promocionService.actualizarPromocion(id, dto)
+        );
     }
 
-    // =====================================================
-    // DESACTIVAR PROMOCIÓN
-    // =====================================================
-
+    // HU-040: desactivacion con auditoria.
     @Operation(
-        summary = "Desactivar una promoción"
+        summary = "Desactivar promocion",
+        description = "Registra fecha y administrador responsable."
     )
     @PutMapping("/{id}/desactivar")
-    public ResponseEntity<?> desactivarPromocion(
+    public ResponseEntity<PromocionDTO> desactivarPromocion(
         @PathVariable Long id
     ) {
-
-        try {
-
-            PromocionDTO desactivada =
-                promocionService.desactivarPromocion(id);
-
-            return ResponseEntity.ok(desactivada);
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("mensaje", e.getMessage()));
-        }
+        return ResponseEntity.ok(
+            promocionService.desactivarPromocion(id)
+        );
     }
 
-    // =====================================================
-    // ELIMINAR PROMOCIÓN
-    // =====================================================
-
-    @Operation(
-        summary = "Eliminar una promoción"
-    )
+    // Eliminar promocion.
+    @Operation(summary = "Eliminar promocion")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarPromocion(
+    public ResponseEntity<Map<String, String>> eliminarPromocion(
         @PathVariable Long id
     ) {
+        promocionService.eliminarPromocion(id);
 
-        try {
-
-            promocionService.eliminarPromocion(id);
-
-            return ResponseEntity.ok(
-                Map.of(
-                    "mensaje",
-                    "Promoción eliminada correctamente."
-                )
-            );
-
-        } catch (IllegalArgumentException e) {
-
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("mensaje", e.getMessage()));
-        }
+        return ResponseEntity.ok(
+            Map.of(
+                "mensaje",
+                "Promocion eliminada correctamente."
+            )
+        );
     }
 }

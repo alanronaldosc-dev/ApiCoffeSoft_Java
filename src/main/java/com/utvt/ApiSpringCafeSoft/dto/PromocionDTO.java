@@ -5,10 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
 
-@Schema(description = "Promoción con vigencia controlada por fechas")
+@Schema(description = "Promocion con vigencia y auditoria")
 public class PromocionDTO {
 
-    @Schema(description = "ID de la promoción", example = "1")
     private Long id;
 
     @NotBlank(message = "El nombre es obligatorio")
@@ -29,26 +28,22 @@ public class PromocionDTO {
     private LocalDateTime fechaFin;
 
     private Boolean activa;
-
     private Integer minGarrafones = 0;
-
     private Boolean acumulaPuntos = true;
 
-    // Calculado automáticamente en el backend
+    // HU-039
     private Boolean vigente;
-
-    // HU-039: estado calculado de la promoción
-    @Schema(
-        description = "VIGENTE, VENCIDA, PROGRAMADA o DESACTIVADA",
-        example = "VIGENTE"
-    )
     private String estado;
 
     private Long sucursalId;
-
     private String sucursalNombre;
-
     private LocalDateTime createdAt;
+
+    // HU-040: datos de auditoria (solo lectura)
+    private LocalDateTime fechaDesactivacion;
+    private Long desactivadaPorId;
+    private String desactivadaPorNombre;
+    private String desactivadaPorEmail;
 
     public PromocionDTO() {}
 
@@ -162,5 +157,43 @@ public class PromocionDTO {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getFechaDesactivacion() {
+        return fechaDesactivacion;
+    }
+
+    public void setFechaDesactivacion(
+        LocalDateTime fechaDesactivacion
+    ) {
+        this.fechaDesactivacion = fechaDesactivacion;
+    }
+
+    public Long getDesactivadaPorId() {
+        return desactivadaPorId;
+    }
+
+    public void setDesactivadaPorId(Long desactivadaPorId) {
+        this.desactivadaPorId = desactivadaPorId;
+    }
+
+    public String getDesactivadaPorNombre() {
+        return desactivadaPorNombre;
+    }
+
+    public void setDesactivadaPorNombre(
+        String desactivadaPorNombre
+    ) {
+        this.desactivadaPorNombre = desactivadaPorNombre;
+    }
+
+    public String getDesactivadaPorEmail() {
+        return desactivadaPorEmail;
+    }
+
+    public void setDesactivadaPorEmail(
+        String desactivadaPorEmail
+    ) {
+        this.desactivadaPorEmail = desactivadaPorEmail;
     }
 }

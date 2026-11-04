@@ -8,10 +8,12 @@ import com.utvt.ApiSpringCafeSoft.repository.PromocionRepository;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,26 +30,119 @@ public class PromocionService {
     private UsuarioRepository usuarioRepository;
 
     // =====================================================
-    // HU-039: CALCULAR ESTADO AUTOMÁTICAMENTE
+    // HU-039: ESTADO AUTOMATICO
     // =====================================================
 
-    private String calcularEstado(Promocion promocion) {
+    private String calcularEstado(Promocion p) {
 
-        if (!Boolean.TRUE.equals(promocion.getActiva())) {
+        if (!Boolean.TRUE.equals(p.getActiva())) {
             return "DESACTIVADA";
         }
 
         LocalDateTime ahora = LocalDateTime.now();
 
-        if (ahora.isBefore(promocion.getFechaInicio())) {
+        if (ahora.isBefore(p.getFechaInicio())) {
             return "PROGRAMADA";
         }
 
-        if (ahora.isAfter(promocion.getFechaFin())) {
+        if (ahora.isAfter(p.getFechaFin())) {
             return "VENCIDA";
         }
 
         return "VIGENTE";
+    }
+
+    // =====================================================
+    // HU-040: OBTENER ADMINISTRADOR AUTENTICADO
+    // =====================================================
+
+    private Usuario obtenerAdministrador() {
+
+        Authentication auth = SecurityContextHolder
+            .getContext()
+            .getAuthentication();
+
+        if (auth == null ||
+            !auth.isAuthenticated() ||
+            "anonymousUser".equals(auth.getPrincipal())) {
+
+            throw new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Debes iniciar sesion."
+            );
+        }
+
+        boolean tieneRolAdmin = auth.getAuthorities()
+            .stream()
+            .anyMatch(a ->
+                "ROLE_ADMIN".equals(a.getAuthority())
+            );
+
+        if (!tieneRolAdmin) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Solo un administrador puede realizar esta accion."
+            );
+        }
+
+        Usuario usuario = usuarioRepository
+            .findByEmail(auth.getName())
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Usuario autenticado no encontrado."
+                )
+            );
+
+        if (!Integer.valueOf(0).equals(usuario.getUserTipo())
+            || !Boolean.TRUE.equals(usuario.getActivo())) {
+
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "El usuario no es un administrador activo."
+            );
+        }
+
+        return usuario;
+    }
+
+    // =====================================================
+    // BUSCAR PROMOCION
+    // =====================================================
+
+    private Promocion buscarPromocion(Long id) {
+
+        return promocionRepository.findById(id)
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Promocion no encontrada con ID: " + id
+                )
+            );
+    }
+
+    // =====================================================
+    // VALIDAR FECHAS
+    // =====================================================
+
+    private void validarFechas(
+        LocalDateTime inicio,
+        LocalDateTime fin
+    ) {
+
+        if (inicio == null || fin == null) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Las fechas de inicio y fin son obligatorias."
+            );
+        }
+
+        if (!fin.isAfter(inicio)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La fecha de fin debe ser posterior al inicio."
+            );
+        }
     }
 
     // =====================================================
@@ -61,7 +156,9 @@ public class PromocionService {
         dto.setId(p.getId());
         dto.setNombre(p.getNombre());
         dto.setDescripcion(p.getDescripcion());
-        dto.setDescuentoPorcentaje(p.getDescuentoPorcentaje());
+        dto.setDescuentoPorcentaje(
+            p.getDescuentoPorcentaje()
+        );
         dto.setFechaInicio(p.getFechaInicio());
         dto.setFechaFin(p.getFechaFin());
         dto.setActiva(p.getActiva());
@@ -76,86 +173,83 @@ public class PromocionService {
 
         if (p.getSucursal() != null) {
             dto.setSucursalId(p.getSucursal().getId());
-            dto.setSucursalNombre(p.getSucursal().getNombre());
+            dto.setSucursalNombre(
+                p.getSucursal().getNombre()
+            );
+        }
+
+        // HU-040
+        dto.setFechaDesactivacion(
+            p.getFechaDesactivacion()
+        );
+
+        if (p.getDesactivadaPor() != null) {
+            Usuario admin = p.getDesactivadaPor();
+
+            dto.setDesactivadaPorId(admin.getId());
+            dto.setDesactivadaPorNombre(admin.getNombre());
+            dto.setDesactivadaPorEmail(admin.getEmail());
         }
 
         return dto;
     }
 
     // =====================================================
-    // CREAR PROMOCIÓN
+    // CREAR PROMOCION
     // =====================================================
 
     @Transactional
     public PromocionDTO crearPromocion(PromocionDTO dto) {
 
-        if (dto.getFechaInicio() == null ||
-            dto.getFechaFin() == null) {
+        Usuario administrador = obtenerAdministrador();
 
-            throw new IllegalArgumentException(
-                "Las fechas de inicio y fin son obligatorias."
+        validarFechas(
+            dto.getFechaInicio(),
+            dto.getFechaFin()
+        );
+
+        if (administrador.getSucursal() == null) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El administrador no tiene sucursal asignada."
             );
         }
 
-        if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
-            throw new IllegalArgumentException(
-                "La fecha de fin no puede ser anterior a la fecha de inicio."
-            );
-        }
+        Promocion p = new Promocion();
 
-        Authentication auth =
-            SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new IllegalStateException(
-                "No existe una sesión autenticada."
-            );
-        }
-
-        String email = auth.getName();
-
-        Usuario usuarioAuth = usuarioRepository.findByEmail(email)
-            .orElseThrow(() ->
-                new IllegalStateException("Usuario no encontrado.")
-            );
-
-        if (usuarioAuth.getSucursal() == null) {
-            throw new IllegalArgumentException(
-                "Tu cuenta no tiene una sucursal asignada."
-            );
-        }
-
-        Promocion promocion = new Promocion();
-
-        promocion.setNombre(dto.getNombre());
-        promocion.setDescripcion(dto.getDescripcion());
-        promocion.setDescuentoPorcentaje(
+        p.setNombre(dto.getNombre());
+        p.setDescripcion(dto.getDescripcion());
+        p.setDescuentoPorcentaje(
             dto.getDescuentoPorcentaje()
         );
-        promocion.setFechaInicio(dto.getFechaInicio());
-        promocion.setFechaFin(dto.getFechaFin());
-        promocion.setActiva(true);
+        p.setFechaInicio(dto.getFechaInicio());
+        p.setFechaFin(dto.getFechaFin());
+        p.setActiva(true);
 
-        promocion.setMinGarrafones(
+        p.setMinGarrafones(
             dto.getMinGarrafones() != null
                 ? dto.getMinGarrafones()
                 : 0
         );
 
-        promocion.setAcumulaPuntos(
+        p.setAcumulaPuntos(
             dto.getAcumulaPuntos() != null
                 ? dto.getAcumulaPuntos()
                 : true
         );
 
-        promocion.setCreatedAt(LocalDateTime.now());
-        promocion.setSucursal(usuarioAuth.getSucursal());
+        p.setCreatedAt(LocalDateTime.now());
+        p.setSucursal(administrador.getSucursal());
 
-        return toDTO(promocionRepository.save(promocion));
+        // Una promocion nueva no tiene auditoria.
+        p.setFechaDesactivacion(null);
+        p.setDesactivadaPor(null);
+
+        return toDTO(promocionRepository.save(p));
     }
 
     // =====================================================
-    // CONSULTAR TODAS LAS PROMOCIONES
+    // CONSULTAR TODAS
     // =====================================================
 
     @Transactional(readOnly = true)
@@ -168,47 +262,46 @@ public class PromocionService {
     }
 
     // =====================================================
-    // HU-039: FILTRAR PROMOCIONES POR ESTADO
+    // HU-039: FILTRAR POR ESTADO
     // =====================================================
 
     @Transactional(readOnly = true)
-    public List<PromocionDTO> obtenerPorEstado(String estado) {
+    public List<PromocionDTO> obtenerPorEstado(
+        String estado
+    ) {
 
-        if (estado == null ||
-            estado.isBlank() ||
-            estado.equalsIgnoreCase("TODAS")) {
+        String filtro = estado == null
+            ? "TODAS"
+            : estado.trim().toUpperCase(Locale.ROOT);
 
+        if (filtro.isBlank() || "TODAS".equals(filtro)) {
             return obtenerTodas();
         }
 
-        String estadoNormalizado =
-            estado.trim().toUpperCase(Locale.ROOT);
-
-        List<String> estadosPermitidos = List.of(
+        List<String> permitidos = List.of(
             "VIGENTE",
             "VENCIDA",
             "PROGRAMADA",
             "DESACTIVADA"
         );
 
-        if (!estadosPermitidos.contains(estadoNormalizado)) {
-            throw new IllegalArgumentException(
-                "Estado no válido. Utiliza VIGENTE, VENCIDA, " +
+        if (!permitidos.contains(filtro)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Estado invalido. Usa VIGENTE, VENCIDA, " +
                 "PROGRAMADA o DESACTIVADA."
             );
         }
 
         return promocionRepository.findAll()
             .stream()
-            .filter(p ->
-                calcularEstado(p).equals(estadoNormalizado)
-            )
+            .filter(p -> calcularEstado(p).equals(filtro))
             .map(this::toDTO)
             .collect(Collectors.toList());
     }
 
     // =====================================================
-    // CONSULTAR PROMOCIONES VIGENTES
+    // CONSULTAR VIGENTES
     // =====================================================
 
     @Transactional(readOnly = true)
@@ -241,24 +334,17 @@ public class PromocionService {
     }
 
     // =====================================================
-    // CONSULTAR PROMOCIÓN POR ID
+    // CONSULTAR POR ID
     // =====================================================
 
     @Transactional(readOnly = true)
     public PromocionDTO obtenerPorId(Long id) {
 
-        Promocion promocion = promocionRepository.findById(id)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Promoción no encontrada con ID: " + id
-                )
-            );
-
-        return toDTO(promocion);
+        return toDTO(buscarPromocion(id));
     }
 
     // =====================================================
-    // ACTUALIZAR PROMOCIÓN
+    // HU-040: ACTUALIZAR SIN PERMITIR REACTIVACION
     // =====================================================
 
     @Transactional
@@ -267,138 +353,171 @@ public class PromocionService {
         PromocionDTO dto
     ) {
 
-        Promocion promocion = promocionRepository.findById(id)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Promoción no encontrada con ID: " + id
-                )
-            );
+        obtenerAdministrador();
 
-        LocalDateTime fechaInicio =
-            dto.getFechaInicio() != null
-                ? dto.getFechaInicio()
-                : promocion.getFechaInicio();
+        Promocion p = promocionRepository.findByIdForUpdate(id)
+    .orElseThrow(() ->
+        new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Promocion no encontrada con ID: " + id
+        )
+    );
 
-        LocalDateTime fechaFin =
-            dto.getFechaFin() != null
-                ? dto.getFechaFin()
-                : promocion.getFechaFin();
-
-        if (fechaFin.isBefore(fechaInicio)) {
-            throw new IllegalArgumentException(
-                "La fecha de fin no puede ser anterior a la fecha de inicio."
+        // No se permite modificar una promocion
+        // que ya fue desactivada manualmente.
+        if (!Boolean.TRUE.equals(p.getActiva())) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "La promocion esta desactivada y " +
+                "no puede editarse ni reactivarse."
             );
         }
 
-        if (Boolean.TRUE.equals(dto.getActiva()) &&
-            !Boolean.TRUE.equals(promocion.getActiva()) &&
-            LocalDateTime.now().isAfter(fechaFin)) {
-
-            throw new IllegalArgumentException(
-                "La promoción está vencida. " +
-                "Actualiza su fecha de fin para reactivarla."
+        // La desactivacion solo puede hacerse
+        // mediante el endpoint dedicado.
+        if (Boolean.FALSE.equals(dto.getActiva())) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Utiliza el endpoint de desactivacion."
             );
         }
 
-        promocion.setNombre(dto.getNombre());
-        promocion.setDescripcion(dto.getDescripcion());
+        LocalDateTime inicio = dto.getFechaInicio() != null
+            ? dto.getFechaInicio()
+            : p.getFechaInicio();
 
-        promocion.setDescuentoPorcentaje(
+        LocalDateTime fin = dto.getFechaFin() != null
+            ? dto.getFechaFin()
+            : p.getFechaFin();
+
+        validarFechas(inicio, fin);
+
+        p.setNombre(dto.getNombre());
+        p.setDescripcion(dto.getDescripcion());
+        p.setDescuentoPorcentaje(
             dto.getDescuentoPorcentaje()
         );
-
-        promocion.setFechaInicio(fechaInicio);
-        promocion.setFechaFin(fechaFin);
-
-        if (dto.getActiva() != null) {
-            promocion.setActiva(dto.getActiva());
-        }
+        p.setFechaInicio(inicio);
+        p.setFechaFin(fin);
 
         if (dto.getMinGarrafones() != null) {
-            promocion.setMinGarrafones(
-                dto.getMinGarrafones()
-            );
+            p.setMinGarrafones(dto.getMinGarrafones());
         }
 
         if (dto.getAcumulaPuntos() != null) {
-            promocion.setAcumulaPuntos(
-                dto.getAcumulaPuntos()
-            );
+            p.setAcumulaPuntos(dto.getAcumulaPuntos());
         }
 
-        return toDTO(promocionRepository.save(promocion));
+        // No modificar activa ni los campos de auditoria.
+        return toDTO(promocionRepository.save(p));
     }
 
     // =====================================================
-    // DESACTIVAR PROMOCIÓN
+    // HU-040: DESACTIVACION ANTICIPADA CON AUDITORIA
     // =====================================================
 
     @Transactional
     public PromocionDTO desactivarPromocion(Long id) {
 
-        Promocion promocion = promocionRepository.findById(id)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Promoción no encontrada con ID: " + id
-                )
+        Usuario administrador = obtenerAdministrador();
+
+        Promocion p = promocionRepository.findByIdForUpdate(id)
+    .orElseThrow(() ->
+        new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Promocion no encontrada con ID: " + id
+        )
+    );
+
+        if (!Boolean.TRUE.equals(p.getActiva())) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "La promocion ya esta desactivada."
             );
+        }
 
-        promocion.setActiva(false);
+        LocalDateTime ahora = LocalDateTime.now();
 
-        return toDTO(promocionRepository.save(promocion));
+        // HU-040: desactivar antes del vencimiento.
+        if (!ahora.isBefore(p.getFechaFin())) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "La promocion ya vencio. " +
+                "No es posible una desactivacion anticipada."
+            );
+        }
+
+        p.setActiva(false);
+        p.setFechaDesactivacion(ahora);
+        p.setDesactivadaPor(administrador);
+
+        return toDTO(promocionRepository.save(p));
     }
 
     // =====================================================
-    // ELIMINAR PROMOCIÓN
+    // ELIMINAR PROMOCION
     // =====================================================
 
     @Transactional
     public void eliminarPromocion(Long id) {
 
-        if (!promocionRepository.existsById(id)) {
-            throw new IllegalArgumentException(
-                "Promoción no encontrada con ID: " + id
+        obtenerAdministrador();
+
+        Promocion p = promocionRepository.findByIdForUpdate(id)
+    .orElseThrow(() ->
+        new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Promocion no encontrada con ID: " + id
+        )
+    );
+
+        // HU-040: conservar la auditoria
+        // de promociones desactivadas.
+        if (p.getFechaDesactivacion() != null) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "No se puede eliminar una promocion " +
+                "desactivada porque contiene auditoria."
             );
         }
 
-        promocionRepository.deleteById(id);
+        promocionRepository.delete(p);
     }
 
     // =====================================================
-    // VALIDAR SI LA PROMOCIÓN SE PUEDE APLICAR
+    // VALIDAR APLICACION DE PROMOCION
     // =====================================================
 
     @Transactional(readOnly = true)
     public PromocionDTO validarAplicacion(Long id) {
 
-        Promocion promocion = promocionRepository.findById(id)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Promoción no encontrada con ID: " + id
-                )
-            );
+        Promocion p = buscarPromocion(id);
 
-        String estado = calcularEstado(promocion);
+        String estado = calcularEstado(p);
 
         switch (estado) {
 
             case "DESACTIVADA":
-                throw new IllegalStateException(
-                    "La promoción está desactivada y no puede aplicarse."
+                throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "La promocion esta desactivada " +
+                    "y no puede aplicarse."
                 );
 
             case "PROGRAMADA":
-                throw new IllegalStateException(
-                    "La promoción aún no ha iniciado."
+                throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "La promocion aun no ha iniciado."
                 );
 
             case "VENCIDA":
-                throw new IllegalStateException(
-                    "La promoción ha vencido."
+                throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "La promocion ha vencido."
                 );
 
             default:
-                return toDTO(promocion);
+                return toDTO(p);
         }
     }
 }
