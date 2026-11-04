@@ -113,3 +113,76 @@ están implementadas, y sus pruebas focalizadas pasan. HU-034 no debe declararse
 completo autenticado contra el servidor SonarQube y revisar los hallazgos
 vigentes. La suite completa también requiere corregir la configuración local de
 PostgreSQL para que pase el test de contexto.
+
+## Resumen listo para el reporte académico
+
+La entidad seleccionada para la sincronización es la promoción aplicada a una
+venta y su segmento de cliente. La API Java ofrece consulta y administración
+de promociones, consulta de segmentos, cotización de puntos y registro de
+ventas. La aplicación React consulta la API, permite seleccionar una promoción
+o cotizar un canje, y envía la venta. El descuento no se confía al navegador:
+el servidor lo vuelve a calcular usando los precios persistidos, el estado y
+vigencia de la promoción, el segmento y, cuando aplica, el saldo de puntos.
+
+Se agregaron servicios y controladores de promociones, segmentos y puntos; se
+establecieron reglas de autorización por rol; y se amplió la venta para
+relacionarla con el cliente/promoción y registrar el canje. El saldo se valida
+y descuenta con bloqueo de fila dentro de la transacción. Las promociones no
+se combinan con puntos. La integración usa un saldo local que comienza en cero
+y debe cargarse por un proceso administrativo; no acumula puntos
+automáticamente.
+
+La evidencia de pruebas disponible es: 17 pruebas Java focalizadas aprobadas,
+6 pruebas Vitest aprobadas y build/lint focalizado de React aprobados. En la
+suite Java total, 22 de 23 pruebas pasan; el test de contexto no pudo iniciar
+por la contraseña PostgreSQL local. Esto se informa como limitación del
+entorno, no como prueba de funcionamiento integrado con una base QA.
+
+## Guion para la demostración
+
+1. **Explicar el flujo:** React envía una consulta de promociones con el cliente
+   y la cantidad; Java decide qué promociones aplican. Al cobrar, Java valida
+   nuevamente y calcula el importe. El navegador no puede imponer un
+   descuento.
+2. **Mostrar el control de acceso:** enseñar `SecurityConfig` y la matriz de
+   endpoints de este documento. Explicar que administración/segmentación
+   requiere `ADMIN`, mientras consulta de promociones aplicables y venta
+   permite `ADMIN`/`USER`. Las rutas de API requieren JWT.
+3. **Mostrar reglas de negocio:** recorrer el servicio de promociones y
+   segmentación; indicar vigencia, cantidad mínima y categorías de segmento.
+   Mostrar el servicio de puntos para la regla de 5 puntos por $1 MXN, la
+   cotización no consumible y el descuento protegido por transacción.
+4. **Mostrar el cliente React:** abrir el carrito, agregar productos y
+   seleccionar cliente. Mostrar cómo aparece una promoción aplicable o cómo se
+   solicita una cotización de puntos. Aclarar que no pueden combinarse.
+5. **Mostrar pruebas automatizadas:** presentar las pruebas focalizadas Java y
+   las seis pruebas Vitest. Indicar honestamente que la prueba de contexto
+   completa está bloqueada por la configuración local de PostgreSQL.
+6. **Mostrar SonarQube:** si se abre `http://localhost:9000`, aclarar que el
+   servidor responde `UP`, pero no hay análisis completo reciente ni Quality
+   Gate de esta rama. El intento de escaneo recibió HTTP 401 y no se pudo
+   completar Connected Mode. No presentar el escaneo base anterior ni los
+   intentos de análisis por archivo como resultado de HU-034.
+7. **Concluir con los límites:** el despliegue local usa HTTP; producción debe
+   usar HTTPS. El esquema nuevo requiere verificarse en una base QA. El saldo
+   inicial se carga administrativamente y no se acumula por compras en esta
+   implementación.
+
+### Texto breve para decir durante la exposición
+
+> “HU-034 integra promociones por segmento en el flujo de venta. La interfaz
+> consulta y presenta las opciones, pero el backend es quien autoriza y
+> recalcula el descuento; también valida puntos y evita consumos simultáneos
+> del mismo saldo. Las pruebas focalizadas pasan. No afirmo que el Quality Gate
+> esté aprobado: falta autenticación para ejecutar el análisis Sonar completo,
+> y una prueba de contexto necesita credenciales válidas de PostgreSQL.”
+
+### Material que conviene tener abierto
+
+- Este reporte, especialmente la tabla de endpoints, la matriz de pruebas y el
+  estado de SonarQube.
+- La pantalla React de promociones y el carrito, con datos ficticios o de QA.
+- Las clases `SecurityConfig`, `PromocionService`,
+  `SegmentacionClienteService`, `PuntosService` y `VentaService`.
+- La terminal con la salida de pruebas. No ejecutar una venta real en
+  producción ni mostrar tokens, contraseñas o datos personales.
