@@ -1,22 +1,21 @@
+
 package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.PromocionDTO;
 import com.utvt.ApiSpringCafeSoft.model.Promocion;
-import com.utvt.ApiSpringCafeSoft.model.Sucursal;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
 import com.utvt.ApiSpringCafeSoft.repository.PromocionRepository;
-import com.utvt.ApiSpringCafeSoft.repository.SucursalRepository;
+import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.utvt.ApiSpringCafeSoft.model.Usuario;
-import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,10 +27,37 @@ public class PromocionService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    // =====================================================
+    // HU-039: CALCULAR ESTADO AUTOMÁTICAMENTE
+    // =====================================================
 
-    // ── Mapeo entidad → DTO ──
+    private String calcularEstado(Promocion promocion) {
+
+        if (!Boolean.TRUE.equals(promocion.getActiva())) {
+            return "DESACTIVADA";
+        }
+
+        LocalDateTime ahora = LocalDateTime.now();
+
+        if (ahora.isBefore(promocion.getFechaInicio())) {
+            return "PROGRAMADA";
+        }
+
+        if (ahora.isAfter(promocion.getFechaFin())) {
+            return "VENCIDA";
+        }
+
+        return "VIGENTE";
+    }
+
+    // =====================================================
+    // CONVERTIR ENTIDAD A DTO
+    // =====================================================
+
     private PromocionDTO toDTO(Promocion p) {
+
         PromocionDTO dto = new PromocionDTO();
+
         dto.setId(p.getId());
         dto.setNombre(p.getNombre());
         dto.setDescripcion(p.getDescripcion());
@@ -42,157 +68,337 @@ public class PromocionService {
         dto.setMinGarrafones(p.getMinGarrafones());
         dto.setAcumulaPuntos(p.getAcumulaPuntos());
         dto.setCreatedAt(p.getCreatedAt());
-        // CA-2: se calcula en tiempo real
-        dto.setVigente(p.isVigente());
+
+        // HU-039
+        String estado = calcularEstado(p);
+        dto.setEstado(estado);
+        dto.setVigente("VIGENTE".equals(estado));
+
         if (p.getSucursal() != null) {
             dto.setSucursalId(p.getSucursal().getId());
             dto.setSucursalNombre(p.getSucursal().getNombre());
         }
+
         return dto;
     }
 
-    // ── Crear promoción ──
+    // =====================================================
+    // CREAR PROMOCIÓN
+    // =====================================================
+
     @Transactional
-public PromocionDTO crearPromocion(PromocionDTO dto) {
-    // CA-1: validar coherencia de fechas
-    if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
-        throw new IllegalArgumentException(
-                "La fecha de fin no puede ser anterior a la fecha de inicio.");
-    }
+    public PromocionDTO crearPromocion(PromocionDTO dto) {
 
-    // Sucursal del usuario autenticado (JWT) — igual que en VentaService
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    String email = auth.getName();
-    Usuario usuarioAuth = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-    if (usuarioAuth.getSucursal() == null) {
-        throw new IllegalArgumentException(
-                "Tu cuenta no tiene una sucursal asignada. Contacta al administrador.");
-    }
+        if (dto.getFechaInicio() == null ||
+            dto.getFechaFin() == null) {
 
-    Promocion promocion = new Promocion();
-    promocion.setNombre(dto.getNombre());
-    promocion.setDescripcion(dto.getDescripcion());
-    promocion.setDescuentoPorcentaje(dto.getDescuentoPorcentaje());
-    promocion.setFechaInicio(dto.getFechaInicio());
-    promocion.setFechaFin(dto.getFechaFin());
-    promocion.setActiva(true);
-    promocion.setMinGarrafones(dto.getMinGarrafones() != null ? dto.getMinGarrafones() : 0);
-    promocion.setAcumulaPuntos(dto.getAcumulaPuntos() != null ? dto.getAcumulaPuntos() : true);
-    promocion.setCreatedAt(LocalDateTime.now());
-    promocion.setSucursal(usuarioAuth.getSucursal());
-
-    return toDTO(promocionRepository.save(promocion));
-}
-
-    // ── Listar todas ──
-    public List<PromocionDTO> obtenerTodas() {
-        return promocionRepository.findAll().stream()
-                .map(this::toDTO).collect(Collectors.toList());
-    }
-
-    // ── Listar solo las vigentes (CA-2) ──
-    public List<PromocionDTO> obtenerVigentes() {
-        return promocionRepository.findVigentes(LocalDateTime.now()).stream()
-                .map(this::toDTO).collect(Collectors.toList());
-    }
-
-    // ── Listar vigentes por sucursal (CA-2) ──
-    public List<PromocionDTO> obtenerVigentesPorSucursal(Long sucursalId) {
-        return promocionRepository
-                .findVigentesBySucursal(sucursalId, LocalDateTime.now()).stream()
-                .map(this::toDTO).collect(Collectors.toList());
-    }
-
-    // ── Obtener por ID ──
-    public PromocionDTO obtenerPorId(Long id) {
-        Promocion p = promocionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(
-                        "Promoción no encontrada con ID: " + id));
-        return toDTO(p);
-    }
-
-    // ── Actualizar ──
-    @Transactional
-    public PromocionDTO actualizarPromocion(Long id, PromocionDTO dto) {
-        Promocion promocion = promocionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(
-                        "Promoción no encontrada con ID: " + id));
-
-        // CA-3: no se puede reactivar una promoción expirada cambiando solo 'activa'
-        // Si el fin ya pasó, debe actualizar también la fecha
-        if (Boolean.TRUE.equals(dto.getActiva())
-                && dto.getFechaFin() == null
-                && LocalDateTime.now().isAfter(promocion.getFechaFin())) {
             throw new IllegalArgumentException(
-                    "La promoción está expirada. Actualiza la fecha de fin para reactivarla.");
+                "Las fechas de inicio y fin son obligatorias."
+            );
         }
 
-        if (dto.getFechaFin() != null && dto.getFechaInicio() != null
-                && dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+        if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
             throw new IllegalArgumentException(
-                    "La fecha de fin no puede ser anterior a la fecha de inicio.");
+                "La fecha de fin no puede ser anterior a la fecha de inicio."
+            );
+        }
+
+        Authentication auth =
+            SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new IllegalStateException(
+                "No existe una sesión autenticada."
+            );
+        }
+
+        String email = auth.getName();
+
+        Usuario usuarioAuth = usuarioRepository.findByEmail(email)
+            .orElseThrow(() ->
+                new IllegalStateException("Usuario no encontrado.")
+            );
+
+        if (usuarioAuth.getSucursal() == null) {
+            throw new IllegalArgumentException(
+                "Tu cuenta no tiene una sucursal asignada."
+            );
+        }
+
+        Promocion promocion = new Promocion();
+
+        promocion.setNombre(dto.getNombre());
+        promocion.setDescripcion(dto.getDescripcion());
+        promocion.setDescuentoPorcentaje(
+            dto.getDescuentoPorcentaje()
+        );
+        promocion.setFechaInicio(dto.getFechaInicio());
+        promocion.setFechaFin(dto.getFechaFin());
+        promocion.setActiva(true);
+
+        promocion.setMinGarrafones(
+            dto.getMinGarrafones() != null
+                ? dto.getMinGarrafones()
+                : 0
+        );
+
+        promocion.setAcumulaPuntos(
+            dto.getAcumulaPuntos() != null
+                ? dto.getAcumulaPuntos()
+                : true
+        );
+
+        promocion.setCreatedAt(LocalDateTime.now());
+        promocion.setSucursal(usuarioAuth.getSucursal());
+
+        return toDTO(promocionRepository.save(promocion));
+    }
+
+    // =====================================================
+    // CONSULTAR TODAS LAS PROMOCIONES
+    // =====================================================
+
+    @Transactional(readOnly = true)
+    public List<PromocionDTO> obtenerTodas() {
+
+        return promocionRepository.findAll()
+            .stream()
+            .map(this::toDTO)
+            .collect(Collectors.toList());
+    }
+
+    // =====================================================
+    // HU-039: FILTRAR PROMOCIONES POR ESTADO
+    // =====================================================
+
+    @Transactional(readOnly = true)
+    public List<PromocionDTO> obtenerPorEstado(String estado) {
+
+        if (estado == null ||
+            estado.isBlank() ||
+            estado.equalsIgnoreCase("TODAS")) {
+
+            return obtenerTodas();
+        }
+
+        String estadoNormalizado =
+            estado.trim().toUpperCase(Locale.ROOT);
+
+        List<String> estadosPermitidos = List.of(
+            "VIGENTE",
+            "VENCIDA",
+            "PROGRAMADA",
+            "DESACTIVADA"
+        );
+
+        if (!estadosPermitidos.contains(estadoNormalizado)) {
+            throw new IllegalArgumentException(
+                "Estado no válido. Utiliza VIGENTE, VENCIDA, " +
+                "PROGRAMADA o DESACTIVADA."
+            );
+        }
+
+        return promocionRepository.findAll()
+            .stream()
+            .filter(p ->
+                calcularEstado(p).equals(estadoNormalizado)
+            )
+            .map(this::toDTO)
+            .collect(Collectors.toList());
+    }
+
+    // =====================================================
+    // CONSULTAR PROMOCIONES VIGENTES
+    // =====================================================
+
+    @Transactional(readOnly = true)
+    public List<PromocionDTO> obtenerVigentes() {
+
+        return promocionRepository
+            .findVigentes(LocalDateTime.now())
+            .stream()
+            .map(this::toDTO)
+            .collect(Collectors.toList());
+    }
+
+    // =====================================================
+    // CONSULTAR VIGENTES POR SUCURSAL
+    // =====================================================
+
+    @Transactional(readOnly = true)
+    public List<PromocionDTO> obtenerVigentesPorSucursal(
+        Long sucursalId
+    ) {
+
+        return promocionRepository
+            .findVigentesBySucursal(
+                sucursalId,
+                LocalDateTime.now()
+            )
+            .stream()
+            .map(this::toDTO)
+            .collect(Collectors.toList());
+    }
+
+    // =====================================================
+    // CONSULTAR PROMOCIÓN POR ID
+    // =====================================================
+
+    @Transactional(readOnly = true)
+    public PromocionDTO obtenerPorId(Long id) {
+
+        Promocion promocion = promocionRepository.findById(id)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "Promoción no encontrada con ID: " + id
+                )
+            );
+
+        return toDTO(promocion);
+    }
+
+    // =====================================================
+    // ACTUALIZAR PROMOCIÓN
+    // =====================================================
+
+    @Transactional
+    public PromocionDTO actualizarPromocion(
+        Long id,
+        PromocionDTO dto
+    ) {
+
+        Promocion promocion = promocionRepository.findById(id)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "Promoción no encontrada con ID: " + id
+                )
+            );
+
+        LocalDateTime fechaInicio =
+            dto.getFechaInicio() != null
+                ? dto.getFechaInicio()
+                : promocion.getFechaInicio();
+
+        LocalDateTime fechaFin =
+            dto.getFechaFin() != null
+                ? dto.getFechaFin()
+                : promocion.getFechaFin();
+
+        if (fechaFin.isBefore(fechaInicio)) {
+            throw new IllegalArgumentException(
+                "La fecha de fin no puede ser anterior a la fecha de inicio."
+            );
+        }
+
+        if (Boolean.TRUE.equals(dto.getActiva()) &&
+            !Boolean.TRUE.equals(promocion.getActiva()) &&
+            LocalDateTime.now().isAfter(fechaFin)) {
+
+            throw new IllegalArgumentException(
+                "La promoción está vencida. " +
+                "Actualiza su fecha de fin para reactivarla."
+            );
         }
 
         promocion.setNombre(dto.getNombre());
         promocion.setDescripcion(dto.getDescripcion());
-        promocion.setDescuentoPorcentaje(dto.getDescuentoPorcentaje());
-        promocion.setFechaInicio(dto.getFechaInicio());
-        promocion.setFechaFin(dto.getFechaFin());
+
+        promocion.setDescuentoPorcentaje(
+            dto.getDescuentoPorcentaje()
+        );
+
+        promocion.setFechaInicio(fechaInicio);
+        promocion.setFechaFin(fechaFin);
+
         if (dto.getActiva() != null) {
             promocion.setActiva(dto.getActiva());
         }
+
         if (dto.getMinGarrafones() != null) {
-            promocion.setMinGarrafones(dto.getMinGarrafones());
+            promocion.setMinGarrafones(
+                dto.getMinGarrafones()
+            );
         }
+
         if (dto.getAcumulaPuntos() != null) {
-            promocion.setAcumulaPuntos(dto.getAcumulaPuntos());
+            promocion.setAcumulaPuntos(
+                dto.getAcumulaPuntos()
+            );
         }
 
         return toDTO(promocionRepository.save(promocion));
     }
 
-    // ── Desactivar manualmente (CA-3) ──
+    // =====================================================
+    // DESACTIVAR PROMOCIÓN
+    // =====================================================
+
     @Transactional
     public PromocionDTO desactivarPromocion(Long id) {
+
         Promocion promocion = promocionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(
-                        "Promoción no encontrada con ID: " + id));
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "Promoción no encontrada con ID: " + id
+                )
+            );
+
         promocion.setActiva(false);
+
         return toDTO(promocionRepository.save(promocion));
     }
 
-    // ── Eliminar ──
+    // =====================================================
+    // ELIMINAR PROMOCIÓN
+    // =====================================================
+
     @Transactional
     public void eliminarPromocion(Long id) {
+
         if (!promocionRepository.existsById(id)) {
-            throw new RuntimeException("Promoción no encontrada con ID: " + id);
+            throw new IllegalArgumentException(
+                "Promoción no encontrada con ID: " + id
+            );
         }
+
         promocionRepository.deleteById(id);
     }
 
-    // ── CA-3: validar si una promoción puede aplicarse ahora ──
+    // =====================================================
+    // VALIDAR SI LA PROMOCIÓN SE PUEDE APLICAR
+    // =====================================================
+
+    @Transactional(readOnly = true)
     public PromocionDTO validarAplicacion(Long id) {
-        Promocion p = promocionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException(
-                        "Promoción no encontrada con ID: " + id));
 
-        if (!Boolean.TRUE.equals(p.getActiva())) {
-            throw new IllegalStateException(
-                    "La promoción está desactivada y no puede aplicarse.");
-        }
+        Promocion promocion = promocionRepository.findById(id)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "Promoción no encontrada con ID: " + id
+                )
+            );
 
-        LocalDateTime ahora = LocalDateTime.now();
-        if (ahora.isBefore(p.getFechaInicio())) {
-            throw new IllegalStateException(
-                    "La promoción aún no ha iniciado. Inicia el: "
-                    + p.getFechaInicio());
-        }
-        if (ahora.isAfter(p.getFechaFin())) {
-            throw new IllegalStateException(
-                    "La promoción ha expirado. Venció el: " + p.getFechaFin());
-        }
+        String estado = calcularEstado(promocion);
 
-        return toDTO(p);
+        switch (estado) {
+
+            case "DESACTIVADA":
+                throw new IllegalStateException(
+                    "La promoción está desactivada y no puede aplicarse."
+                );
+
+            case "PROGRAMADA":
+                throw new IllegalStateException(
+                    "La promoción aún no ha iniciado."
+                );
+
+            case "VENCIDA":
+                throw new IllegalStateException(
+                    "La promoción ha vencido."
+                );
+
+            default:
+                return toDTO(promocion);
+        }
     }
 }
