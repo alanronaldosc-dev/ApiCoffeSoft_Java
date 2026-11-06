@@ -47,6 +47,7 @@ public class EntregaPedido {
     @Column(length = 500)
     private String observaciones;
 
+
     public EntregaPedido() {}
 
     public Long getId() { return id; }
@@ -80,4 +81,5 @@ public class EntregaPedido {
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+
 }

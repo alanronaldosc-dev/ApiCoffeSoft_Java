@@ -19,6 +19,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import org.springframework.web.server.ResponseStatusException;
+
 @ExtendWith(MockitoExtension.class)
 class PromocionVigenciaTest {
 
@@ -71,12 +73,12 @@ class PromocionVigenciaTest {
         promocion.setFechaFin(ahora.minusDays(1));
         configurarPromocion();
 
-        IllegalStateException error = assertThrows(
-                IllegalStateException.class,
+        ResponseStatusException error = assertThrows(
+                ResponseStatusException.class,
                 () -> promocionService.validarAplicacion(10L)
         );
 
-        assertTrue(error.getMessage().contains("expirado"));
+        assertTrue(error.getMessage().contains("vencido"));
     }
 
     // QA-03: Promocion que aun no comienza
@@ -89,7 +91,7 @@ class PromocionVigenciaTest {
         configurarPromocion();
 
         assertThrows(
-                IllegalStateException.class,
+                ResponseStatusException.class,
                 () -> promocionService.validarAplicacion(10L)
         );
     }
@@ -100,8 +102,8 @@ class PromocionVigenciaTest {
         promocion.setActiva(false);
         configurarPromocion();
 
-        IllegalStateException error = assertThrows(
-                IllegalStateException.class,
+        ResponseStatusException error = assertThrows(
+                ResponseStatusException.class,
                 () -> promocionService.validarAplicacion(10L)
         );
 

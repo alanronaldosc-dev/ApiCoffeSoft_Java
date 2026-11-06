@@ -220,7 +220,7 @@ public class UsuarioService {
 
     // HU-011: Convertir entidad a DTO
     private UsuarioDTO convertirADTO(Usuario usuario) {
-        return new UsuarioDTO(
+        UsuarioDTO dto = new UsuarioDTO(
                 usuario.getId(),
                 usuario.getNombre(),
                 usuario.getEmail(),
@@ -232,6 +232,8 @@ public class UsuarioService {
                 usuario.getSucursal() != null ? usuario.getSucursal().getId() : null,
                 usuario.getSucursal() != null ? usuario.getSucursal().getNombre() : null
         );
+        dto.setTraccarDeviceId(usuario.getTraccarDeviceId());
+        return dto;
     }
 
     // Actualizar push token
@@ -273,4 +275,22 @@ public class UsuarioService {
                 .map(this::convertirADTO)
                 .collect(Collectors.toList());
     }
+    // Hito 1.4: vincular dispositivo Traccar a un repartidor existente.
+    public UsuarioDTO asignarDispositivoTraccar(Long usuarioId, String deviceId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        if (!Integer.valueOf(4).equals(usuario.getUserTipo())) {
+            throw new IllegalArgumentException("El usuario no es un repartidor (userTipo=4)");
+        }
+        if (deviceId == null || deviceId.isBlank() || deviceId.length() > 100) {
+            throw new IllegalArgumentException("traccarDeviceId debe contener entre 1 y 100 caracteres");
+        }
+        String normalizado = deviceId.trim();
+        if (usuarioRepository.existsByTraccarDeviceIdAndIdNot(normalizado, usuarioId)) {
+            throw new IllegalArgumentException("El dispositivo ya esta vinculado a otro usuario");
+        }
+        usuario.setTraccarDeviceId(normalizado);
+        return convertirADTO(usuarioRepository.save(usuario));
+    }
+
 }
