@@ -1,89 +1,62 @@
-name: CI - AquaSoft API
+name: CI – API Java
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
   pull_request:
-    branches: [master]
+    branches: [ master ]
 
 jobs:
-  build-and-test:
+  build-test-sonar:
+    name: Build, Test & SonarCloud
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+      SPRING_DATASOURCE_USERNAME: testuser
+      SPRING_DATASOURCE_PASSWORD: testpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      JWT_SECRET: ci-test-secret-key-not-used-in-prod
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Requerido por SonarCloud para blame y nuevas líneas
+
+      - name: Configurar Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
 
-      - name: Make mvnw executable
-        run: chmod +x mvnw
-
-      - name: Build and test
+      - name: Build y tests con cobertura (JaCoCo)
         run: ./mvnw -B clean verify
 
-      - name: Package (skip tests, already ran)
-        run: ./mvnw -B package -DskipTests
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Análisis SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          name: aquasoft-api-jar
-          path: target/*.jar
-
-  sonarqube:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: ${{ secrets.SONAR_TOKEN != '' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-      - name: SonarQube scan
-        run: ./mvnw -B sonar:sonar -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: aquasoft-api-jar
-          path: ./deploy
-
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /opt/aquasoft
-            git pull origin master
-            chmod +x mvnw
-            ./mvnw -B clean package -DskipTests
-            sudo systemctl restart aquasoft
-
-      - name: Health check
-        run: |
-          for i in {1..12}; do
-            if curl -sf http://${{ secrets.EC2_HOST }}:8080/api/health; then
-              echo "Health check OK"
-              exit 0
-            fi
-            echo "Intento $i fallido, esperando..."
-            sleep 5
-          done
-          echo "Health check fallido"
-          exit 1
+          args: >
+            -Dsonar.projectKey=alanronaldosc-dev_ApiCoffeSoft_Java
+            -Dsonar.organization=Alan Ronaldo Serrano Colin
+            -Dsonar.java.binaries=target/classes
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
