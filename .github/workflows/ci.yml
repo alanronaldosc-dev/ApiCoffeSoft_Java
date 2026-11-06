@@ -13,10 +13,13 @@ jobs:
 
     env:
       SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
-      SPRING_DATASOURCE_USERNAME: testuser
-      SPRING_DATASOURCE_PASSWORD: testpass
+      DB_URL: jdbc:postgresql://localhost:5432/testdb
+      DB_USERNAME: testuser
+      DB_PASSWORD: testpass
       SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
       JWT_SECRET: ci-test-secret-key-not-used-in-prod
+      TRACCAR_EMAIL: test@test.com
+      TRACCAR_PASSWORD: testpass
 
     services:
       postgres:
@@ -37,7 +40,7 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Requerido por SonarCloud para blame y nuevas líneas
+          fetch-depth: 0
 
       - name: Configurar Java 17
         uses: actions/setup-java@v4
@@ -45,6 +48,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+
+      - name: Dar permisos de ejecución a mvnw
+        run: chmod +x mvnw
 
       - name: Build y tests con cobertura (JaCoCo)
         run: ./mvnw -B clean verify
@@ -57,6 +63,6 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=alanronaldosc-dev_ApiCoffeSoft_Java
-            -Dsonar.organization=Alan Ronaldo Serrano Colin
+            -Dsonar.organization=alanronaldosc-dev
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
