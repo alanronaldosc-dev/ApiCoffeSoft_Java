@@ -114,6 +114,7 @@ public class ClienteService {
         // (evita sobreescribir el registro de otra persona)
         cliente.setId(null);
         cliente.setActivo(true);
+        cliente.setSaldoPuntos(0);
 
         Cliente guardado = clienteRepository.save(cliente);
 
