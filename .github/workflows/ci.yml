@@ -66,3 +66,73 @@ jobs:
             -Dsonar.organization=alanronaldosc-dev
             -Dsonar.java.binaries=target/classes
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+      - name: Empaquetar JAR para deploy
+        run: ./mvnw -B package -DskipTests
+        if: github.ref == 'refs/heads/master'
+
+      - name: Subir JAR al EC2
+        uses: appleboy/scp-action@v0.1.7
+        if: github.ref == 'refs/heads/master'
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "target/*.jar"
+          target: "/opt/cafesoft-api/"
+          strip_components: 1
+
+  deploy:
+    name: Deploy a EC2
+    runs-on: ubuntu-latest
+    needs: build-test-sonar
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Reiniciar servicio en EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Instalar Java 17 si no está
+            if ! java -version 2>&1 | grep -q "17"; then
+              sudo dnf install -y java-17-amazon-corretto-headless
+            fi
+
+            # Crear directorio si no existe
+            sudo mkdir -p /opt/cafesoft-api
+            sudo chown ec2-user:ec2-user /opt/cafesoft-api
+
+            # Crear servicio systemd si no existe
+            if [ ! -f /etc/systemd/system/cafesoft-api.service ]; then
+              sudo tee /etc/systemd/system/cafesoft-api.service > /dev/null <<'EOF'
+            [Unit]
+            Description=CafeSoft API
+            After=network.target
+
+            [Service]
+            User=ec2-user
+            WorkingDirectory=/opt/cafesoft-api
+            ExecStart=/usr/bin/java -jar /opt/cafesoft-api/ApiSpringCafeSoft-0.0.1-SNAPSHOT.jar
+            SuccessExitStatus=143
+            Restart=always
+            RestartSec=10
+            StandardOutput=journal
+            StandardError=journal
+
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+              sudo systemctl daemon-reload
+              sudo systemctl enable cafesoft-api
+            fi
+
+            # Reiniciar servicio con el nuevo JAR
+            sudo systemctl restart cafesoft-api
+            sleep 15
+
+            # Health check
+            curl -f http://localhost:8080/api/health || exit 1
+            echo "Deploy exitoso - API en línea"
