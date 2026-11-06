@@ -12,6 +12,8 @@ import java.util.List;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
+    List<Venta> findByFechaBetweenAndSucursalId(LocalDateTime inicio, LocalDateTime fin, Long sucursalId);
+
     Venta findByFolio(String folio);
     List<Venta> findByUsuarioId(Long usuarioId);
     List<Venta> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin);
