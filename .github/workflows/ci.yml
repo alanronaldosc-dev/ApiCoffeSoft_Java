@@ -87,6 +87,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-test-sonar
     if: github.ref == 'refs/heads/master'
+    env:
+      DB_URL_PROD: ${{ secrets.DB_URL_PROD }}
+      DB_USERNAME_PROD: ${{ secrets.DB_USERNAME_PROD }}
+      DB_PASSWORD_PROD: ${{ secrets.DB_PASSWORD_PROD }}
 
     steps:
       - name: Reiniciar servicio en EC2
@@ -95,6 +99,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DB_URL_PROD,DB_USERNAME_PROD,DB_PASSWORD_PROD
           script: |
             # Instalar Java 17 si no está
             if ! java -version 2>&1 | grep -q "17"; then
@@ -108,9 +113,16 @@ jobs:
             # Mover JAR desde home al directorio de la app
             mv /home/ec2-user/*.jar /opt/cafesoft-api/ 2>/dev/null || true
 
+            # Crear archivo de variables de entorno
+            sudo tee /opt/cafesoft-api/.env > /dev/null <<EOF
+            DB_URL=$DB_URL_PROD
+            DB_USERNAME=$DB_USERNAME_PROD
+            DB_PASSWORD=$DB_PASSWORD_PROD
+            EOF
+
             # Crear servicio systemd si no existe
             if [ ! -f /etc/systemd/system/cafesoft-api.service ]; then
-              sudo tee /etc/systemd/system/cafesoft-api.service > /dev/null <<'EOF'
+              sudo tee /etc/systemd/system/cafesoft-api.service > /dev/null <<'SVCEOF'
             [Unit]
             Description=CafeSoft API
             After=network.target
@@ -118,6 +130,7 @@ jobs:
             [Service]
             User=ec2-user
             WorkingDirectory=/opt/cafesoft-api
+            EnvironmentFile=/opt/cafesoft-api/.env
             ExecStart=/usr/bin/java -jar /opt/cafesoft-api/ApiSpringCafeSoft-0.0.1-SNAPSHOT.jar
             SuccessExitStatus=143
             Restart=always
@@ -127,15 +140,26 @@ jobs:
 
             [Install]
             WantedBy=multi-user.target
-            EOF
+            SVCEOF
               sudo systemctl daemon-reload
               sudo systemctl enable cafesoft-api
+            else
+              sudo systemctl daemon-reload
             fi
 
             # Reiniciar servicio con el nuevo JAR
             sudo systemctl restart cafesoft-api
-            sleep 15
+            sleep 45
 
-            # Health check
-            curl -f http://localhost:8080/api/health || exit 1
-            echo "Deploy exitoso - API en línea"
+            # Health check con reintentos
+            for i in 1 2 3 4 5; do
+              if curl -f http://localhost:8080/api/health 2>/dev/null; then
+                echo "Deploy exitoso - API en línea"
+                exit 0
+              fi
+              echo "Intento $i fallido, esperando 15s..."
+              sleep 15
+            done
+            echo "ERROR: API no respondió después de 120s"
+            sudo journalctl -u cafesoft-api --no-pager -n 50
+            exit 1
