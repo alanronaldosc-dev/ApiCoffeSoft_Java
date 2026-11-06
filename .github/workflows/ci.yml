@@ -1,0 +1,68 @@
+name: CI – API Java
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-test-sonar:
+    name: Build, Test & SonarCloud
+    runs-on: ubuntu-latest
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+      DB_URL: jdbc:postgresql://localhost:5432/testdb
+      DB_USERNAME: testuser
+      DB_PASSWORD: testpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      JWT_SECRET: ci-test-secret-key-not-used-in-prod
+      TRACCAR_EMAIL: test@test.com
+      TRACCAR_PASSWORD: testpass
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Dar permisos de ejecución a mvnw
+        run: chmod +x mvnw
+
+      - name: Build y tests con cobertura (JaCoCo)
+        run: ./mvnw -B clean verify
+
+      - name: Análisis SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=alanronaldosc-dev_ApiCoffeSoft_Java
+            -Dsonar.organization=alanronaldosc-dev
+            -Dsonar.java.binaries=target/classes
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
