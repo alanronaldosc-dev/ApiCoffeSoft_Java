@@ -24,6 +24,10 @@ public interface LiquidacionRepository
             LocalDate fechaOperacion
     );
 
+    // Consultar el cierre mas reciente de un repartidor para una fecha.
+    List<Liquidacion> findByRepartidorIdAndFechaOperacionOrderByFechaCierreDesc(
+            Long repartidorId, LocalDate fechaOperacion);
+
     /**
      * Historial de liquidaciones
      * de un repartidor.
