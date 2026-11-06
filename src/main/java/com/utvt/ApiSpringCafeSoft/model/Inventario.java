@@ -22,7 +22,7 @@ public class Inventario {
     private String tipo;
 
     @NotNull(message = "La cantidad es obligatoria")
-    @Min(value = 0, message = "La cantidad no puede ser negativa")
+    @DecimalMin(value = "0.0", inclusive = true, message = "La cantidad no puede ser negativa")
     @Column(nullable = false)
     private Double cantidad;
 
@@ -32,7 +32,7 @@ public class Inventario {
     private String unidadMedida;
 
     @NotNull(message = "La cantidad mínima es obligatoria")
-    @Min(value = 0, message = "La cantidad mínima no puede ser negativa")
+    @DecimalMin(value = "0.0", inclusive = true, message = "La cantidad mínima no puede ser negativa")
     @Column(nullable = false)
     private Double cantidadMinima;
 
@@ -44,7 +44,7 @@ public class Inventario {
     private String proveedor;
 
     @NotNull(message = "El precio unitario es obligatorio")
-    @Min(value = 0, message = "El precio unitario no puede ser negativo")
+    @DecimalMin(value = "0.0", inclusive = true, message = "El precio unitario no puede ser negativo")
     @Column(name = "precio_unitario", nullable = false)
     private Double precioUnitario;
 
