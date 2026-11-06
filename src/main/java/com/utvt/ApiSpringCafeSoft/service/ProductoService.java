@@ -490,13 +490,13 @@ public class ProductoService {
 
         resultado =
                 resultado.replaceAll(
-                        "(?i)garrafón",
+                        "(?iu)garrafón",
                         ""
                 );
 
         resultado =
                 resultado.replaceAll(
-                        "(?i)garrafon",
+                        "(?iu)garrafon",
                         ""
                 );
 
