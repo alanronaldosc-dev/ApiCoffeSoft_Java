@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
-    List<Venta> findByFechaBetweenAndSucursalId(LocalDateTime inicio, LocalDateTime fin, Long sucursalId);
+
 
     Venta findByFolio(String folio);
     List<Venta> findByUsuarioId(Long usuarioId);
@@ -40,6 +40,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     @Query("SELECT SUM(v.total) FROM Venta v WHERE v.sucursal.id = :sucursalId AND DATE(v.fecha) = DATE(:fecha)")
     Double sumTotalBySucursalAndFecha(@Param("sucursalId") Long sucursalId, @Param("fecha") LocalDateTime fecha);
+
+    // HU-018: consulta de ventas en ruta para clientes frecuentes.
+    List<Venta> findByFechaBetweenAndSucursalIdAndClienteRutaIdIsNotNull(
+            LocalDateTime inicio, LocalDateTime fin, Long sucursalId);
 
     // Consultar ventas por rango de fechas y sucursal
 @Query("""

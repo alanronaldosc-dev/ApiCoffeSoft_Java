@@ -33,6 +33,7 @@ public class VentaService {
     @Autowired private InventarioRepository inventarioRepository;
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private LoteRepository loteRepository;
+    @Autowired private BeneficiosService beneficiosService;
     @Autowired private ClienteRepository clienteRepository;
     @Autowired private MovimientoPuntosRepository movimientoPuntosRepository;
 

@@ -375,7 +375,7 @@ public class EntregaPedidoService {
                         .toUpperCase()
         );
         entregaDTO.setMontoCobrado(
-                Math.max(0, total - descuentoPromo)
+                Math.max(0, ventaGuardada.getTotal())
         );
         entregaDTO.setObservaciones(
                 dto.getObservaciones()

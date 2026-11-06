@@ -15,6 +15,7 @@ import com.utvt.ApiSpringCafeSoft.repository.EntregaPedidoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.EntregaGarrafonDetalleRepository;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.LiquidacionRepository;
+import com.utvt.ApiSpringCafeSoft.repository.MovimientoPuntosRepository;
 import com.utvt.ApiSpringCafeSoft.repository.RutaRepository;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,8 @@ public class LiquidacionService {
     private EntregaGarrafonDetalleRepository entregaGarrafonDetalleRepository;
     @Autowired
     private InventarioRepository inventarioRepository;
+    @Autowired
+    private MovimientoPuntosRepository movimientoPuntosRepository;
     public ResumenLiquidacionDTO obtenerResumen(Long repartidorId, LocalDate fecha) {
         Usuario repartidor = obtenerRepartidor(repartidorId);
         LocalDate fechaConsulta = fecha != null ? fecha : LocalDate.now();
