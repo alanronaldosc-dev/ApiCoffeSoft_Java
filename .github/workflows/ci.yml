@@ -79,7 +79,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "target/*.jar"
-          target: "/opt/cafesoft-api/"
+          target: "/home/ec2-user/"
           strip_components: 1
 
   deploy:
@@ -104,6 +104,9 @@ jobs:
             # Crear directorio si no existe
             sudo mkdir -p /opt/cafesoft-api
             sudo chown ec2-user:ec2-user /opt/cafesoft-api
+
+            # Mover JAR desde home al directorio de la app
+            mv /home/ec2-user/*.jar /opt/cafesoft-api/ 2>/dev/null || true
 
             # Crear servicio systemd si no existe
             if [ ! -f /etc/systemd/system/cafesoft-api.service ]; then
