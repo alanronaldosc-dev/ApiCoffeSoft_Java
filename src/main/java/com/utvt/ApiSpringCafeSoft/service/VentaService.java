@@ -1,9 +1,11 @@
 package com.utvt.ApiSpringCafeSoft.service;
 
+import com.utvt.ApiSpringCafeSoft.dto.ClienteFrecuenteDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDetalleDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
+import com.utvt.ApiSpringCafeSoft.exception.RecursoNoEncontradoException;
 import com.utvt.ApiSpringCafeSoft.model.*;
 import com.utvt.ApiSpringCafeSoft.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,11 @@ public class VentaService {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private LoteRepository loteRepository;
     @Autowired private BeneficiosService beneficiosService;
+    @Autowired private NotificacionService notificacionService;
+
+    private static final List<String> ESTADOS_PEDIDO = List.of(
+            "PENDIENTE", "RECIBIDA", "EN_PROCESO", "ENTREGADA"
+    );
 
     private VentaDTO convertToDTO(Venta venta) {
         VentaDTO dto = new VentaDTO();
@@ -164,7 +171,10 @@ public class VentaService {
             venta.setCambio(cambio);
         }
 
-        VentaDTO respuesta = convertToDTO(ventaRepository.save(venta));
+        Venta ventaGuardada = ventaRepository.save(venta);
+        notificacionService.enviarCambioEstado(ventaGuardada, "PENDIENTE");
+
+        VentaDTO respuesta = convertToDTO(ventaGuardada);
         respuesta.setClienteId(ventaDTO.getClienteId());
         respuesta.setPuntosCanjeados(ventaDTO.getPuntosCanjeados());
         respuesta.setSaldoPuntosRestante(saldoPuntosRestante);
@@ -249,10 +259,43 @@ public class VentaService {
 
     @Transactional
     public VentaDTO marcarPedidoEntregado(Long id) {
+        return actualizarEstadoPedido(id, "ENTREGADA");
+    }
+
+    /**
+     * Cambia el estado de un pedido y notifica al usuario
+     * asociado a la venta.
+     *
+     * Estados permitidos:
+     * PENDIENTE -> RECIBIDA -> EN_PROCESO -> ENTREGADA
+     */
+    @Transactional
+    public VentaDTO actualizarEstadoPedido(Long id, String estado) {
+
+        String nuevoEstado = estado == null
+                ? ""
+                : estado.trim().toUpperCase(Locale.ROOT);
+
+        if (!ESTADOS_PEDIDO.contains(nuevoEstado)) {
+            throw new IllegalArgumentException(
+                    "Estado no válido. Usa: PENDIENTE, RECIBIDA, EN_PROCESO o ENTREGADA."
+            );
+        }
+
         Venta venta = ventaRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + id));
-        venta.setEstadoPedido("ENTREGADA");
-        return convertToDTO(ventaRepository.save(venta));
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Pedido no encontrado con ID: " + id));
+
+        if (nuevoEstado.equals(venta.getEstadoPedido())) {
+            return convertToDTO(venta);
+        }
+
+        venta.setEstadoPedido(nuevoEstado);
+        Venta guardada = ventaRepository.save(venta);
+
+        notificacionService.enviarCambioEstado(guardada, nuevoEstado);
+
+        return convertToDTO(guardada);
     }
 
     @Transactional
@@ -484,5 +527,46 @@ public class VentaService {
             this.desde = desde;
             this.hasta = hasta;
         }
+    }
+
+    // =========================================================
+    // HU-018: CLIENTES FRECUENTES
+    // =========================================================
+
+    /**
+     * Devuelve la lista de clientes ordenada por número de compras
+     * en el periodo seleccionado, con la bandera esFrecuente cuando
+     * superan el mínimo de compras indicado.
+     */
+    public List<ClienteFrecuenteDTO> obtenerClientesFrecuentes(
+            String periodo, int minimoCompras) {
+
+        Usuario usuario = usuarioConSucursal();
+        Long sucursalId = usuario.getSucursal().getId();
+
+        RangoPeriodo rango = calcularRangoPeriodo(periodo);
+
+        List<Venta> ventas = ventaRepository
+                .findByFechaBetweenAndSucursalId(rango.desde, rango.hasta, sucursalId);
+
+        // Agrupar por nombreCliente
+        Map<String, List<Venta>> porCliente = ventas.stream()
+                .filter(v -> v.getNombreCliente() != null && !v.getNombreCliente().isBlank())
+                .collect(Collectors.groupingBy(Venta::getNombreCliente));
+
+        return porCliente.entrySet().stream()
+                .map(e -> {
+                    String nombre = e.getKey();
+                    List<Venta> compras = e.getValue();
+                    int total = compras.size();
+                    double gastado = compras.stream()
+                            .mapToDouble(v -> v.getTotal() != null ? v.getTotal() : 0.0)
+                            .sum();
+                    return new ClienteFrecuenteDTO(
+                            null, nombre, null, null,
+                            total, gastado, total >= minimoCompras);
+                })
+                .sorted(Comparator.comparingInt(ClienteFrecuenteDTO::getTotalCompras).reversed())
+                .collect(Collectors.toList());
     }
 }
