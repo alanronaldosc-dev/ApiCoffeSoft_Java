@@ -1,6 +1,5 @@
 package com.utvt.ApiSpringCafeSoft.controller;
 
-import com.utvt.ApiSpringCafeSoft.dto.ClienteFrecuenteDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
@@ -488,28 +487,6 @@ public class VentaController {
                 ventaService.obtenerProductosMasVendidos(periodo);
 
         return ResponseEntity.ok(productos);
-    }
-
-
-    // =========================================================
-    // HU-018: CLIENTES FRECUENTES
-    // =========================================================
-
-    @Operation(
-        summary = "Clientes frecuentes",
-        description = "Lista los clientes ordenados por número de compras " +
-                      "en el periodo. Marca como frecuente a quienes superan " +
-                      "el mínimo de compras indicado."
-    )
-    @GetMapping("/reporte/clientes-frecuentes")
-    public ResponseEntity<List<ClienteFrecuenteDTO>> obtenerClientesFrecuentes(
-            @RequestParam(defaultValue = "mes") String periodo,
-            @RequestParam(defaultValue = "3")   int    minimoCompras) {
-
-        List<ClienteFrecuenteDTO> resultado =
-                ventaService.obtenerClientesFrecuentes(periodo, minimoCompras);
-
-        return ResponseEntity.ok(resultado);
     }
 
 
