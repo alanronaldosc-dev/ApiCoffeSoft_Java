@@ -559,113 +559,70 @@ public class VentaService {
     }
 
     // =========================================================
-<<<<<<< HEAD
     // HU-018: CLIENTES FRECUENTES
     // =========================================================
 
     /**
-     * Devuelve la lista de clientes ordenada por número de compras
-     * en el periodo seleccionado, con la bandera esFrecuente cuando
-     * superan el mínimo de compras indicado.
+     * Identifica los clientes frecuentes en el periodo indicado.
+     *
+     * Criterio de frecuencia: se considera frecuente todo cliente
+     * que haya realizado al menos {@code minimoCompras} compras
+     * en el periodo. El valor por defecto es 3 compras.
+     *
+     * Solo se consideran ventas con clienteRutaId asignado
+     * (ventas del módulo de ruta).
+     *
+     * @param periodo       "hoy", "mes" o "mes_anterior"
+     * @param minimoCompras número mínimo de compras para ser frecuente (≥ 1)
+     * @return lista completa ordenada por totalCompras descendente;
+     *         cada elemento indica si cumple el criterio
      */
     public List<ClienteFrecuenteDTO> obtenerClientesFrecuentes(
             String periodo, int minimoCompras) {
 
-        Usuario usuario = usuarioConSucursal();
-        Long sucursalId = usuario.getSucursal().getId();
+        // Validar criterio mínimo
+        if (minimoCompras < 1) {
+            throw new IllegalArgumentException(
+                    "El mínimo de compras debe ser al menos 1.");
+        }
 
+        // Resolver usuario autenticado y su sucursal
+        Usuario usuario   = usuarioConSucursal();
+        Long sucursalId   = usuario.getSucursal().getId();
+
+        // Calcular rango de fechas del periodo
         RangoPeriodo rango = calcularRangoPeriodo(periodo);
 
-        List<Venta> ventas = ventaRepository
-                .findByFechaBetweenAndSucursalId(rango.desde, rango.hasta, sucursalId);
+        // Obtener ventas de ruta en la sucursal y periodo
+        List<Venta> ventas =
+                ventaRepository
+                        .findByFechaBetweenAndSucursalIdAndClienteRutaIdIsNotNull(
+                                rango.desde, rango.hasta, sucursalId);
 
-        // Agrupar por nombreCliente
-        Map<String, List<Venta>> porCliente = ventas.stream()
-                .filter(v -> v.getNombreCliente() != null && !v.getNombreCliente().isBlank())
-                .collect(Collectors.groupingBy(Venta::getNombreCliente));
+        // Agrupar por clienteRutaId y acumular compras y monto
+        Map<Long, ClienteFrecuenteDTO> porCliente = new LinkedHashMap<>();
 
-        return porCliente.entrySet().stream()
-                .map(e -> {
-                    String nombre = e.getKey();
-                    List<Venta> compras = e.getValue();
-                    int total = compras.size();
-                    double gastado = compras.stream()
-                            .mapToDouble(v -> v.getTotal() != null ? v.getTotal() : 0.0)
-                            .sum();
-                    return new ClienteFrecuenteDTO(
-                            null, nombre, null, null,
-                            total, gastado, total >= minimoCompras);
-                })
-                .sorted(Comparator.comparingInt(ClienteFrecuenteDTO::getTotalCompras).reversed())
+        for (Venta venta : ventas) {
+            Long cid    = venta.getClienteRutaId();
+            String nombre = venta.getNombreCliente() != null
+                    ? venta.getNombreCliente() : "Cliente #" + cid;
+            double monto = venta.getTotal() != null ? venta.getTotal() : 0.0;
+
+            ClienteFrecuenteDTO fila = porCliente.computeIfAbsent(
+                    cid,
+                    k -> new ClienteFrecuenteDTO(cid, nombre, 0L, 0.0, false));
+
+            // nombre puede actualizarse si en alguna venta viene más completo
+            fila.setNombre(nombre);
+            fila.setTotalCompras(fila.getTotalCompras() + 1);
+            fila.setMontoTotal(fila.getMontoTotal() + monto);
+        }
+
+        // Marcar si cumple el criterio y ordenar por compras descendente
+        int min = minimoCompras;
+        return porCliente.values().stream()
+                .peek(c -> c.setEsFrecuente(c.getTotalCompras() >= min))
+                .sorted(Comparator.comparingLong(ClienteFrecuenteDTO::getTotalCompras).reversed())
                 .collect(Collectors.toList());
     }
-=======
-// HU-018: CLIENTES FRECUENTES
-// =========================================================
-
-/**
- * Identifica los clientes frecuentes en el periodo indicado.
- *
- * Criterio de frecuencia: se considera frecuente todo cliente
- * que haya realizado al menos {@code minimoCompras} compras
- * en el periodo. El valor por defecto es 3 compras.
- *
- * Solo se consideran ventas con clienteRutaId asignado
- * (ventas del módulo de ruta).
- *
- * @param periodo       "hoy", "mes" o "mes_anterior"
- * @param minimoCompras número mínimo de compras para ser frecuente (≥ 1)
- * @return lista completa ordenada por totalCompras descendente;
- *         cada elemento indica si cumple el criterio
- */
-public List<ClienteFrecuenteDTO> obtenerClientesFrecuentes(
-        String periodo, int minimoCompras) {
-
-    // Validar criterio mínimo
-    if (minimoCompras < 1) {
-        throw new IllegalArgumentException(
-                "El mínimo de compras debe ser al menos 1.");
-    }
-
-    // Resolver usuario autenticado y su sucursal
-    Usuario usuario   = usuarioConSucursal();
-    Long sucursalId   = usuario.getSucursal().getId();
-
-    // Calcular rango de fechas del periodo
-    RangoPeriodo rango = calcularRangoPeriodo(periodo);
-
-    // Obtener ventas de ruta en la sucursal y periodo
-    List<Venta> ventas =
-            ventaRepository
-                    .findByFechaBetweenAndSucursalIdAndClienteRutaIdIsNotNull(
-                            rango.desde, rango.hasta, sucursalId);
-
-    // Agrupar por clienteRutaId y acumular compras y monto
-    Map<Long, ClienteFrecuenteDTO> porCliente = new LinkedHashMap<>();
-
-    for (Venta venta : ventas) {
-        Long cid    = venta.getClienteRutaId();
-        String nombre = venta.getNombreCliente() != null
-                ? venta.getNombreCliente() : "Cliente #" + cid;
-        double monto = venta.getTotal() != null ? venta.getTotal() : 0.0;
-
-        ClienteFrecuenteDTO fila = porCliente.computeIfAbsent(
-                cid,
-                k -> new ClienteFrecuenteDTO(cid, nombre, 0L, 0.0, false));
-
-        // nombre puede actualizarse si en alguna venta viene más completo
-        fila.setNombre(nombre);
-        fila.setTotalCompras(fila.getTotalCompras() + 1);
-        fila.setMontoTotal(fila.getMontoTotal() + monto);
-    }
-
-    // Marcar si cumple el criterio y ordenar por compras descendente
-    int min = minimoCompras;
-    return porCliente.values().stream()
-            .peek(c -> c.setEsFrecuente(c.getTotalCompras() >= min))
-            .sorted(Comparator.comparingLong(ClienteFrecuenteDTO::getTotalCompras).reversed())
-            .collect(Collectors.toList());
-}
-
->>>>>>> origin/master
 }
