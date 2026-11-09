@@ -9,8 +9,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Base64;
@@ -93,10 +95,56 @@ class SecurityConfigTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void allowsAuthenticatedCustomersToReadProductsButRestrictsProductChangesToStaff()
+            throws Exception {
+        mockMvc.perform(get("/api/productos")
+                        .with(user("cliente").roles("CLIENT")))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/productos")
+                        .with(user("cliente").roles("CLIENT")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/productos/1")
+                        .with(user("cliente").roles("CLIENT")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/productos/1")
+                        .with(user("cliente").roles("CLIENT")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/productos")
+                        .with(user("staff").roles("USER")))
+                .andExpect(status().isNotFound());
+    }
+
     @RestController
     static class ProbeController {
         @GetMapping("/api/probe")
         String probe() {
+            return "ok";
+        }
+
+        @GetMapping("/api/productos")
+        String products() {
+            return "ok";
+        }
+
+        @PostMapping("/api/productos")
+        String createProduct() {
+            return "ok";
+        }
+
+        @PutMapping("/api/productos/{id}")
+        String updateProduct() {
+            return "ok";
+        }
+
+        @DeleteMapping("/api/productos/{id}")
+        String deleteProduct() {
             return "ok";
         }
 
