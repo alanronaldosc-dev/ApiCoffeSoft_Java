@@ -1,9 +1,11 @@
 package com.utvt.ApiSpringCafeSoft.model;
+
 /**
-     * 
-     * (HU-006): agrega confirmacion de carga por repartidor
-     * 
-     */
+ * HU-006: agrega confirmación de carga por repartidor.
+ */
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -27,7 +29,20 @@ public class Carga {
     private Usuario repartidor;
 
     /**
-     * Registro de inventario del cual se toman los garrafones.
+     * HU-016:
+     * Ruta a la que pertenece esta carga.
+     *
+     * JsonIgnore evita un ciclo al convertir:
+     * Ruta -> Carga -> Ruta -> Carga...
+     */
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ruta_id")
+    private Ruta ruta;
+
+    /**
+     * Registro de inventario del cual
+     * se toman los garrafones.
      */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "inventario_id", nullable = false)
@@ -37,27 +52,39 @@ public class Carga {
      * Cantidad de garrafones asignados.
      */
     @NotNull(message = "La cantidad es obligatoria")
-    @DecimalMin(value = "0.01", message = "La cantidad debe ser mayor a 0")
+    @DecimalMin(
+            value = "0.01",
+            message = "La cantidad debe ser mayor a 0"
+    )
     @Column(nullable = false)
     private Double cantidad;
 
     /**
-     * Fecha y hora en que se registra la carga.
+     * Fecha y hora en que
+     * se registra la carga.
      */
     @Column(name = "fecha_hora", nullable = false)
     private LocalDateTime fechaHora;
 
     /**
      * Estados posibles:
+     *
+     * SIN ASIGNAR
      * PENDIENTE
      * CARGA EN TRÁNSITO
+     * AGOTADA
+     * LIQUIDADA
      */
     @Column(nullable = false, length = 30)
     private String estado;
 
     /**
-     * HU-015: cantidad de garrafones que todavía conserva el repartidor.
-     * Se inicializa con la carga y disminuye con cada entrega confirmada.
+     * HU-015:
+     * Cantidad de garrafones que todavía
+     * conserva el repartidor.
+     *
+     * Se inicializa con la carga y disminuye
+     * con cada entrega confirmada.
      */
     @Column(name = "cantidad_disponible")
     private Double cantidadDisponible;
@@ -65,11 +92,12 @@ public class Carga {
     public Carga() {
     }
 
-    public Carga(Usuario repartidor,
-                 Inventario inventario,
-                 Double cantidad,
-                 LocalDateTime fechaHora,
-                 String estado) {
+    public Carga(
+            Usuario repartidor,
+            Inventario inventario,
+            Double cantidad,
+            LocalDateTime fechaHora,
+            String estado) {
 
         this.repartidor = repartidor;
         this.inventario = inventario;
@@ -91,15 +119,29 @@ public class Carga {
         return repartidor;
     }
 
-    public void setRepartidor(Usuario repartidor) {
+    public void setRepartidor(
+            Usuario repartidor) {
+
         this.repartidor = repartidor;
+    }
+
+    public Ruta getRuta() {
+        return ruta;
+    }
+
+    public void setRuta(
+            Ruta ruta) {
+
+        this.ruta = ruta;
     }
 
     public Inventario getInventario() {
         return inventario;
     }
 
-    public void setInventario(Inventario inventario) {
+    public void setInventario(
+            Inventario inventario) {
+
         this.inventario = inventario;
     }
 
@@ -107,7 +149,9 @@ public class Carga {
         return cantidad;
     }
 
-    public void setCantidad(Double cantidad) {
+    public void setCantidad(
+            Double cantidad) {
+
         this.cantidad = cantidad;
     }
 
@@ -115,7 +159,9 @@ public class Carga {
         return fechaHora;
     }
 
-    public void setFechaHora(LocalDateTime fechaHora) {
+    public void setFechaHora(
+            LocalDateTime fechaHora) {
+
         this.fechaHora = fechaHora;
     }
 
@@ -123,7 +169,9 @@ public class Carga {
         return estado;
     }
 
-    public void setEstado(String estado) {
+    public void setEstado(
+            String estado) {
+
         this.estado = estado;
     }
 
@@ -131,7 +179,10 @@ public class Carga {
         return cantidadDisponible;
     }
 
-    public void setCantidadDisponible(Double cantidadDisponible) {
-        this.cantidadDisponible = cantidadDisponible;
+    public void setCantidadDisponible(
+            Double cantidadDisponible) {
+
+        this.cantidadDisponible =
+                cantidadDisponible;
     }
-}    
+}

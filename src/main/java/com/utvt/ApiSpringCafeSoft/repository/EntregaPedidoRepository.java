@@ -15,5 +15,9 @@ public interface EntregaPedidoRepository extends JpaRepository<EntregaPedido, Lo
             LocalDateTime fin
     );
 
+    List<EntregaPedido> findByRutaIdOrderByFechaAsc(
+        Long rutaId
+);
+
     boolean existsByVentaIdAndResultado(Long ventaId, String resultado);
 }
