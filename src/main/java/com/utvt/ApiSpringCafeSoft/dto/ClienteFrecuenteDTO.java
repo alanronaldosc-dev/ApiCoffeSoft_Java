@@ -41,11 +41,11 @@ public class ClienteFrecuenteDTO {
     public ClienteFrecuenteDTO(Long clienteId, String nombre,
                                long totalCompras, double montoTotal,
                                boolean esFrecuente) {
-        this.clienteId   = clienteId;
-        this.nombre      = nombre;
+        this.clienteId    = clienteId;
+        this.nombre       = nombre;
         this.totalCompras = totalCompras;
-        this.montoTotal  = montoTotal;
-        this.esFrecuente = esFrecuente;
+        this.montoTotal   = montoTotal;
+        this.esFrecuente  = esFrecuente;
     }
 
     public Long getClienteId()            { return clienteId; }

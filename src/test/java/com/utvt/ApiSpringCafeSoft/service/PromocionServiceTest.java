@@ -18,8 +18,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,7 +45,7 @@ class PromocionServiceTest {
     @InjectMocks
     private PromocionService promocionService;
 
-    // ── Helpers para construir objetos de prueba ──
+    // ── Helpers ──
 
     private Promocion promocionVigente() {
         Promocion p = new Promocion();
@@ -103,6 +105,20 @@ class PromocionServiceTest {
         SecurityContextHolder.clearContext();
     }
 
+    private Usuario adminConSucursal(String email) {
+        Sucursal sucursal = new Sucursal();
+        sucursal.setId(1L);
+        sucursal.setNombre("Sucursal Central");
+
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setEmail(email);
+        usuario.setUserTipo(0);   // 0 = ADMIN
+        usuario.setActivo(true);
+        usuario.setSucursal(sucursal);
+        return usuario;
+    }
+
     // ── Tests ──
 
     @Test
@@ -126,8 +142,12 @@ class PromocionServiceTest {
     @Test
     @DisplayName("crearPromocion: crea correctamente cuando las fechas son válidas")
     void crearPromocion_fechasValidas_guardaPromocion() {
+        String email = "admin@cafesoft.com";
+        mockAdminContext(email);
+        when(usuarioRepository.findByEmail(email))
+                .thenReturn(Optional.of(adminConSucursal(email)));
+
         PromocionDTO dto = dtoConFechasValidas();
-        mockSecurityContext("admin@cafesoft.com");
 
         Sucursal sucursal = new Sucursal();
         sucursal.setId(1L);
@@ -181,12 +201,12 @@ class PromocionServiceTest {
     void obtenerPorId_noExiste_lanzaExcepcion() {
         when(promocionRepository.findById(99L)).thenReturn(Optional.empty());
 
-        RuntimeException ex = assertThrows(
-                RuntimeException.class,
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
                 () -> promocionService.obtenerPorId(99L)
         );
 
-        assertTrue(ex.getMessage().contains("99"));
+        assertTrue(ex.getReason().contains("99"));
     }
 
     @Test
@@ -242,7 +262,7 @@ class PromocionServiceTest {
     }
 
     @Test
-    @DisplayName("validarAplicacion: lanza excepción cuando la promoción está desactivada (CA-3)")
+    @DisplayName("validarAplicacion: lanza ResponseStatusException cuando está desactivada (CA-3)")
     void validarAplicacion_desactivada_lanzaExcepcion() {
         Promocion p = promocionVigente();
         p.setActiva(false);
@@ -253,7 +273,7 @@ class PromocionServiceTest {
     }
 
     @Test
-    @DisplayName("validarAplicacion: lanza excepción cuando la promoción aún no ha iniciado (CA-3)")
+    @DisplayName("validarAplicacion: lanza ResponseStatusException cuando aún no ha iniciado (CA-3)")
     void validarAplicacion_noIniciada_lanzaExcepcion() {
         Promocion p = promocionVigente();
         p.setFechaInicio(LocalDateTime.now().plusDays(2));
@@ -264,11 +284,11 @@ class PromocionServiceTest {
                 ResponseStatusException.class,
                 () -> promocionService.validarAplicacion(1L)
         );
-        assertTrue(ex.getMessage().contains("no ha iniciado"));
+        assertTrue(ex.getReason().toLowerCase().contains("no ha iniciado"));
     }
 
     @Test
-    @DisplayName("validarAplicacion: lanza excepción cuando la promoción ya expiró (CA-3)")
+    @DisplayName("validarAplicacion: lanza ResponseStatusException cuando ya expiró (CA-3)")
     void validarAplicacion_expirada_lanzaExcepcion() {
         Promocion p = promocionVigente();
         p.setFechaInicio(LocalDateTime.now().minusDays(5));

@@ -211,6 +211,34 @@ class VentaServiceTest {
         VentaDTO resultado = ventaService.marcarPedidoEntregado(10L);
 
         assertEquals("ENTREGADA", resultado.getEstadoPedido());
+        verify(notificacionService).enviarCambioEstado(venta, "ENTREGADA");
+    }
+
+    @Test
+    @DisplayName("actualizarEstadoPedido: rechaza un estado no permitido")
+    void actualizarEstadoPedido_estadoInvalido_lanzaExcepcion() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ventaService.actualizarEstadoPedido(10L, "VOLANDO")
+        );
+
+        verifyNoInteractions(notificacionService);
+    }
+
+    @Test
+    @DisplayName("actualizarEstadoPedido: cambia el estado y envía la notificación")
+    void actualizarEstadoPedido_estadoValido_cambiaYNotifica() {
+        Venta venta = ventaConUsuario();
+
+        when(ventaRepository.findById(10L)).thenReturn(Optional.of(venta));
+        when(ventaRepository.save(any(Venta.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        VentaDTO resultado =
+                ventaService.actualizarEstadoPedido(10L, "EN_PROCESO");
+
+        assertEquals("EN_PROCESO", resultado.getEstadoPedido());
+        verify(notificacionService).enviarCambioEstado(venta, "EN_PROCESO");
     }
 
     // ── Tests: obtenerPedidosPendientes ──
