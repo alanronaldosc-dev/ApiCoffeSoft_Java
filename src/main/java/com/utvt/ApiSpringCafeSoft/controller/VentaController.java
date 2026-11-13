@@ -1,9 +1,11 @@
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
+import com.utvt.ApiSpringCafeSoft.dto.DesempenoRepartidoresDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
 import com.utvt.ApiSpringCafeSoft.service.VentaService;
+import com.utvt.ApiSpringCafeSoft.service.DesempenoRepartidoresService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,6 +18,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +35,9 @@ public class VentaController {
 
     @Autowired
     private VentaService ventaService;
+
+    @Autowired
+    private DesempenoRepartidoresService desempenoRepartidoresService;
 
 
     // =========================================================
@@ -487,6 +493,22 @@ public class VentaController {
                 ventaService.obtenerProductosMasVendidos(periodo);
 
         return ResponseEntity.ok(productos);
+    }
+
+
+    // =========================================================
+    // HU-049: DESEMPEÑO DE REPARTIDORES
+    // =========================================================
+
+    @GetMapping("/desempeno-repartidores")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Consultar desempeño de repartidores",
+        description = "Devuelve los rankings de entregas confirmadas por número de ventas y monto cobrado para la sucursal del administrador autenticado."
+    )
+    public ResponseEntity<DesempenoRepartidoresDTO> obtenerDesempenoRepartidores() {
+        return ResponseEntity.ok(
+                desempenoRepartidoresService.obtenerDesempenoRepartidores());
     }
 
 
