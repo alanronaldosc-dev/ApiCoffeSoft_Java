@@ -1,16 +1,20 @@
 package com.utvt.ApiSpringCafeSoft.service;
 
+import com.utvt.ApiSpringCafeSoft.dto.ClienteFrecuenteDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDetalleDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
+import com.utvt.ApiSpringCafeSoft.exception.RecursoNoEncontradoException;
 import com.utvt.ApiSpringCafeSoft.model.*;
 import com.utvt.ApiSpringCafeSoft.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import com.utvt.ApiSpringCafeSoft.dto.ClienteFrecuenteDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,6 +36,11 @@ public class VentaService {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private LoteRepository loteRepository;
     @Autowired private BeneficiosService beneficiosService;
+    @Autowired private NotificacionService notificacionService;
+
+    private static final List<String> ESTADOS_PEDIDO = List.of(
+            "PENDIENTE", "RECIBIDA", "EN_PROCESO", "ENTREGADA"
+    );
 
     private VentaDTO convertToDTO(Venta venta) {
         VentaDTO dto = new VentaDTO();
@@ -75,13 +84,17 @@ public class VentaService {
     }
 
     private String generarFolio() {
+        // Se ejecuta dentro de la misma transacción SERIALIZABLE de crearVenta,
+        // por lo que el SELECT ya está protegido por el lock de la transacción.
+        // El uso de findLastFolio() con la BD bloqueada evita folios duplicados
+        // bajo carga concurrente.
         String lastFolio = ventaRepository.findLastFolio();
         if (lastFolio == null) return "V-0001";
         int numero = Integer.parseInt(lastFolio.substring(2)) + 1;
         return String.format("V-%04d", numero);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public VentaDTO crearVenta(VentaDTO ventaDTO) {
         Usuario usuario = usuarioRepository.findById(ventaDTO.getUsuarioId())
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + ventaDTO.getUsuarioId()));
@@ -164,7 +177,10 @@ public class VentaService {
             venta.setCambio(cambio);
         }
 
-        VentaDTO respuesta = convertToDTO(ventaRepository.save(venta));
+        Venta ventaGuardada = ventaRepository.save(venta);
+        notificacionService.enviarCambioEstado(ventaGuardada, "PENDIENTE");
+
+        VentaDTO respuesta = convertToDTO(ventaGuardada);
         respuesta.setClienteId(ventaDTO.getClienteId());
         respuesta.setPuntosCanjeados(ventaDTO.getPuntosCanjeados());
         respuesta.setSaldoPuntosRestante(saldoPuntosRestante);
@@ -173,7 +189,11 @@ public class VentaService {
 
     private void validarStock(Producto producto, Integer cantidadVendida) {
         for (ProductoInsumo pi : producto.getInsumos()) {
-            Inventario inv = pi.getInsumo();
+            // Re-leer con bloqueo para obtener el valor actual antes de validar
+            Inventario inv = inventarioRepository
+                .findByIdForUpdate(pi.getInsumo().getId())
+                .orElseThrow(() -> new RuntimeException(
+                    "Inventario no encontrado para insumo ID: " + pi.getInsumo().getId()));
             double necesario = pi.getCantidad() * cantidadVendida;
             if (inv.getCantidad() < necesario) {
                 throw new RuntimeException("Stock insuficiente para: " + inv.getNombre()
@@ -185,23 +205,42 @@ public class VentaService {
 
     private void descontarPorLotes(Producto producto, Integer cantidadVendida) {
         for (ProductoInsumo pi : producto.getInsumos()) {
-            Inventario inv = pi.getInsumo();
+            // Re-leer con bloqueo pesimista: garantiza que ninguna otra
+            // transacción concurrente pueda leer ni escribir este registro
+            // hasta que la transacción actual haga commit (HU-017).
+            Inventario inv = inventarioRepository
+                .findByIdForUpdate(pi.getInsumo().getId())
+                .orElseThrow(() -> new RuntimeException(
+                    "Inventario no encontrado para insumo ID: " + pi.getInsumo().getId()));
+
             double aDescontar = pi.getCantidad() * cantidadVendida;
+
+            // Doble chequeo dentro del lock: evita ventas en negativo
+            // si otra transacción consumió stock entre la validación inicial
+            // y este punto.
+            if (inv.getCantidad() < aDescontar) {
+                throw new RuntimeException("Stock insuficiente para: " + inv.getNombre()
+                    + " | Disponible: " + inv.getCantidad()
+                    + " | Necesario: " + aDescontar + " " + inv.getUnidadMedida());
+            }
 
             inv.setCantidad(inv.getCantidad() - aDescontar);
             inventarioRepository.save(inv);
 
-            List<Lote> lotes = loteRepository.findLotesDisponiblesByNombreYUnidad(
-                inv.getNombre(), inv.getUnidadMedida());
+            // Consumir lotes con bloqueo pesimista (FEFO)
+            List<Lote> lotes = loteRepository
+                .findLotesDisponiblesByNombreYUnidadForUpdate(
+                    inv.getNombre(), inv.getUnidadMedida());
 
+            double restante = aDescontar;
             for (Lote lote : lotes) {
-                if (aDescontar <= 0) break;
+                if (restante <= 0) break;
                 double disponibleEnLote = lote.getCantidad();
-                if (disponibleEnLote >= aDescontar) {
-                    lote.setCantidad(disponibleEnLote - aDescontar);
-                    aDescontar = 0;
+                if (disponibleEnLote >= restante) {
+                    lote.setCantidad(disponibleEnLote - restante);
+                    restante = 0;
                 } else {
-                    aDescontar -= disponibleEnLote;
+                    restante -= disponibleEnLote;
                     lote.setCantidad(0.0);
                 }
                 loteRepository.save(lote);
@@ -249,10 +288,43 @@ public class VentaService {
 
     @Transactional
     public VentaDTO marcarPedidoEntregado(Long id) {
+        return actualizarEstadoPedido(id, "ENTREGADA");
+    }
+
+    /**
+     * Cambia el estado de un pedido y notifica al usuario
+     * asociado a la venta.
+     *
+     * Estados permitidos:
+     * PENDIENTE -> RECIBIDA -> EN_PROCESO -> ENTREGADA
+     */
+    @Transactional
+    public VentaDTO actualizarEstadoPedido(Long id, String estado) {
+
+        String nuevoEstado = estado == null
+                ? ""
+                : estado.trim().toUpperCase(Locale.ROOT);
+
+        if (!ESTADOS_PEDIDO.contains(nuevoEstado)) {
+            throw new IllegalArgumentException(
+                    "Estado no válido. Usa: PENDIENTE, RECIBIDA, EN_PROCESO o ENTREGADA."
+            );
+        }
+
         Venta venta = ventaRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Pedido no encontrado con ID: " + id));
-        venta.setEstadoPedido("ENTREGADA");
-        return convertToDTO(ventaRepository.save(venta));
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Pedido no encontrado con ID: " + id));
+
+        if (nuevoEstado.equals(venta.getEstadoPedido())) {
+            return convertToDTO(venta);
+        }
+
+        venta.setEstadoPedido(nuevoEstado);
+        Venta guardada = ventaRepository.save(venta);
+
+        notificacionService.enviarCambioEstado(guardada, nuevoEstado);
+
+        return convertToDTO(guardada);
     }
 
     @Transactional
@@ -484,5 +556,73 @@ public class VentaService {
             this.desde = desde;
             this.hasta = hasta;
         }
+    }
+
+    // =========================================================
+    // HU-018: CLIENTES FRECUENTES
+    // =========================================================
+
+    /**
+     * Identifica los clientes frecuentes en el periodo indicado.
+     *
+     * Criterio de frecuencia: se considera frecuente todo cliente
+     * que haya realizado al menos {@code minimoCompras} compras
+     * en el periodo. El valor por defecto es 3 compras.
+     *
+     * Solo se consideran ventas con clienteRutaId asignado
+     * (ventas del módulo de ruta).
+     *
+     * @param periodo       "hoy", "mes" o "mes_anterior"
+     * @param minimoCompras número mínimo de compras para ser frecuente (≥ 1)
+     * @return lista completa ordenada por totalCompras descendente;
+     *         cada elemento indica si cumple el criterio
+     */
+    public List<ClienteFrecuenteDTO> obtenerClientesFrecuentes(
+            String periodo, int minimoCompras) {
+
+        // Validar criterio mínimo
+        if (minimoCompras < 1) {
+            throw new IllegalArgumentException(
+                    "El mínimo de compras debe ser al menos 1.");
+        }
+
+        // Resolver usuario autenticado y su sucursal
+        Usuario usuario   = usuarioConSucursal();
+        Long sucursalId   = usuario.getSucursal().getId();
+
+        // Calcular rango de fechas del periodo
+        RangoPeriodo rango = calcularRangoPeriodo(periodo);
+
+        // Obtener ventas de ruta en la sucursal y periodo
+        List<Venta> ventas =
+                ventaRepository
+                        .findByFechaBetweenAndSucursalIdAndClienteRutaIdIsNotNull(
+                                rango.desde, rango.hasta, sucursalId);
+
+        // Agrupar por clienteRutaId y acumular compras y monto
+        Map<Long, ClienteFrecuenteDTO> porCliente = new LinkedHashMap<>();
+
+        for (Venta venta : ventas) {
+            Long cid    = venta.getClienteRutaId();
+            String nombre = venta.getNombreCliente() != null
+                    ? venta.getNombreCliente() : "Cliente #" + cid;
+            double monto = venta.getTotal() != null ? venta.getTotal() : 0.0;
+
+            ClienteFrecuenteDTO fila = porCliente.computeIfAbsent(
+                    cid,
+                    k -> new ClienteFrecuenteDTO(cid, nombre, 0L, 0.0, false));
+
+            // nombre puede actualizarse si en alguna venta viene más completo
+            fila.setNombre(nombre);
+            fila.setTotalCompras(fila.getTotalCompras() + 1);
+            fila.setMontoTotal(fila.getMontoTotal() + monto);
+        }
+
+        // Marcar si cumple el criterio y ordenar por compras descendente
+        int min = minimoCompras;
+        return porCliente.values().stream()
+                .peek(c -> c.setEsFrecuente(c.getTotalCompras() >= min))
+                .sorted(Comparator.comparingLong(ClienteFrecuenteDTO::getTotalCompras).reversed())
+                .collect(Collectors.toList());
     }
 }

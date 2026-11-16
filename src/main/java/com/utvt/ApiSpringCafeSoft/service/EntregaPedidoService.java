@@ -21,6 +21,11 @@ import com.utvt.ApiSpringCafeSoft.repository.ClienteRepository;
 import com.utvt.ApiSpringCafeSoft.repository.EntregaGarrafonDetalleRepository;
 import com.utvt.ApiSpringCafeSoft.repository.EntregaPedidoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.MovimientoPuntosRepository;
+
+
+import com.utvt.ApiSpringCafeSoft.repository.PromocionRepository;
+
+
 import com.utvt.ApiSpringCafeSoft.model.MovimientoPuntos;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
 import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
@@ -62,6 +67,11 @@ public class EntregaPedidoService {
     @Autowired private ClienteRepository clienteRepository;
     @Autowired private MovimientoPuntosRepository movimientoPuntosRepository;
     @Autowired private RutaRepository rutaRepository;
+
+
+    @Autowired private PromocionRepository promocionRepository;
+
+
 
     /**
      * HU-015
@@ -252,10 +262,115 @@ public class EntregaPedidoService {
         venta.setNombreCliente(cliente.getNombre());
         venta.setClienteRutaId(cliente.getId());
 
+        // ============================================
+        // PROMOCIÓN APLICADA (si existe)
+        // ============================================
+       
+Double descuentoPromo =
+        dto.getDescuento() != null ? dto.getDescuento() : 0.0;
+
+Long promocionId = dto.getPromocionId();
+
+if (promocionId != null) {
+
+    com.utvt.ApiSpringCafeSoft.model.Promocion promo =
+            promocionRepository.findById(promocionId)
+                    .orElseThrow(() ->
+                            new org.springframework.web.server.ResponseStatusException(
+                                    org.springframework.http.HttpStatus.NOT_FOUND,
+                                    "Promocion no encontrada."
+                            )
+                    );
+
+    if (!Boolean.TRUE.equals(promo.getActiva())) {
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion esta desactivada y no puede aplicarse."
+        );
+    }
+
+    LocalDateTime ahora = LocalDateTime.now();
+
+    if (promo.getFechaInicio() == null ||
+            promo.getFechaFin() == null ||
+            ahora.isBefore(promo.getFechaInicio()) ||
+            ahora.isAfter(promo.getFechaFin())) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion no esta vigente."
+        );
+    }
+
+    if (repartidor.getSucursal() == null ||
+            promo.getSucursal() == null ||
+            !promo.getSucursal().getId().equals(
+                    repartidor.getSucursal().getId())) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN,
+                "La promocion no pertenece a la sucursal del repartidor."
+        );
+    }
+
+    if (promo.getMinGarrafones() != null &&
+            promo.getMinGarrafones() > 0 &&
+            totalGarrafones < promo.getMinGarrafones()) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion requiere al menos "
+                        + promo.getMinGarrafones()
+                        + " garrafones."
+        );
+    }
+
+    Double porcentaje = promo.getDescuentoPorcentaje();
+
+    if (porcentaje == null ||
+            !Double.isFinite(porcentaje) ||
+            porcentaje <= 0 ||
+            porcentaje > 100) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion tiene un porcentaje invalido."
+        );
+    }
+
+    // El servidor calcula el descuento autorizado.
+    descuentoPromo = total * (porcentaje / 100.0);
+}
+
+        // Validar que la promoción exista y sea vigente
+        if (promocionId != null) {
+            com.utvt.ApiSpringCafeSoft.model.Promocion promo =
+                    promocionRepository.findById(promocionId)
+                            .orElseThrow(() -> new RuntimeException("Promoción no encontrada"));
+            if (!Boolean.TRUE.equals(promo.getActiva())) {
+                throw new RuntimeException("La promoción está desactivada.");
+            }
+            LocalDateTime ahora = LocalDateTime.now();
+            if (ahora.isBefore(promo.getFechaInicio()) || ahora.isAfter(promo.getFechaFin())) {
+                throw new RuntimeException("La promoción no está vigente.");
+            }
+            // Validar mínimo de garrafones
+            if (promo.getMinGarrafones() != null && promo.getMinGarrafones() > 0
+                    && totalGarrafones < promo.getMinGarrafones()) {
+                throw new RuntimeException(
+                        "La promoción requiere al menos " + promo.getMinGarrafones()
+                                + " garrafones. Seleccionados: " + (int) totalGarrafones);
+            }
+            // Recalcular descuento si no viene del frontend
+            if (descuentoPromo <= 0) {
+                descuentoPromo = total * (promo.getDescuentoPorcentaje() / 100.0);
+            }
+        }
+
         venta.setSubtotal(total);
         venta.setImpuestos(0.0);
-        venta.setDescuento(0.0);
-        venta.setTotal(total);
+        venta.setDescuento(descuentoPromo);
+        venta.setTotal(Math.max(0, total - descuentoPromo));
 
         String metodoPago =
                 dto.getMetodoCobro().toLowerCase();
@@ -348,9 +463,22 @@ public class EntregaPedidoService {
 
         // ============================================
         // GENERAR PUNTOS (1 punto por garrafón)
-        // Solo se acreditan si el pago NO fue con puntos.
+
+
+        // Solo se acreditan si el pago NO fue con puntos
+        // Y si la promoción acumula puntos.
         // Si el pago fue con puntos, se descuentan.
         // ============================================
+        boolean acumulaPuntos = true;
+        if (promocionId != null) {
+            com.utvt.ApiSpringCafeSoft.model.Promocion promo2 =
+                    promocionRepository.findById(promocionId).orElse(null);
+            if (promo2 != null && promo2.getAcumulaPuntos() != null) {
+                acumulaPuntos = promo2.getAcumulaPuntos();
+            }
+        }
+
+
         if ("PUNTOS".equals(metodo)) {
             try {
                 if (movimientoPuntosRepository.findByVentaId(ventaGuardada.getId()).isEmpty()) {
@@ -363,7 +491,15 @@ public class EntregaPedidoService {
             } catch (Exception e) {
                 System.out.println("Error descontando puntos: " + e.getMessage());
             }
+
         } else {
+
+
+        } else if (acumulaPuntos) {
+
+        } else {
+
+
             try {
                 if (movimientoPuntosRepository.findByVentaId(ventaGuardada.getId()).isEmpty()) {
                     MovimientoPuntos mp = new MovimientoPuntos();
@@ -402,7 +538,7 @@ public class EntregaPedidoService {
         );
 
         entregaDTO.setMontoCobrado(
-                total
+                Math.max(0, total - descuentoPromo)
         );
 
         entregaDTO.setObservaciones(

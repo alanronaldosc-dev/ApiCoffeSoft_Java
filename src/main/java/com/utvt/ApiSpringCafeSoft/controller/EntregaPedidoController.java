@@ -1,3 +1,4 @@
+
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.RegistrarVentaRutaDTO;
@@ -15,14 +16,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * HU-015:
- * Confirmación de entregas,
- * ventas en ruta e incidencias del repartidor.
+ * Confirmación de entregas, ventas en ruta
+ * e incidencias del repartidor.
+ *
+ * HU-040:
+ * Se conservan los códigos HTTP correspondientes
+ * cuando una promoción no puede utilizarse.
  */
 @RestController
 @RequestMapping("/api/ventas")
@@ -50,28 +56,49 @@ public class EntregaPedidoController {
         try {
 
             EntregaPedidoDTO entrega =
-                    entregaPedidoService
-                            .registrarVentaRuta(dto);
+                    entregaPedidoService.registrarVentaRuta(dto);
 
-            return new ResponseEntity<>(
-                    entrega,
-                    HttpStatus.CREATED
-            );
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(entrega);
+
+        } catch (ResponseStatusException e) {
+
+            /*
+             * HU-040:
+             * Conservamos el código HTTP original
+             * enviado por el servicio.
+             *
+             * Ejemplos:
+             * 403 - Sucursal no autorizada.
+             * 404 - Promoción no encontrada.
+             * 409 - Promoción desactivada.
+             * 409 - Promoción fuera de vigencia.
+             * 409 - No cumple el mínimo de garrafones.
+             *
+             * GlobalExceptionHandler procesará
+             * estas excepciones.
+             */
+            throw e;
 
         } catch (RuntimeException e) {
 
-            Map<String, String> error =
-                    new HashMap<>();
+            /*
+             * Se conserva el comportamiento original
+             * de HU-015 para otros errores del servicio.
+             */
+            Map<String, String> error = new HashMap<>();
 
             error.put(
-                    "error",
-                    e.getMessage()
+                "error",
+                e.getMessage() != null
+                    ? e.getMessage()
+                    : "No se pudo registrar la venta."
             );
 
-            return new ResponseEntity<>(
-                    error,
-                    HttpStatus.BAD_REQUEST
-            );
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(error);
         }
     }
 
@@ -90,30 +117,27 @@ public class EntregaPedidoController {
         try {
 
             EntregaPedidoDTO entrega =
-                    entregaPedidoService
-                            .confirmarEntrega(
-                                    id,
-                                    dto
-                            );
+                    entregaPedidoService.confirmarEntrega(
+                        id,
+                        dto
+                    );
 
-            return ResponseEntity.ok(
-                    entrega
-            );
+            return ResponseEntity.ok(entrega);
 
         } catch (RuntimeException e) {
 
-            Map<String, String> error =
-                    new HashMap<>();
+            Map<String, String> error = new HashMap<>();
 
             error.put(
-                    "error",
-                    e.getMessage()
+                "error",
+                e.getMessage() != null
+                    ? e.getMessage()
+                    : "No se pudo confirmar la entrega."
             );
 
-            return new ResponseEntity<>(
-                    error,
-                    HttpStatus.BAD_REQUEST
-            );
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(error);
         }
     }
 
@@ -132,30 +156,27 @@ public class EntregaPedidoController {
         try {
 
             EntregaPedidoDTO entrega =
-                    entregaPedidoService
-                            .reportarIncidencia(
-                                    id,
-                                    dto
-                            );
+                    entregaPedidoService.reportarIncidencia(
+                        id,
+                        dto
+                    );
 
-            return ResponseEntity.ok(
-                    entrega
-            );
+            return ResponseEntity.ok(entrega);
 
         } catch (RuntimeException e) {
 
-            Map<String, String> error =
-                    new HashMap<>();
+            Map<String, String> error = new HashMap<>();
 
             error.put(
-                    "error",
-                    e.getMessage()
+                "error",
+                e.getMessage() != null
+                    ? e.getMessage()
+                    : "No se pudo reportar la incidencia."
             );
 
-            return new ResponseEntity<>(
-                    error,
-                    HttpStatus.BAD_REQUEST
-            );
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(error);
         }
     }
 
@@ -174,32 +195,33 @@ public class EntregaPedidoController {
 
         System.out.println(
             "ENTRO A ENTREGAS HOY -> repartidorId: "
-                    + repartidorId
+                + repartidorId
         );
 
         try {
 
             return ResponseEntity.ok(
-                    entregaPedidoService
-                            .entregasHoy(
-                                    repartidorId
-                            )
+                entregaPedidoService.entregasHoy(
+                    repartidorId
+                )
             );
 
         } catch (RuntimeException e) {
 
             System.out.println(
                 "ERROR ENTREGAS HOY -> "
-                        + e.getMessage()
+                    + e.getMessage()
             );
 
             return ResponseEntity
                     .badRequest()
                     .body(
-                            Map.of(
-                                    "error",
-                                    e.getMessage()
-                            )
+                        Map.of(
+                            "error",
+                            e.getMessage() != null
+                                ? e.getMessage()
+                                : "No se pudieron obtener las entregas."
+                        )
                     );
         }
     }

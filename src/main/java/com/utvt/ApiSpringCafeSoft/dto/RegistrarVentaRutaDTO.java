@@ -60,6 +60,12 @@ public class RegistrarVentaRutaDTO {
 
     private String observaciones;
 
+    // Promoción aplicada (opcional)
+    private Long promocionId;
+
+    // Descuento aplicado por la promoción
+    private Double descuento = 0.0;
+
     public Long getClienteId() {
         return clienteId;
     }
@@ -115,4 +121,10 @@ public class RegistrarVentaRutaDTO {
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
     }
+
+    public Long getPromocionId() { return promocionId; }
+    public void setPromocionId(Long promocionId) { this.promocionId = promocionId; }
+
+    public Double getDescuento() { return descuento; }
+    public void setDescuento(Double descuento) { this.descuento = descuento; }
 }

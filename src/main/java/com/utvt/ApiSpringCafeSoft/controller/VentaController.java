@@ -350,6 +350,53 @@ public class VentaController {
 
 
     // =========================================================
+    // CAMBIAR ESTADO DEL PEDIDO
+    // =========================================================
+
+    @Operation(
+        summary = "Cambiar el estado de un pedido",
+        description =
+            "Actualiza el estado del pedido y envía una notificación " +
+            "push al usuario asociado. Estados permitidos: " +
+            "PENDIENTE, RECIBIDA, EN_PROCESO y ENTREGADA."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "✅ Estado actualizado y notificación enviada"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "❌ Estado no válido"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "❌ Pedido no encontrado"
+        )
+    })
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<VentaDTO> cambiarEstadoPedido(
+            @Parameter(
+                description = "ID del pedido",
+                required = true,
+                example = "1"
+            )
+            @PathVariable Long id,
+            @Parameter(
+                description = "Nuevo estado del pedido",
+                required = true,
+                example = "EN_PROCESO"
+            )
+            @RequestParam String estado) {
+
+        VentaDTO pedido =
+                ventaService.actualizarEstadoPedido(id, estado);
+
+        return ResponseEntity.ok(pedido);
+    }
+
+
+    // =========================================================
     // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
     // =========================================================
 
@@ -527,4 +574,35 @@ public class VentaController {
 
         return ResponseEntity.noContent().build();
     }
+    @Operation(
+    summary = "Clientes frecuentes",
+    description =
+        "Lista los clientes de ruta ordenados por número de compras " +
+        "en el periodo. Incluye un indicador 'esFrecuente' cuando el " +
+        "cliente alcanza o supera el mínimo de compras configurado."
+)
+@ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "✅ Listado obtenido correctamente"),
+    @ApiResponse(responseCode = "400", description = "❌ Periodo o parámetros inválidos"),
+    @ApiResponse(responseCode = "500", description = "❌ Error interno del servidor")
+})
+@GetMapping("/reporte/clientes-frecuentes")
+public ResponseEntity<?> obtenerClientesFrecuentes(
+        @Parameter(description = "Periodo: hoy, mes o mes_anterior", example = "mes")
+        @RequestParam(defaultValue = "mes") String periodo,
+        @Parameter(description = "Mínimo de compras para ser frecuente", example = "3")
+        @RequestParam(defaultValue = "3") int minimoCompras) {
+
+    try {
+        return ResponseEntity.ok(
+                ventaService.obtenerClientesFrecuentes(periodo, minimoCompras));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest()
+                .body(java.util.Map.of("mensaje", e.getMessage()));
+    } catch (RuntimeException e) {
+        return ResponseEntity.badRequest()
+                .body(java.util.Map.of("mensaje", e.getMessage()));
+    }
+}
+
 }

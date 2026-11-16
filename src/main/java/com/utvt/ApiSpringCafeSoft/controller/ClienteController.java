@@ -22,6 +22,7 @@ public class ClienteController {
     @Autowired
     private ClienteService clienteService;
 
+
     @Autowired
     private BeneficiosService beneficiosService;
 
@@ -44,6 +45,7 @@ public class ClienteController {
             "saldo", puntosRepository.saldo(id), "movimientos", puntosRepository.findByClienteIdOrderByFechaDesc(id)
                 .stream().map(m -> Map.of("ventaId", m.getVenta().getId(), "puntos", m.getPuntos(), "fecha", m.getFecha().toString())).toList()));
     }
+
     }
 
     // ============================================

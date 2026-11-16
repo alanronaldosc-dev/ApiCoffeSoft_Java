@@ -6,6 +6,8 @@ import com.utvt.ApiSpringCafeSoft.model.Usuario;
 import com.utvt.ApiSpringCafeSoft.repository.SucursalRepository;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -236,10 +238,61 @@ public class UsuarioService {
 
     // Actualizar push token
     public void actualizarPushToken(Long id, String pushToken) {
+
+        validarPropietarioDelToken(id);
+
+        if (pushToken != null && !pushToken.isBlank()) {
+            String valor = pushToken.trim();
+
+            boolean formatoExpo =
+                    (valor.startsWith("ExponentPushToken[")
+                            || valor.startsWith("ExpoPushToken["))
+                    && valor.endsWith("]");
+
+            if (!formatoExpo) {
+                throw new RuntimeException("El push token no tiene un formato válido");
+            }
+        }
+
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
-        usuario.setPushToken(pushToken);
+
+        usuario.setPushToken(
+                pushToken == null || pushToken.isBlank()
+                        ? null
+                        : pushToken.trim()
+        );
+
         usuarioRepository.save(usuario);
+    }
+
+    /**
+     * Un usuario solo puede modificar su propio token; el ADMIN
+     * puede hacerlo sobre cualquier usuario.
+     */
+    private void validarPropietarioDelToken(Long id) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated()
+                || auth.getPrincipal() == null
+                || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new RuntimeException("No hay un usuario autenticado");
+        }
+
+        boolean esAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        if (esAdmin) {
+            return;
+        }
+
+        Usuario autenticado = usuarioRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!autenticado.getId().equals(id)) {
+            throw new RuntimeException("No puedes modificar el token de otro usuario");
+        }
     }
 
     // Obtener push tokens de empleados
