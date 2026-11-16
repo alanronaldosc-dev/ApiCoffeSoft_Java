@@ -1,4 +1,4 @@
-package edu.tuempresa.selenium;
+package selenium;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -110,8 +110,12 @@ class CanjeBeneficiosTest {
         assertTrue(saldoRestante < saldoInicial, "El saldo debe disminuir después de cobrar");
         guardarEvidencia("03-venta-y-saldo-restante");
 
-        driver.findElement(By.cssSelector("[data-testid='menu-clientes']")).click();
-        driver.findElement(By.cssSelector("[data-testid='buscar-clientes']")).sendKeys(clienteNombre);
+        WebElement menuClientes = wait.until(d -> d.findElement(By.xpath(
+                "//nav[contains(@class,'menu')]//p[contains(normalize-space(.), 'Clientes')]")));
+        menuClientes.click();
+        WebElement buscarClientes = wait.until(d -> d.findElement(By.cssSelector(
+                "[data-testid='buscar-clientes'], input[placeholder^='🔍 Buscar por nombre']")));
+        buscarClientes.sendKeys(clienteNombre);
         WebElement fichaCliente = wait.until(d -> d.findElement(By.cssSelector(
                 "[data-testid='ficha-cliente'][data-cliente-id='" + clienteId + "']")));
         List<WebElement> saldoEnFicha = fichaCliente.findElements(

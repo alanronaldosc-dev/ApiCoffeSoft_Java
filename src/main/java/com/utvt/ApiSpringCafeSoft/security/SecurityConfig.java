@@ -58,6 +58,13 @@ public class SecurityConfig {
                     "/swagger-ui/**", "/swagger-ui.html",
                     "/swagger-resources/**", "/webjars/**"
                 ).permitAll()
+                // Solo el ADMIN puede disparar notificaciones de prueba
+                // desde el backend (evita spam a tokens arbitrarios).
+                .requestMatchers("/api/notificaciones/**").hasRole("ADMIN")
+                // Cualquier usuario autenticado puede registrar
+                // su propio token de notificaciones push.
+                .requestMatchers(HttpMethod.PUT, "/api/usuarios/*/push-token")
+                    .authenticated()
                 .requestMatchers(HttpMethod.GET,    "/api/usuarios/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/usuarios/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasRole("ADMIN")
@@ -77,6 +84,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasRole("ADMIN")
                 .requestMatchers("/api/cargas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/rutas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers("/api/clientes/segmentos/**").hasRole("ADMIN")
                 .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "REPARTIDOR")
                 .requestMatchers("/api/auditoria/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
                 .requestMatchers("/api/mermas/**").hasAnyRole("ADMIN", "REPARTIDOR")

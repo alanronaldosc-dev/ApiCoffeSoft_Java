@@ -1,12 +1,10 @@
+
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.PromocionDTO;
 import com.utvt.ApiSpringCafeSoft.service.PromocionService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
@@ -21,202 +19,128 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/promociones")
-@Tag(name = "Promociones", description = "Gestión de promociones con vigencia controlada por fecha")
+@Tag(
+    name = "Promociones",
+    description = "Gestion de promociones y auditoria"
+)
 public class PromocionController {
 
     @Autowired
     private PromocionService promocionService;
 
-
-    // =========================================================
-    // CREAR PROMOCIÓN — CA-1: inicio y fin obligatorios
-    // =========================================================
-
-    @Operation(
-        summary = "Crear una nueva promoción",
-        description = "Registra una promoción con fecha de inicio y fin obligatorias."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "✅ Promoción creada exitosamente"),
-        @ApiResponse(responseCode = "400", description = "❌ Datos inválidos o fechas incoherentes"),
-        @ApiResponse(responseCode = "404", description = "❌ Sucursal no encontrada")
-    })
-    @PostMapping
-    public ResponseEntity<?> crearPromocion(@Valid @RequestBody PromocionDTO dto) {
-        try {
-            PromocionDTO nueva = promocionService.crearPromocion(dto);
-            return new ResponseEntity<>(nueva, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
-        }
-    }
-
-
-    // =========================================================
-    // LISTAR TODAS
-    // =========================================================
-
-    @Operation(summary = "Listar todas las promociones")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "✅ Lista obtenida correctamente")
-    })
-    @GetMapping
+    // Consultar todas.
+    @Operation(summary = "Consultar todas las promociones")
+    @GetMapping({"", "/"})
     public ResponseEntity<List<PromocionDTO>> obtenerTodas() {
-        return ResponseEntity.ok(promocionService.obtenerTodas());
+        return ResponseEntity.ok(
+            promocionService.obtenerTodas()
+        );
     }
 
+    // HU-039: consultar por estado.
+    @Operation(summary = "Filtrar promociones por estado")
+    @GetMapping("/estado")
+    public ResponseEntity<List<PromocionDTO>> consultarPorEstado(
+        @RequestParam(defaultValue = "TODAS") String estado
+    ) {
+        return ResponseEntity.ok(
+            promocionService.obtenerPorEstado(estado)
+        );
+    }
 
-    // =========================================================
-    // LISTAR VIGENTES — CA-2: no se activan fuera del periodo
-    // =========================================================
-
-    @Operation(
-        summary = "Listar promociones vigentes",
-        description = "Devuelve solo las promociones activas cuya fecha actual esté dentro del periodo."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "✅ Promociones vigentes obtenidas")
-    })
+    // Consultar vigentes.
+    @Operation(summary = "Consultar promociones vigentes")
     @GetMapping("/vigentes")
     public ResponseEntity<List<PromocionDTO>> obtenerVigentes() {
-        return ResponseEntity.ok(promocionService.obtenerVigentes());
+        return ResponseEntity.ok(
+            promocionService.obtenerVigentes()
+        );
     }
 
-
-    // =========================================================
-    // VIGENTES POR SUCURSAL — CA-2
-    // =========================================================
-
+    // Consultar vigentes por sucursal.
     @Operation(
-        summary = "Listar promociones vigentes por sucursal",
-        description = "Devuelve las promociones dentro de vigencia para una sucursal específica."
+        summary = "Consultar promociones vigentes por sucursal"
     )
     @GetMapping("/vigentes/sucursal/{sucursalId}")
     public ResponseEntity<List<PromocionDTO>> obtenerVigentesPorSucursal(
-            @Parameter(description = "ID de la sucursal", required = true, example = "1")
-            @PathVariable Long sucursalId) {
+        @PathVariable Long sucursalId
+    ) {
         return ResponseEntity.ok(
-                promocionService.obtenerVigentesPorSucursal(sucursalId));
+            promocionService.obtenerVigentesPorSucursal(sucursalId)
+        );
     }
 
-
-    // =========================================================
-    // OBTENER POR ID
-    // =========================================================
-
-    @Operation(summary = "Obtener una promoción por ID")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "✅ Promoción encontrada"),
-        @ApiResponse(responseCode = "404", description = "❌ Promoción no encontrada")
-    })
+    // Consultar por ID.
+    @Operation(summary = "Consultar promocion por ID")
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(
-            @Parameter(description = "ID de la promoción", required = true, example = "1")
-            @PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(promocionService.obtenerPorId(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("mensaje", e.getMessage()));
-        }
+    public ResponseEntity<PromocionDTO> obtenerPorId(
+        @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+            promocionService.obtenerPorId(id)
+        );
     }
 
-
-    // =========================================================
-    // VALIDAR SI PUEDE APLICARSE — CA-3
-    // =========================================================
-
-    @Operation(
-        summary = "Validar si una promoción puede aplicarse",
-        description = "CA-3: Verifica que la promoción esté activa y dentro de su periodo. " +
-                      "Una promoción expirada o fuera de rango no puede aplicarse."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "✅ La promoción puede aplicarse"),
-        @ApiResponse(responseCode = "400", description = "❌ Fuera de periodo o desactivada"),
-        @ApiResponse(responseCode = "404", description = "❌ No encontrada")
-    })
+    // Validar aplicacion.
+    @Operation(summary = "Validar aplicacion de promocion")
     @GetMapping("/{id}/validar")
-    public ResponseEntity<?> validarAplicacion(
-            @Parameter(description = "ID de la promoción", required = true, example = "1")
-            @PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(promocionService.validarAplicacion(id));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("mensaje", e.getMessage()));
-        }
+    public ResponseEntity<PromocionDTO> validarAplicacion(
+        @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+            promocionService.validarAplicacion(id)
+        );
     }
 
+    // Crear promocion.
+    @Operation(summary = "Crear promocion")
+    @PostMapping({"", "/"})
+    public ResponseEntity<PromocionDTO> crearPromocion(
+        @Valid @RequestBody PromocionDTO dto
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(promocionService.crearPromocion(dto));
+    }
 
-    // =========================================================
-    // ACTUALIZAR
-    // =========================================================
-
-    @Operation(summary = "Actualizar una promoción")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "✅ Promoción actualizada"),
-        @ApiResponse(responseCode = "400", description = "❌ Datos inválidos"),
-        @ApiResponse(responseCode = "404", description = "❌ Promoción no encontrada")
-    })
+    // Actualizar promocion.
+    @Operation(summary = "Actualizar promocion")
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarPromocion(
-            @PathVariable Long id,
-            @Valid @RequestBody PromocionDTO dto) {
-        try {
-            return ResponseEntity.ok(promocionService.actualizarPromocion(id, dto));
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("mensaje", e.getMessage()));
-        }
+    public ResponseEntity<PromocionDTO> actualizarPromocion(
+        @PathVariable Long id,
+        @Valid @RequestBody PromocionDTO dto
+    ) {
+        return ResponseEntity.ok(
+            promocionService.actualizarPromocion(id, dto)
+        );
     }
 
-
-    // =========================================================
-    // DESACTIVAR — CA-3: control manual
-    // =========================================================
-
+    // HU-040: desactivacion con auditoria.
     @Operation(
-        summary = "Desactivar una promoción",
-        description = "CA-3: Desactiva manualmente la promoción para que no pueda aplicarse, " +
-                      "independientemente de si está dentro del periodo."
+        summary = "Desactivar promocion",
+        description = "Registra fecha y administrador responsable."
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "✅ Promoción desactivada"),
-        @ApiResponse(responseCode = "404", description = "❌ No encontrada")
-    })
     @PutMapping("/{id}/desactivar")
-    public ResponseEntity<?> desactivarPromocion(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(promocionService.desactivarPromocion(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("mensaje", e.getMessage()));
-        }
+    public ResponseEntity<PromocionDTO> desactivarPromocion(
+        @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+            promocionService.desactivarPromocion(id)
+        );
     }
 
-
-    // =========================================================
-    // ELIMINAR
-    // =========================================================
-
-    @Operation(summary = "Eliminar una promoción")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "✅ Eliminada correctamente"),
-        @ApiResponse(responseCode = "404", description = "❌ No encontrada")
-    })
+    // Eliminar promocion.
+    @Operation(summary = "Eliminar promocion")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarPromocion(@PathVariable Long id) {
-        try {
-            promocionService.eliminarPromocion(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("mensaje", e.getMessage()));
-        }
+    public ResponseEntity<Map<String, String>> eliminarPromocion(
+        @PathVariable Long id
+    ) {
+        promocionService.eliminarPromocion(id);
+
+        return ResponseEntity.ok(
+            Map.of(
+                "mensaje",
+                "Promocion eliminada correctamente."
+            )
+        );
     }
 }

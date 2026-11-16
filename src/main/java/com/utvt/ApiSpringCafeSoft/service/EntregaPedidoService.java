@@ -261,8 +261,82 @@ public class EntregaPedidoService {
         // ============================================
         // PROMOCIÓN APLICADA (si existe)
         // ============================================
-        Double descuentoPromo = dto.getDescuento() != null ? dto.getDescuento() : 0.0;
-        Long promocionId = dto.getPromocionId();
+       
+Double descuentoPromo =
+        dto.getDescuento() != null ? dto.getDescuento() : 0.0;
+
+Long promocionId = dto.getPromocionId();
+
+if (promocionId != null) {
+
+    com.utvt.ApiSpringCafeSoft.model.Promocion promo =
+            promocionRepository.findById(promocionId)
+                    .orElseThrow(() ->
+                            new org.springframework.web.server.ResponseStatusException(
+                                    org.springframework.http.HttpStatus.NOT_FOUND,
+                                    "Promocion no encontrada."
+                            )
+                    );
+
+    if (!Boolean.TRUE.equals(promo.getActiva())) {
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion esta desactivada y no puede aplicarse."
+        );
+    }
+
+    LocalDateTime ahora = LocalDateTime.now();
+
+    if (promo.getFechaInicio() == null ||
+            promo.getFechaFin() == null ||
+            ahora.isBefore(promo.getFechaInicio()) ||
+            ahora.isAfter(promo.getFechaFin())) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion no esta vigente."
+        );
+    }
+
+    if (repartidor.getSucursal() == null ||
+            promo.getSucursal() == null ||
+            !promo.getSucursal().getId().equals(
+                    repartidor.getSucursal().getId())) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN,
+                "La promocion no pertenece a la sucursal del repartidor."
+        );
+    }
+
+    if (promo.getMinGarrafones() != null &&
+            promo.getMinGarrafones() > 0 &&
+            totalGarrafones < promo.getMinGarrafones()) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion requiere al menos "
+                        + promo.getMinGarrafones()
+                        + " garrafones."
+        );
+    }
+
+    Double porcentaje = promo.getDescuentoPorcentaje();
+
+    if (porcentaje == null ||
+            !Double.isFinite(porcentaje) ||
+            porcentaje <= 0 ||
+            porcentaje > 100) {
+
+        throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "La promocion tiene un porcentaje invalido."
+        );
+    }
+
+    // El servidor calcula el descuento autorizado.
+    descuentoPromo = total * (porcentaje / 100.0);
+}
 
         // Validar que la promoción exista y sea vigente
         if (promocionId != null) {
