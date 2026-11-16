@@ -22,9 +22,7 @@ import com.utvt.ApiSpringCafeSoft.repository.EntregaGarrafonDetalleRepository;
 import com.utvt.ApiSpringCafeSoft.repository.EntregaPedidoRepository;
 import com.utvt.ApiSpringCafeSoft.repository.MovimientoPuntosRepository;
 
-
 import com.utvt.ApiSpringCafeSoft.repository.PromocionRepository;
-
 
 import com.utvt.ApiSpringCafeSoft.model.MovimientoPuntos;
 import com.utvt.ApiSpringCafeSoft.repository.InventarioRepository;
@@ -68,9 +66,7 @@ public class EntregaPedidoService {
     @Autowired private MovimientoPuntosRepository movimientoPuntosRepository;
     @Autowired private RutaRepository rutaRepository;
 
-
     @Autowired private PromocionRepository promocionRepository;
-
 
 
     /**
@@ -464,7 +460,6 @@ if (promocionId != null) {
         // ============================================
         // GENERAR PUNTOS (1 punto por garrafón)
 
-
         // Solo se acreditan si el pago NO fue con puntos
         // Y si la promoción acumula puntos.
         // Si el pago fue con puntos, se descuentan.
@@ -477,7 +472,6 @@ if (promocionId != null) {
                 acumulaPuntos = promo2.getAcumulaPuntos();
             }
         }
-
 
         if ("PUNTOS".equals(metodo)) {
             try {
@@ -492,13 +486,9 @@ if (promocionId != null) {
                 System.out.println("Error descontando puntos: " + e.getMessage());
             }
 
-        } else {
-
-
         } else if (acumulaPuntos) {
 
         } else {
-
 
             try {
                 if (movimientoPuntosRepository.findByVentaId(ventaGuardada.getId()).isEmpty()) {

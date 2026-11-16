@@ -46,8 +46,6 @@ public class ClienteController {
                 .stream().map(m -> Map.of("ventaId", m.getVenta().getId(), "puntos", m.getPuntos(), "fecha", m.getFecha().toString())).toList()));
     }
 
-    }
-
     // ============================================
     // HU-011 - REGISTRAR CLIENTE
     // ============================================
