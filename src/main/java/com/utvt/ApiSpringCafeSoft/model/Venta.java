@@ -86,6 +86,11 @@ private String metodoPago;
     @Column(name = "cliente_ruta_id")
 private Long clienteRutaId;
 
+    @Column(name="cliente_fidelidad_id")
+    private Long clienteFidelidadId;
+    public Long getClienteFidelidadId(){return clienteFidelidadId;}
+    public void setClienteFidelidadId(Long id){this.clienteFidelidadId=id;}
+
     // ── NUEVO: relación con sucursal ──
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sucursal_id", nullable = false)

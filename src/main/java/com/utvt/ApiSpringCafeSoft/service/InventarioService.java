@@ -27,7 +27,7 @@ public class InventarioService {
     private SucursalRepository sucursalRepository;
 
     private InventarioDTO convertToDTO(Inventario inventario) {
-        return new InventarioDTO(
+        InventarioDTO dto = new InventarioDTO(
             inventario.getId(),
             inventario.getNombre(),
             inventario.getTipo(),
@@ -39,6 +39,13 @@ public class InventarioService {
             inventario.getPrecioUnitario(),
             inventario.getProductoId()
         );
+
+        if (inventario.getSucursal() != null) {
+            dto.setSucursalId(inventario.getSucursal().getId());
+            dto.setSucursalNombre(inventario.getSucursal().getNombre());
+        }
+
+        return dto;
     }
 
     private Inventario convertToEntity(InventarioDTO dto) {

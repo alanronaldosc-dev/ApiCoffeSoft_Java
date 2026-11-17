@@ -114,6 +114,15 @@
             <version>4.21.0</version>
             <scope>test</scope>
         </dependency>
+
+
+        <!-- Base de datos H2 para pruebas automatizadas -->
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>test</scope>
+</dependency>
+
     </dependencies>
     
     <build>

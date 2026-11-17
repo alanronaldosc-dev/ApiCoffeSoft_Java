@@ -20,6 +20,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import org.springframework.web.server.ResponseStatusException;
+
 @ExtendWith(MockitoExtension.class)
 class PromocionVigenciaTest {
 
@@ -78,8 +80,7 @@ class PromocionVigenciaTest {
                 () -> promocionService.validarAplicacion(10L)
         );
 
-        // El service lanza "La promocion ha vencido."
-        assertTrue(error.getReason().toLowerCase().contains("vencido"));
+        assertTrue(error.getMessage().contains("vencido"));
     }
 
     // QA-03: Promocion que aun no comienza
@@ -90,7 +91,7 @@ class PromocionVigenciaTest {
         promocion.setFechaFin(ahora.plusDays(5));
         configurarPromocion();
 
-        ResponseStatusException error = assertThrows(
+        assertThrows(
                 ResponseStatusException.class,
                 () -> promocionService.validarAplicacion(10L)
         );

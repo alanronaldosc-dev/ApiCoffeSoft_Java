@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * HU-016: cierre de turno de un repartidor.
+ * HU-016: cierre de ruta de un repartidor.
  */
 @Entity
 @Table(name = "liquidaciones")
@@ -18,6 +18,11 @@ public class Liquidacion {
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "repartidor_id", nullable = false)
     private Usuario repartidor;
+
+    // NUEVO: ruta a la que pertenece la liquidación
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ruta_id")
+    private Ruta ruta;
 
     @Column(name = "fecha_operacion", nullable = false)
     private LocalDate fechaOperacion;
@@ -57,32 +62,123 @@ public class Liquidacion {
 
     public Liquidacion() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Usuario getRepartidor() { return repartidor; }
-    public void setRepartidor(Usuario repartidor) { this.repartidor = repartidor; }
-    public LocalDate getFechaOperacion() { return fechaOperacion; }
-    public void setFechaOperacion(LocalDate fechaOperacion) { this.fechaOperacion = fechaOperacion; }
-    public LocalDateTime getFechaCierre() { return fechaCierre; }
-    public void setFechaCierre(LocalDateTime fechaCierre) { this.fechaCierre = fechaCierre; }
-    public Double getCargaInicial() { return cargaInicial; }
-    public void setCargaInicial(Double cargaInicial) { this.cargaInicial = cargaInicial; }
-    public Double getGarrafonesEntregados() { return garrafonesEntregados; }
-    public void setGarrafonesEntregados(Double garrafonesEntregados) { this.garrafonesEntregados = garrafonesEntregados; }
-    public Double getGarrafonesNoVendidosDevueltos() { return garrafonesNoVendidosDevueltos; }
-    public void setGarrafonesNoVendidosDevueltos(Double value) { this.garrafonesNoVendidosDevueltos = value; }
-    public Double getTotalEfectivo() { return totalEfectivo; }
-    public void setTotalEfectivo(Double totalEfectivo) { this.totalEfectivo = totalEfectivo; }
-    public Double getTotalTransferencias() { return totalTransferencias; }
-    public void setTotalTransferencias(Double totalTransferencias) { this.totalTransferencias = totalTransferencias; }
-    public Double getEfectivoEntregado() { return efectivoEntregado; }
-    public void setEfectivoEntregado(Double efectivoEntregado) { this.efectivoEntregado = efectivoEntregado; }
-    public Double getDiferenciaGarrafones() { return diferenciaGarrafones; }
-    public void setDiferenciaGarrafones(Double diferenciaGarrafones) { this.diferenciaGarrafones = diferenciaGarrafones; }
-    public Double getDiferenciaEfectivo() { return diferenciaEfectivo; }
-    public void setDiferenciaEfectivo(Double diferenciaEfectivo) { this.diferenciaEfectivo = diferenciaEfectivo; }
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
-    public String getObservaciones() { return observaciones; }
-    public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Usuario getRepartidor() {
+        return repartidor;
+    }
+
+    public void setRepartidor(Usuario repartidor) {
+        this.repartidor = repartidor;
+    }
+
+    public Ruta getRuta() {
+        return ruta;
+    }
+
+    public void setRuta(Ruta ruta) {
+        this.ruta = ruta;
+    }
+
+    public LocalDate getFechaOperacion() {
+        return fechaOperacion;
+    }
+
+    public void setFechaOperacion(LocalDate fechaOperacion) {
+        this.fechaOperacion = fechaOperacion;
+    }
+
+    public LocalDateTime getFechaCierre() {
+        return fechaCierre;
+    }
+
+    public void setFechaCierre(LocalDateTime fechaCierre) {
+        this.fechaCierre = fechaCierre;
+    }
+
+    public Double getCargaInicial() {
+        return cargaInicial;
+    }
+
+    public void setCargaInicial(Double cargaInicial) {
+        this.cargaInicial = cargaInicial;
+    }
+
+    public Double getGarrafonesEntregados() {
+        return garrafonesEntregados;
+    }
+
+    public void setGarrafonesEntregados(Double garrafonesEntregados) {
+        this.garrafonesEntregados = garrafonesEntregados;
+    }
+
+    public Double getGarrafonesNoVendidosDevueltos() {
+        return garrafonesNoVendidosDevueltos;
+    }
+
+    public void setGarrafonesNoVendidosDevueltos(Double value) {
+        this.garrafonesNoVendidosDevueltos = value;
+    }
+
+    public Double getTotalEfectivo() {
+        return totalEfectivo;
+    }
+
+    public void setTotalEfectivo(Double totalEfectivo) {
+        this.totalEfectivo = totalEfectivo;
+    }
+
+    public Double getTotalTransferencias() {
+        return totalTransferencias;
+    }
+
+    public void setTotalTransferencias(Double totalTransferencias) {
+        this.totalTransferencias = totalTransferencias;
+    }
+
+    public Double getEfectivoEntregado() {
+        return efectivoEntregado;
+    }
+
+    public void setEfectivoEntregado(Double efectivoEntregado) {
+        this.efectivoEntregado = efectivoEntregado;
+    }
+
+    public Double getDiferenciaGarrafones() {
+        return diferenciaGarrafones;
+    }
+
+    public void setDiferenciaGarrafones(Double diferenciaGarrafones) {
+        this.diferenciaGarrafones = diferenciaGarrafones;
+    }
+
+    public Double getDiferenciaEfectivo() {
+        return diferenciaEfectivo;
+    }
+
+    public void setDiferenciaEfectivo(Double diferenciaEfectivo) {
+        this.diferenciaEfectivo = diferenciaEfectivo;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
 }
