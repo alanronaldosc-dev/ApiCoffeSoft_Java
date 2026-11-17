@@ -147,6 +147,16 @@ class VentaDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("Sin ranking de productos el dashboard devuelve una lista vacia")
+    void crearDesde_sinTopProductos_listaVacia() {
+        DashboardVentasDTO dashboard = DashboardVentasDTO.crearDesde(reporteConVentas(), null);
+
+        assertNotNull(dashboard.getTopProductos());
+        assertTrue(dashboard.getTopProductos().isEmpty());
+        assertEquals(1400.0, dashboard.getMontoTotal(), 0.001);
+    }
+
+    @Test
     @DisplayName("El ticket promedio se redondea a dos decimales")
     void calcularTicketPromedio_redondeaDosDecimales() {
         assertEquals(333.33, DashboardVentasDTO.calcularTicketPromedio(1000.0, 3), 0.001);
