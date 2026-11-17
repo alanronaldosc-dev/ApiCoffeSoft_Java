@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -32,10 +33,17 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(false);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    private static AntPathRequestMatcher ant(HttpMethod method, String pattern) {
+        return new AntPathRequestMatcher(pattern, method.name());
+    }
+
+    private static AntPathRequestMatcher ant(String pattern) {
+        return new AntPathRequestMatcher(pattern);
     }
 
     @Bean
@@ -43,54 +51,50 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .httpBasic(httpBasic -> httpBasic.disable())  
+            .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(formLogin -> formLogin.disable())
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/usuarios/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+                .requestMatchers(ant(HttpMethod.OPTIONS, "/**")).permitAll()
+                .requestMatchers(ant("/api/usuarios/login")).permitAll()
+                .requestMatchers(ant(HttpMethod.POST, "/api/usuarios")).permitAll()
                 .requestMatchers(
-                    "/v3/api-docs", "/v3/api-docs/**",
-                    "/api-docs",    "/api-docs/**",
-                    "/swagger-ui/**", "/swagger-ui.html",
-                    "/swagger-resources/**", "/webjars/**"
+                    ant("/v3/api-docs"),          ant("/v3/api-docs/**"),
+                    ant("/api-docs"),             ant("/api-docs/**"),
+                    ant("/swagger-ui/**"),        ant("/swagger-ui.html"),
+                    ant("/swagger-resources/**"), ant("/webjars/**"),
+                    ant("/h2-console"),           ant("/h2-console/**")
                 ).permitAll()
-                .requestMatchers(HttpMethod.GET,    "/api/usuarios/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/usuarios/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasRole("ADMIN")
-                .requestMatchers("/api/insumos/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers("/api/lotes/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers("/api/proveedores/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers("/api/categorias/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers("/api/sucursales/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
-                .requestMatchers(HttpMethod.GET, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
-                .requestMatchers(HttpMethod.POST, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers(HttpMethod.PUT, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers(HttpMethod.DELETE, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers(HttpMethod.GET,    "/api/productos/**").authenticated()
-                .requestMatchers(HttpMethod.POST,   "/api/productos/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/productos/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasRole("ADMIN")
-                .requestMatchers("/api/cargas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
-                .requestMatchers("/api/rutas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
-                .requestMatchers("/api/clientes/segmentos/**").hasRole("ADMIN")
-                .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "REPARTIDOR")
-                .requestMatchers("/api/auditoria/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
-                .requestMatchers("/api/mermas/**").hasAnyRole("ADMIN", "REPARTIDOR")
-
-                // Agregar junto a las demás reglas, antes de .anyRequest().authenticated()
-                .requestMatchers(HttpMethod.GET,    "/api/promociones/**").authenticated()
-                .requestMatchers(HttpMethod.POST,   "/api/promociones/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/promociones/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/promociones/**").hasRole("ADMIN")
-
-                .requestMatchers(HttpMethod.GET, "/api/traccar/**").hasAnyRole("ADMIN", "EMPLEADO")
-                .requestMatchers(HttpMethod.POST, "/api/traccar/**").hasRole("ADMIN")
-
-
+                .requestMatchers(ant(HttpMethod.GET,    "/api/usuarios/**")).hasRole("ADMIN")
+                .requestMatchers(ant(HttpMethod.PUT,    "/api/usuarios/**")).hasRole("ADMIN")
+                .requestMatchers(ant(HttpMethod.DELETE, "/api/usuarios/**")).hasRole("ADMIN")
+                .requestMatchers(ant("/api/insumos/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant("/api/lotes/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant("/api/proveedores/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant("/api/categorias/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant("/api/sucursales/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant("/api/ventas/**")).hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(ant(HttpMethod.GET,    "/api/inventario/**")).hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(ant(HttpMethod.POST,   "/api/inventario/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant(HttpMethod.PUT,    "/api/inventario/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant(HttpMethod.DELETE, "/api/inventario/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant(HttpMethod.GET,    "/api/productos/**")).authenticated()
+                .requestMatchers(ant(HttpMethod.POST,   "/api/productos/**")).hasRole("ADMIN")
+                .requestMatchers(ant(HttpMethod.PUT,    "/api/productos/**")).hasRole("ADMIN")
+                .requestMatchers(ant(HttpMethod.DELETE, "/api/productos/**")).hasRole("ADMIN")
+                .requestMatchers(ant("/api/cargas/**")).hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(ant("/api/rutas/**")).hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(ant("/api/clientes/segmentos/**")).hasRole("ADMIN")
+                .requestMatchers(ant("/api/clientes/**")).hasAnyRole("ADMIN", "REPARTIDOR")
+                .requestMatchers(ant("/api/auditoria/**")).hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(ant("/api/mermas/**")).hasAnyRole("ADMIN", "REPARTIDOR")
+                .requestMatchers(ant(HttpMethod.GET,    "/api/promociones/**")).authenticated()
+                .requestMatchers(ant(HttpMethod.POST,   "/api/promociones/**")).hasRole("ADMIN")
+                .requestMatchers(ant(HttpMethod.PUT,    "/api/promociones/**")).hasRole("ADMIN")
+                .requestMatchers(ant(HttpMethod.DELETE, "/api/promociones/**")).hasRole("ADMIN")
+                .requestMatchers(ant(HttpMethod.GET,    "/api/traccar/**")).hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(ant(HttpMethod.POST,   "/api/traccar/**")).hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

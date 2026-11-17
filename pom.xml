@@ -68,6 +68,13 @@
             <version>2.2.0</version>
         </dependency>
         
+        <!-- H2 en memoria (perfil h2 para pruebas de carga sin PostgreSQL) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Spring Boot Starter Test (JUnit 5 incluido) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
