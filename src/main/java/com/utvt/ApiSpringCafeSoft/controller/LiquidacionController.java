@@ -41,6 +41,7 @@ public class LiquidacionController {
     private LiquidacionService liquidacionService;
 
 
+
     @GetMapping("/repartidor/{repartidorId}")
     @Operation(summary = "Listar liquidaciones de un repartidor")
     public ResponseEntity<?> listarLiquidaciones(
@@ -54,6 +55,7 @@ public class LiquidacionController {
             return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
         }
     }
+
 
     @GetMapping("/repartidor/{repartidorId}/hoy")
     @Operation(summary = "Consultar liquidacion de hoy")
@@ -168,10 +170,15 @@ public class LiquidacionController {
             headers.setContentDispositionFormData("attachment", "liquidacion.pdf");
             return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
 
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+
+
         } catch (Exception e) {
             System.out.println("ERROR PDF: " + e.getClass().getName() + " - " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage().getBytes());
+
         }
     }
 }
