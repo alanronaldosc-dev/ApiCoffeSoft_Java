@@ -1,3 +1,4 @@
+
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
@@ -19,8 +20,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ventas")
@@ -33,52 +37,32 @@ public class VentaController {
     @Autowired
     private VentaService ventaService;
 
-
     // =========================================================
     // CREAR VENTA
     // =========================================================
 
     @Operation(
         summary = "Crear una nueva venta",
-        description =
-            "Registra una nueva venta y descuenta automáticamente " +
-            "los insumos del inventario."
+        description = "Registra una nueva venta y descuenta automáticamente los insumos del inventario."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "201",
-            description = "✅ Venta creada exitosamente"
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "❌ Datos inválidos"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "❌ Producto o usuario no encontrado"
-        ),
-        @ApiResponse(
-            responseCode = "409",
-            description = "❌ Stock insuficiente de insumos"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "201", description = "Venta creada exitosamente"),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+        @ApiResponse(responseCode = "404", description = "Producto o usuario no encontrado"),
+        @ApiResponse(responseCode = "409", description = "Stock insuficiente de insumos"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PostMapping
     public ResponseEntity<VentaDTO> crearVenta(
             @Valid @RequestBody VentaDTO ventaDTO) {
 
-        VentaDTO nuevaVenta =
-                ventaService.crearVenta(ventaDTO);
+        VentaDTO nuevaVenta = ventaService.crearVenta(ventaDTO);
 
         return new ResponseEntity<>(
-                nuevaVenta,
-                HttpStatus.CREATED
+            nuevaVenta,
+            HttpStatus.CREATED
         );
     }
-
 
     // =========================================================
     // OBTENER TODAS LAS VENTAS
@@ -89,24 +73,17 @@ public class VentaController {
         description = "Lista todas las ventas registradas"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "✅ Lista de ventas obtenida exitosamente"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Lista de ventas obtenida exitosamente"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping
     public ResponseEntity<List<VentaDTO>> obtenerTodasLasVentas() {
 
         List<VentaDTO> ventas =
-                ventaService.obtenerTodasLasVentas();
+            ventaService.obtenerTodasLasVentas();
 
         return ResponseEntity.ok(ventas);
     }
-
 
     // =========================================================
     // OBTENER VENTA POR FOLIO
@@ -117,18 +94,9 @@ public class VentaController {
         description = "Busca una venta específica por su folio"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "✅ Venta encontrada"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "❌ Venta no encontrada"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Venta encontrada"),
+        @ApiResponse(responseCode = "404", description = "Venta no encontrada"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/folio/{folio}")
     public ResponseEntity<VentaDTO> obtenerVentaPorFolio(
@@ -140,11 +108,10 @@ public class VentaController {
             @PathVariable String folio) {
 
         VentaDTO venta =
-                ventaService.obtenerVentaPorFolio(folio);
+            ventaService.obtenerVentaPorFolio(folio);
 
         return ResponseEntity.ok(venta);
     }
-
 
     // =========================================================
     // OBTENER VENTAS POR USUARIO
@@ -152,18 +119,11 @@ public class VentaController {
 
     @Operation(
         summary = "Obtener ventas por usuario",
-        description =
-            "Lista las ventas realizadas por un usuario específico"
+        description = "Lista las ventas realizadas por un usuario específico"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "✅ Lista de ventas del usuario"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Lista de ventas del usuario"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<VentaDTO>> obtenerVentasPorUsuario(
@@ -175,11 +135,10 @@ public class VentaController {
             @PathVariable Long usuarioId) {
 
         List<VentaDTO> ventas =
-                ventaService.obtenerVentasPorUsuario(usuarioId);
+            ventaService.obtenerVentasPorUsuario(usuarioId);
 
         return ResponseEntity.ok(ventas);
     }
-
 
     // =========================================================
     // OBTENER VENTAS POR FECHAS
@@ -190,51 +149,34 @@ public class VentaController {
         description = "Lista las ventas entre dos fechas"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "✅ Lista de ventas en el rango de fechas"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Lista de ventas en el rango de fechas"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/fechas")
     public ResponseEntity<List<VentaDTO>> obtenerVentasPorRangoFechas(
-
             @Parameter(
-                description =
-                    "Fecha de inicio (formato: yyyy-MM-dd'T'HH:mm:ss)",
+                description = "Fecha de inicio (formato: yyyy-MM-dd'T'HH:mm:ss)",
                 required = true,
                 example = "2026-06-01T00:00:00"
             )
             @RequestParam
-            @DateTimeFormat(
-                iso = DateTimeFormat.ISO.DATE_TIME
-            )
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime inicio,
 
             @Parameter(
-                description =
-                    "Fecha de fin (formato: yyyy-MM-dd'T'HH:mm:ss)",
+                description = "Fecha de fin (formato: yyyy-MM-dd'T'HH:mm:ss)",
                 required = true,
                 example = "2026-06-30T23:59:59"
             )
             @RequestParam
-            @DateTimeFormat(
-                iso = DateTimeFormat.ISO.DATE_TIME
-            )
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime fin) {
 
         List<VentaDTO> ventas =
-                ventaService.obtenerVentasPorRangoFechas(
-                        inicio,
-                        fin
-                );
+            ventaService.obtenerVentasPorRangoFechas(inicio, fin);
 
         return ResponseEntity.ok(ventas);
     }
-
 
     // =========================================================
     // OBTENER VENTAS POR MÉTODO DE PAGO
@@ -242,39 +184,26 @@ public class VentaController {
 
     @Operation(
         summary = "Obtener ventas por método de pago",
-        description =
-            "Lista las ventas según el método de pago"
+        description = "Lista las ventas según el método de pago"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description =
-                "✅ Lista de ventas por método de pago"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Lista de ventas por método de pago"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/metodo-pago/{metodoPago}")
     public ResponseEntity<List<VentaDTO>> obtenerVentasPorMetodoPago(
-
             @Parameter(
-                description =
-                    "Método de pago (efectivo o tarjeta)",
+                description = "Método de pago (efectivo o tarjeta)",
                 required = true,
                 example = "efectivo"
             )
             @PathVariable String metodoPago) {
 
         List<VentaDTO> ventas =
-                ventaService.obtenerVentasPorMetodoPago(
-                        metodoPago
-                );
+            ventaService.obtenerVentasPorMetodoPago(metodoPago);
 
         return ResponseEntity.ok(ventas);
     }
-
 
     // =========================================================
     // PEDIDOS PENDIENTES
@@ -282,30 +211,20 @@ public class VentaController {
 
     @Operation(
         summary = "Obtener pedidos pendientes",
-        description =
-            "Obtiene todas las ventas que están pendientes de entregar"
+        description = "Obtiene todas las ventas que están pendientes de entregar"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description =
-                "✅ Pedidos pendientes obtenidos correctamente"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description =
-                "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Pedidos pendientes obtenidos correctamente"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/pedidos/pendientes")
     public ResponseEntity<List<VentaDTO>> obtenerPedidosPendientes() {
 
         List<VentaDTO> pedidos =
-                ventaService.obtenerPedidosPendientes();
+            ventaService.obtenerPedidosPendientes();
 
         return ResponseEntity.ok(pedidos);
     }
-
 
     // =========================================================
     // MARCAR PEDIDO COMO ENTREGADO
@@ -313,25 +232,12 @@ public class VentaController {
 
     @Operation(
         summary = "Marcar pedido como entregado",
-        description =
-            "Cambia el estado del pedido de PENDIENTE a ENTREGADA"
+        description = "Cambia el estado del pedido de PENDIENTE a ENTREGADA"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description =
-                "✅ Pedido marcado como entregado"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description =
-                "❌ Pedido no encontrado"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description =
-                "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Pedido marcado como entregado"),
+        @ApiResponse(responseCode = "404", description = "Pedido no encontrado"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @PutMapping("/{id}/entregar")
     public ResponseEntity<VentaDTO> marcarPedidoEntregado(
@@ -343,11 +249,10 @@ public class VentaController {
             @PathVariable Long id) {
 
         VentaDTO pedido =
-                ventaService.marcarPedidoEntregado(id);
+            ventaService.marcarPedidoEntregado(id);
 
         return ResponseEntity.ok(pedido);
     }
-
 
     // =========================================================
     // CAMBIAR ESTADO DEL PEDIDO
@@ -361,18 +266,9 @@ public class VentaController {
             "PENDIENTE, RECIBIDA, EN_PROCESO y ENTREGADA."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "✅ Estado actualizado y notificación enviada"
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "❌ Estado no válido"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "❌ Pedido no encontrado"
-        )
+        @ApiResponse(responseCode = "200", description = "Estado actualizado y notificación enviada"),
+        @ApiResponse(responseCode = "400", description = "Estado no válido"),
+        @ApiResponse(responseCode = "404", description = "Pedido no encontrado")
     })
     @PutMapping("/{id}/estado")
     public ResponseEntity<VentaDTO> cambiarEstadoPedido(
@@ -382,6 +278,7 @@ public class VentaController {
                 example = "1"
             )
             @PathVariable Long id,
+
             @Parameter(
                 description = "Nuevo estado del pedido",
                 required = true,
@@ -390,11 +287,10 @@ public class VentaController {
             @RequestParam String estado) {
 
         VentaDTO pedido =
-                ventaService.actualizarEstadoPedido(id, estado);
+            ventaService.actualizarEstadoPedido(id, estado);
 
         return ResponseEntity.ok(pedido);
     }
-
 
     // =========================================================
     // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
@@ -410,38 +306,24 @@ public class VentaController {
             "por día y por método de pago."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description =
-                "✅ Reporte generado correctamente"
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description =
-                "❌ Periodo no válido o usuario sin sucursal"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Reporte generado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Periodo no válido o usuario sin sucursal"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/reporte")
     public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(
-
             @Parameter(
-                description =
-                    "Periodo: hoy, mes o mes_anterior",
+                description = "Periodo: hoy, mes o mes_anterior",
                 required = true,
                 example = "hoy"
             )
             @RequestParam(defaultValue = "hoy") String periodo) {
 
         ReporteVentasDTO reporte =
-                ventaService.obtenerReporteVentas(periodo);
+            ventaService.obtenerReporteVentas(periodo);
 
         return ResponseEntity.ok(reporte);
     }
-
 
     // =========================================================
     // HU-017: PRODUCTOS MÁS VENDIDOS
@@ -457,68 +339,40 @@ public class VentaController {
             "Incluye unidades vendidas y monto recaudado."
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description =
-                "✅ Ranking obtenido correctamente"
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description =
-                "❌ Periodo no válido o usuario sin sucursal"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description = "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Ranking obtenido correctamente"),
+        @ApiResponse(responseCode = "400", description = "Periodo no válido o usuario sin sucursal"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/reporte/top-productos")
     public ResponseEntity<List<ProductoMasVendidoDTO>> obtenerProductosMasVendidos(
-
             @Parameter(
-                description =
-                    "Periodo: hoy, mes o mes_anterior",
+                description = "Periodo: hoy, mes o mes_anterior",
                 required = true,
                 example = "mes"
             )
             @RequestParam(defaultValue = "hoy") String periodo) {
 
         List<ProductoMasVendidoDTO> productos =
-                ventaService.obtenerProductosMasVendidos(periodo);
+            ventaService.obtenerProductosMasVendidos(periodo);
 
         return ResponseEntity.ok(productos);
     }
 
-
     // =========================================================
     // OBTENER VENTA POR ID
-    // IMPORTANTE: dejar este endpoint después de las rutas
-    // específicas
     // =========================================================
 
     @Operation(
         summary = "Obtener una venta por ID",
-        description =
-            "Busca una venta específica por su ID"
+        description = "Busca una venta específica por su ID"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "✅ Venta encontrada"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "❌ Venta no encontrada"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description =
-                "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "200", description = "Venta encontrada"),
+        @ApiResponse(responseCode = "404", description = "Venta no encontrada"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/{id}")
     public ResponseEntity<VentaDTO> obtenerVentaPorId(
-
             @Parameter(
                 description = "ID de la venta",
                 required = true,
@@ -527,11 +381,10 @@ public class VentaController {
             @PathVariable Long id) {
 
         VentaDTO venta =
-                ventaService.obtenerVentaPorId(id);
+            ventaService.obtenerVentaPorId(id);
 
         return ResponseEntity.ok(venta);
     }
-
 
     // =========================================================
     // CANCELAR VENTA
@@ -539,32 +392,17 @@ public class VentaController {
 
     @Operation(
         summary = "Cancelar una venta",
-        description =
-            "Cancela una venta y repone los insumos al inventario"
+        description = "Cancela una venta y repone los insumos al inventario"
     )
     @ApiResponses(value = {
-        @ApiResponse(
-            responseCode = "204",
-            description =
-                "✅ Venta cancelada exitosamente"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description =
-                "❌ Venta no encontrada"
-        ),
-        @ApiResponse(
-            responseCode = "500",
-            description =
-                "❌ Error interno del servidor"
-        )
+        @ApiResponse(responseCode = "204", description = "Venta cancelada exitosamente"),
+        @ApiResponse(responseCode = "404", description = "Venta no encontrada"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelarVenta(
-
             @Parameter(
-                description =
-                    "ID de la venta a cancelar",
+                description = "ID de la venta a cancelar",
                 required = true,
                 example = "1"
             )
@@ -574,35 +412,203 @@ public class VentaController {
 
         return ResponseEntity.noContent().build();
     }
+
+    // =========================================================
+    // CLIENTES FRECUENTES
+    // =========================================================
+
     @Operation(
-    summary = "Clientes frecuentes",
-    description =
-        "Lista los clientes de ruta ordenados por número de compras " +
-        "en el periodo. Incluye un indicador 'esFrecuente' cuando el " +
-        "cliente alcanza o supera el mínimo de compras configurado."
-)
-@ApiResponses(value = {
-    @ApiResponse(responseCode = "200", description = "✅ Listado obtenido correctamente"),
-    @ApiResponse(responseCode = "400", description = "❌ Periodo o parámetros inválidos"),
-    @ApiResponse(responseCode = "500", description = "❌ Error interno del servidor")
-})
-@GetMapping("/reporte/clientes-frecuentes")
-public ResponseEntity<?> obtenerClientesFrecuentes(
-        @Parameter(description = "Periodo: hoy, mes o mes_anterior", example = "mes")
-        @RequestParam(defaultValue = "mes") String periodo,
-        @Parameter(description = "Mínimo de compras para ser frecuente", example = "3")
-        @RequestParam(defaultValue = "3") int minimoCompras) {
+        summary = "Clientes frecuentes",
+        description =
+            "Lista los clientes de ruta ordenados por número de compras " +
+            "en el periodo. Incluye un indicador 'esFrecuente' cuando el " +
+            "cliente alcanza o supera el mínimo de compras configurado."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente"),
+        @ApiResponse(responseCode = "400", description = "Periodo o parámetros inválidos"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/reporte/clientes-frecuentes")
+    public ResponseEntity<?> obtenerClientesFrecuentes(
+            @Parameter(
+                description = "Periodo: hoy, mes o mes_anterior",
+                example = "mes"
+            )
+            @RequestParam(defaultValue = "mes") String periodo,
 
-    try {
-        return ResponseEntity.ok(
-                ventaService.obtenerClientesFrecuentes(periodo, minimoCompras));
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.badRequest()
-                .body(java.util.Map.of("mensaje", e.getMessage()));
-    } catch (RuntimeException e) {
-        return ResponseEntity.badRequest()
-                .body(java.util.Map.of("mensaje", e.getMessage()));
+            @Parameter(
+                description = "Mínimo de compras para ser frecuente",
+                example = "3"
+            )
+            @RequestParam(defaultValue = "3") int minimoCompras) {
+
+        try {
+            return ResponseEntity.ok(
+                ventaService.obtenerClientesFrecuentes(
+                    periodo,
+                    minimoCompras
+                )
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        }
     }
-}
 
+    // =========================================================
+    // HU-045 / HU-046
+    // REPORTES DE VENTAS POR HORARIO Y CONSUMO DIARIO
+    // =========================================================
+
+    @Operation(
+        summary = "Patrones de consumo por horario y día",
+        description =
+            "Consulta las ventas agrupadas por franjas horarias " +
+            "y días dentro del rango de fechas seleccionado."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Reporte obtenido correctamente"),
+        @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/reporte/patrones")
+    public ResponseEntity<Map<String, Object>> patronesConsumo(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate inicio,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fin) {
+
+        if (inicio.isAfter(fin)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Map<String, Object> reporte =
+            ventaService.obtenerPatronesConsumo(inicio, fin);
+
+        return ResponseEntity.ok(reporte);
+    }
+
+    // =========================================================
+    // HU-045 / HU-046
+    // EXPORTAR PATRONES DE CONSUMO A CSV
+    // =========================================================
+
+    @Operation(
+        summary = "Exportar patrones de consumo",
+        description =
+            "Exporta los reportes de ventas por horario " +
+            "y patrones de consumo diario en formato CSV."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Archivo CSV generado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping(
+        value = "/reporte/patrones/exportar",
+        produces = "text/csv"
+    )
+    public ResponseEntity<byte[]> exportarPatronesConsumo(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate inicio,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fin) {
+
+        if (inicio.isAfter(fin)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Map<String, Object> reporte =
+            ventaService.obtenerPatronesConsumo(inicio, fin);
+
+        StringBuilder csv = new StringBuilder("sep=;\r\n");
+
+        // INFORMACIÓN GENERAL
+        csv.append("Reporte de consumo;Sucursal;")
+            .append(reporte.get("sucursalNombre"))
+            .append("\r\n");
+
+        csv.append("Desde;")
+            .append(inicio)
+            .append(";Hasta;")
+            .append(fin)
+            .append("\r\n");
+
+        csv.append("Total de ventas;")
+            .append(reporte.get("numeroVentas"))
+            .append(";Monto total;")
+            .append(reporte.get("montoTotal"))
+            .append("\r\n\r\n");
+
+        // REPORTE POR HORARIO
+        csv.append(
+            "Franja horaria;Numero de ventas;Monto total\r\n"
+        );
+
+        List<?> franjas = (List<?>) reporte.get("franjas");
+
+        if (franjas != null) {
+            for (Object obj : franjas) {
+
+                Map<?, ?> franja = (Map<?, ?>) obj;
+
+                csv.append(franja.get("franja"))
+                    .append(';')
+                    .append(franja.get("numeroVentas"))
+                    .append(';')
+                    .append(franja.get("montoTotal"))
+                    .append("\r\n");
+            }
+        }
+
+        // REPORTE DE CONSUMO DIARIO
+        csv.append(
+            "\r\nFecha;Dia;Numero de ventas;Monto total\r\n"
+        );
+
+        List<?> dias = (List<?>) reporte.get("dias");
+
+        if (dias != null) {
+            for (Object obj : dias) {
+
+                Map<?, ?> dia = (Map<?, ?>) obj;
+
+                csv.append(dia.get("fecha"))
+                    .append(';')
+                    .append(dia.get("diaSemana"))
+                    .append(';')
+                    .append(dia.get("numeroVentas"))
+                    .append(';')
+                    .append(dia.get("montoTotal"))
+                    .append("\r\n");
+            }
+        }
+
+        // GENERAR ARCHIVO CSV
+        byte[] bytes = ("\uFEFF" + csv)
+            .getBytes(StandardCharsets.UTF_8);
+
+        return ResponseEntity.ok()
+            .header(
+                org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=consumo_" +
+                    inicio + "_" + fin + ".csv"
+            )
+            .contentType(
+                org.springframework.http.MediaType.parseMediaType(
+                    "text/csv;charset=UTF-8"
+                )
+            )
+            .body(bytes);
+    }
 }
