@@ -30,8 +30,8 @@ import requests
 
 # ── Configuración ──────────────────────────────────────────────────────────────
 BASE_URL       = "http://localhost:8080"
-ADMIN_EMAIL    = "admin@cafesoft.com"
-ADMIN_PASSWORD = "admin123"
+ADMIN_EMAIL    = "adminalan@gmail.com"
+ADMIN_PASSWORD = "admin123456"
 SUCURSAL_ID    = 1          # ID creado por DataInitializer
 
 

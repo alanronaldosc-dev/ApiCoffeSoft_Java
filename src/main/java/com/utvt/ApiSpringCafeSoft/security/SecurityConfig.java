@@ -1,4 +1,3 @@
-
 package com.utvt.ApiSpringCafeSoft.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,31 +25,21 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    // =========================================================
-    // CONFIGURACIÓN CORS
-    // =========================================================
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-
         CorsConfiguration config = new CorsConfiguration();
-
         config.setAllowedOriginPatterns(List.of("*"));
-
-        config.setAllowedMethods(
-            List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS",
-                "PATCH"
-            )
-        );
-
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(false);
+
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
 
         UrlBasedCorsConfigurationSource source =
             new UrlBasedCorsConfigurationSource();
@@ -64,18 +53,73 @@ public class SecurityConfig {
     // CONFIGURACIÓN GENERAL DE SEGURIDAD
     // =========================================================
 
+
     @Bean
-    public SecurityFilterChain filterChain(
-            HttpSecurity http) throws Exception {
-
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors ->
-                cors.configurationSource(
-                    corsConfigurationSource()
-                )
-            )
-
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+
+            .httpBasic(httpBasic -> httpBasic.disable())  
+            .formLogin(formLogin -> formLogin.disable())
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/usuarios/login").permitAll()
+                .requestMatchers("/api/health").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+                .requestMatchers(
+                    "/v3/api-docs", "/v3/api-docs/**",
+                    "/api-docs",    "/api-docs/**",
+                    "/swagger-ui/**", "/swagger-ui.html",
+                    "/swagger-resources/**", "/webjars/**"
+                ).permitAll()
+                // Solo el ADMIN puede disparar notificaciones de prueba
+                // desde el backend (evita spam a tokens arbitrarios).
+                .requestMatchers("/api/notificaciones/**").hasRole("ADMIN")
+                // Cualquier usuario autenticado puede registrar
+                // su propio token de notificaciones push.
+                .requestMatchers(HttpMethod.PUT, "/api/usuarios/*/push-token")
+                    .authenticated()
+                .requestMatchers(HttpMethod.GET,    "/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers("/api/insumos/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers("/api/lotes/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers("/api/proveedores/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers("/api/categorias/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers("/api/sucursales/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers("/api/ventas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(HttpMethod.GET, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers(HttpMethod.POST, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.PUT, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.DELETE, "/api/inventario/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.GET,    "/api/productos/**").authenticated()
+                .requestMatchers(HttpMethod.POST,   "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers("/api/cargas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers("/api/rutas/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers("/api/clientes/segmentos/**").hasRole("ADMIN")
+                .requestMatchers("/api/clientes/**").hasAnyRole("ADMIN", "REPARTIDOR")
+                .requestMatchers("/api/auditoria/**").hasAnyRole("ADMIN", "EMPLEADO", "REPARTIDOR")
+                .requestMatchers("/api/mermas/**").hasAnyRole("ADMIN", "REPARTIDOR")
+
+                // Agregar junto a las demás reglas, antes de .anyRequest().authenticated()
+                .requestMatchers(HttpMethod.GET,    "/api/promociones/**").authenticated()
+                .requestMatchers(HttpMethod.POST,   "/api/promociones/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT,    "/api/promociones/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/promociones/**").hasRole("ADMIN")
+
+                .requestMatchers(HttpMethod.GET, "/api/traccar/**").hasAnyRole("ADMIN", "EMPLEADO")
+                .requestMatchers(HttpMethod.POST, "/api/traccar/**").hasRole("ADMIN")
+
+
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
 
             .httpBasic(httpBasic ->
                 httpBasic.disable()
@@ -429,6 +473,7 @@ public class SecurityConfig {
                 jwtFilter,
                 UsernamePasswordAuthenticationFilter.class
             );
+
 
         return http.build();
     }
