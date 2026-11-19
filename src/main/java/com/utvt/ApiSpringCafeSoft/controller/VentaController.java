@@ -293,37 +293,57 @@ public class VentaController {
     }
 
     // =========================================================
-    // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
+    // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES (HU-050)
     // =========================================================
 
     @Operation(
-        summary = "Reporte de ventas diarias y mensuales",
-        description =
-            "Genera el reporte de ventas de un periodo " +
-            "(hoy, mes o mes_anterior) para la sucursal " +
-            "del usuario autenticado. Incluye el número " +
-            "de ventas, el monto total y los desgloses " +
-            "por día y por método de pago."
+        summary = "Reporte de ventas por periodo",
+        description = "Genera el reporte para la sucursal del usuario autenticado. " +
+            "Admite hoy, semana, mes, mes_anterior, anio/año y personalizado. " +
+            "Para personalizado se deben enviar desde y hasta."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Reporte generado correctamente"),
-        @ApiResponse(responseCode = "400", description = "Periodo no válido o usuario sin sucursal"),
+        @ApiResponse(responseCode = "400", description = "Periodo o rango de fechas inválido"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/reporte")
-    public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(
+    public ResponseEntity<?> obtenerReporteVentas(
             @Parameter(
-                description = "Periodo: hoy, mes o mes_anterior",
-                required = true,
+                description = "Periodo: hoy, semana, mes, mes_anterior, anio o personalizado",
                 example = "hoy"
             )
-            @RequestParam(defaultValue = "hoy") String periodo) {
+            @RequestParam(name = "periodo", defaultValue = "hoy") String periodo,
+            @Parameter(
+                description = "Fecha inicial para el periodo personalizado",
+                example = "2026-01-01"
+            )
+            @RequestParam(name = "desde", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate desde,
+            @Parameter(
+                description = "Fecha final para el periodo personalizado",
+                example = "2026-01-31"
+            )
+            @RequestParam(name = "hasta", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate hasta) {
 
-        ReporteVentasDTO reporte =
-            ventaService.obtenerReporteVentas(periodo);
-
-        return ResponseEntity.ok(reporte);
+        try {
+            ReporteVentasDTO reporte =
+                ventaService.obtenerReporteVentas(periodo, desde, hasta);
+            return ResponseEntity.ok(reporte);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        }
     }
+
+    // Compatibilidad con llamadas anteriores sin rango personalizado.
+public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(String periodo) {
+    ReporteVentasDTO reporte = ventaService.obtenerReporteVentas(periodo);
+    return ResponseEntity.ok(reporte);
+}
 
     // =========================================================
     // HU-017: PRODUCTOS MÁS VENDIDOS
@@ -331,32 +351,53 @@ public class VentaController {
 
     @Operation(
         summary = "Productos más vendidos",
-        description =
-            "Devuelve los productos ordenados por " +
-            "unidades vendidas (descendente) del periodo " +
-            "seleccionado (hoy, mes o mes_anterior) para " +
-            "la sucursal del usuario autenticado. " +
-            "Incluye unidades vendidas y monto recaudado."
+        description = "Devuelve los productos ordenados por unidades vendidas " +
+            "para el periodo seleccionado (hoy, semana, mes, mes_anterior, " +
+            "anio/año o personalizado) y la sucursal del usuario autenticado."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Ranking obtenido correctamente"),
-        @ApiResponse(responseCode = "400", description = "Periodo no válido o usuario sin sucursal"),
+        @ApiResponse(responseCode = "400", description = "Periodo o rango de fechas inválido"),
         @ApiResponse(responseCode = "500", description = "Error interno del servidor")
     })
     @GetMapping("/reporte/top-productos")
-    public ResponseEntity<List<ProductoMasVendidoDTO>> obtenerProductosMasVendidos(
+    public ResponseEntity<?> obtenerProductosMasVendidos(
             @Parameter(
-                description = "Periodo: hoy, mes o mes_anterior",
-                required = true,
+                description = "Periodo: hoy, semana, mes, mes_anterior, anio o personalizado",
                 example = "mes"
             )
-            @RequestParam(defaultValue = "hoy") String periodo) {
+            @RequestParam(name = "periodo", defaultValue = "hoy") String periodo,
+            @Parameter(
+                description = "Fecha inicial para el periodo personalizado",
+                example = "2026-01-01"
+            )
+            @RequestParam(name = "desde", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate desde,
+            @Parameter(
+                description = "Fecha final para el periodo personalizado",
+                example = "2026-01-31"
+            )
+            @RequestParam(name = "hasta", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate hasta) {
 
-        List<ProductoMasVendidoDTO> productos =
+        try {
+            List<ProductoMasVendidoDTO> productos =
+                ventaService.obtenerProductosMasVendidos(periodo, desde, hasta);
+            return ResponseEntity.ok(productos);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        }
+    }
+    // Compatibilidad con llamadas anteriores sin rango personalizado.
+public ResponseEntity<List<ProductoMasVendidoDTO>> obtenerProductosMasVendidos(String periodo) {
+    List<ProductoMasVendidoDTO> productos =
             ventaService.obtenerProductosMasVendidos(periodo);
 
-        return ResponseEntity.ok(productos);
-    }
+    return ResponseEntity.ok(productos);
+}
 
     // =========================================================
     // OBTENER VENTA POR ID
