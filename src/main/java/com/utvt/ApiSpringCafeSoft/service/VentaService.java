@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import com.utvt.ApiSpringCafeSoft.dto.ClienteFrecuenteDTO;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -338,6 +339,7 @@ public class VentaService {
     // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
     // =========================================================
 
+
     /**
      * Genera el reporte de ventas del periodo seleccionado
      * ("hoy", "mes" o "mes_anterior") para la sucursal del
@@ -349,14 +351,35 @@ public class VentaService {
      */
     public ReporteVentasDTO obtenerReporteVentas(String periodo) {
 
+    public ReporteVentasDTO obtenerReporteVentas(String periodo) {
+        return obtenerReporteVentas(periodo, null, null);
+    }
+
+    public ReporteVentasDTO obtenerReporteVentas(
+            String periodo,
+            LocalDate desdePersonalizado,
+            LocalDate hastaPersonalizado) {
+
+
         // ── Usuario autenticado y su sucursal (JWT) ──
         Usuario usuario = usuarioConSucursal();
         Long sucursalId = usuario.getSucursal().getId();
         String sucursalNombre = usuario.getSucursal().getNombre();
 
+
         // ── Resolver el rango del periodo ──
         RangoPeriodo rango = calcularRangoPeriodo(periodo);
         String periodoNormalizado = rango.periodo;
+
+        Long sucursalId =
+            usuario.getSucursal().getId();
+
+        String sucursalNombre =
+            usuario.getSucursal().getNombre();
+
+        RangoPeriodo rango =
+            calcularRangoPeriodo(periodo, desdePersonalizado, hastaPersonalizado);
+
         LocalDateTime desde = rango.desde;
         LocalDateTime hasta = rango.hasta;
 
@@ -420,6 +443,7 @@ public class VentaService {
     // HU-017: PRODUCTOS MÁS VENDIDOS
     // =========================================================
 
+
     /**
      * Ranking de productos ordenado por unidades vendidas
      * (descendente) en el periodo seleccionado, para la
@@ -432,10 +456,27 @@ public class VentaService {
      */
     public List<ProductoMasVendidoDTO> obtenerProductosMasVendidos(String periodo) {
 
+    public List<ProductoMasVendidoDTO> obtenerProductosMasVendidos(String periodo) {
+        return obtenerProductosMasVendidos(periodo, null, null);
+    }
+
+    public List<ProductoMasVendidoDTO> obtenerProductosMasVendidos(
+            String periodo,
+            LocalDate desdePersonalizado,
+            LocalDate hastaPersonalizado) {
+
+
         Usuario usuario = usuarioConSucursal();
         Long sucursalId = usuario.getSucursal().getId();
 
         RangoPeriodo rango = calcularRangoPeriodo(periodo);
+
+        Long sucursalId =
+            usuario.getSucursal().getId();
+
+        RangoPeriodo rango =
+            calcularRangoPeriodo(periodo, desdePersonalizado, hastaPersonalizado);
+
 
         List<Venta> ventas = ventaRepository
                 .findByFechaBetweenAndSucursalId(rango.desde, rango.hasta, sucursalId);
@@ -495,20 +536,45 @@ public class VentaService {
         return usuario;
     }
 
+
     /**
      * Resuelve el rango de fechas y la etiqueta del
      * periodo: "hoy", "mes" o "mes_anterior".
      */
     private RangoPeriodo calcularRangoPeriodo(String periodo) {
-        LocalDate hoy = LocalDate.now();
 
+    // =========================================================
+    // CALCULAR RANGO DE PERIODO
+    // =========================================================
+
+    private RangoPeriodo calcularRangoPeriodo(String periodo) {
+        return calcularRangoPeriodo(periodo, null, null);
+    }
+
+    private RangoPeriodo calcularRangoPeriodo(
+            String periodo,
+            LocalDate desdePersonalizado,
+            LocalDate hastaPersonalizado) {
+
+
+        LocalDate hoy = LocalDate.now();
         DateTimeFormatter fmtDia =
+
                 DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es"));
         DateTimeFormatter fmtMes =
                 DateTimeFormatter.ofPattern("MMMM 'de' yyyy", new Locale("es"));
 
         String periodoNormalizado =
                 periodo == null ? "hoy" : periodo.trim().toLowerCase();
+
+            DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es", "MX"));
+        DateTimeFormatter fmtMes =
+            DateTimeFormatter.ofPattern("MMMM 'de' yyyy", new Locale("es", "MX"));
+
+        String periodoNormalizado = periodo == null
+            ? "hoy"
+            : periodo.trim().toLowerCase(Locale.ROOT);
+
 
         LocalDate desdeFecha;
         LocalDate hastaFecha;
@@ -520,6 +586,16 @@ public class VentaService {
                 hastaFecha = hoy;
                 etiqueta = hoy.format(fmtDia);
                 break;
+
+
+            case "semana":
+                desdeFecha = hoy.with(DayOfWeek.MONDAY);
+                hastaFecha = desdeFecha.plusDays(6);
+                etiqueta = "Del " + desdeFecha.format(fmtDia)
+                    + " al " + hastaFecha.format(fmtDia);
+                break;
+
+
             case "mes":
                 desdeFecha = hoy.withDayOfMonth(1);
                 hastaFecha = hoy.withDayOfMonth(hoy.lengthOfMonth());
@@ -530,9 +606,36 @@ public class VentaService {
                 desdeFecha = mesAnterior.atDay(1);
                 hastaFecha = mesAnterior.atEndOfMonth();
                 etiqueta = mesAnterior.format(fmtMes);
+
+                break;
+
+            case "anio":
+            case "año":
+                desdeFecha = hoy.withDayOfYear(1);
+                hastaFecha = hoy.withDayOfYear(hoy.lengthOfYear());
+                etiqueta = "Año " + hoy.getYear();
+                break;
+
+            case "personalizado":
+                if (desdePersonalizado == null || hastaPersonalizado == null) {
+                    throw new IllegalArgumentException(
+                        "Debes seleccionar una fecha inicial y una fecha final."
+                    );
+                }
+                if (desdePersonalizado.isAfter(hastaPersonalizado)) {
+                    throw new IllegalArgumentException(
+                        "La fecha inicial no puede ser posterior a la fecha final."
+                    );
+                }
+                desdeFecha = desdePersonalizado;
+                hastaFecha = hastaPersonalizado;
+                etiqueta = "Del " + desdeFecha.format(fmtDia)
+                    + " al " + hastaFecha.format(fmtDia);
+
                 break;
             default:
                 throw new IllegalArgumentException(
+
                         "Periodo no válido. Usa: hoy, mes o mes_anterior.");
         }
 
@@ -541,6 +644,18 @@ public class VentaService {
                 etiqueta,
                 desdeFecha.atStartOfDay(),
                 hastaFecha.atTime(23, 59, 59, 999999999));
+
+                    "Periodo no válido. Usa: hoy, semana, mes, mes_anterior, anio o personalizado."
+                );
+        }
+
+        return new RangoPeriodo(
+            periodoNormalizado,
+            etiqueta,
+            desdeFecha.atStartOfDay(),
+            hastaFecha.atTime(LocalTime.MAX)
+        );
+
     }
 
     /** Rango de fechas y etiqueta de un periodo de reporte. */

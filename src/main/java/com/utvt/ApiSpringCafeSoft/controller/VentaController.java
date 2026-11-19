@@ -1,9 +1,12 @@
 package com.utvt.ApiSpringCafeSoft.controller;
 
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
+import com.utvt.ApiSpringCafeSoft.dto.DesempenoRepartidoresDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
+
 import com.utvt.ApiSpringCafeSoft.service.VentaService;
+import com.utvt.ApiSpringCafeSoft.service.DesempenoRepartidoresService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -32,6 +36,12 @@ public class VentaController {
 
     @Autowired
     private VentaService ventaService;
+
+
+    // HU-049: Servicio de desempeño de repartidores
+    @Autowired
+    private DesempenoRepartidoresService desempenoRepartidoresService;
+
 
 
     // =========================================================
@@ -397,19 +407,17 @@ public class VentaController {
 
 
     // =========================================================
-    // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
+    // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES (HU-050)
     // =========================================================
 
     @Operation(
-        summary = "Reporte de ventas diarias y mensuales",
-        description =
-            "Genera el reporte de ventas de un periodo " +
-            "(hoy, mes o mes_anterior) para la sucursal " +
-            "del usuario autenticado. Incluye el número " +
-            "de ventas, el monto total y los desgloses " +
-            "por día y por método de pago."
+        summary = "Reporte de ventas por periodo",
+        description = "Genera el reporte para la sucursal del usuario autenticado. " +
+            "Admite hoy, semana, mes, mes_anterior, anio/año y personalizado. " +
+            "Para personalizado se deben enviar desde y hasta."
     )
     @ApiResponses(value = {
+
         @ApiResponse(
             responseCode = "200",
             description =
@@ -439,8 +447,50 @@ public class VentaController {
         ReporteVentasDTO reporte =
                 ventaService.obtenerReporteVentas(periodo);
 
-        return ResponseEntity.ok(reporte);
+        @ApiResponse(responseCode = "200", description = "Reporte generado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Periodo o rango de fechas inválido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/reporte")
+    public ResponseEntity<?> obtenerReporteVentas(
+            @Parameter(
+                description = "Periodo: hoy, semana, mes, mes_anterior, anio o personalizado",
+                example = "hoy"
+            )
+            @RequestParam(name = "periodo", defaultValue = "hoy") String periodo,
+            @Parameter(
+                description = "Fecha inicial para el periodo personalizado",
+                example = "2026-01-01"
+            )
+            @RequestParam(name = "desde", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate desde,
+            @Parameter(
+                description = "Fecha final para el periodo personalizado",
+                example = "2026-01-31"
+            )
+            @RequestParam(name = "hasta", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate hasta) {
+
+
+        try {
+            ReporteVentasDTO reporte =
+                ventaService.obtenerReporteVentas(periodo, desde, hasta);
+            return ResponseEntity.ok(reporte);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        }
     }
+
+
+
+    // Compatibilidad con llamadas anteriores sin rango personalizado.
+public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(String periodo) {
+    ReporteVentasDTO reporte = ventaService.obtenerReporteVentas(periodo);
+    return ResponseEntity.ok(reporte);
+}
 
 
     // =========================================================
@@ -449,14 +499,12 @@ public class VentaController {
 
     @Operation(
         summary = "Productos más vendidos",
-        description =
-            "Devuelve los productos ordenados por " +
-            "unidades vendidas (descendente) del periodo " +
-            "seleccionado (hoy, mes o mes_anterior) para " +
-            "la sucursal del usuario autenticado. " +
-            "Incluye unidades vendidas y monto recaudado."
+        description = "Devuelve los productos ordenados por unidades vendidas " +
+            "para el periodo seleccionado (hoy, semana, mes, mes_anterior, " +
+            "anio/año o personalizado) y la sucursal del usuario autenticado."
     )
     @ApiResponses(value = {
+
         @ApiResponse(
             responseCode = "200",
             description =
@@ -479,15 +527,56 @@ public class VentaController {
                 description =
                     "Periodo: hoy, mes o mes_anterior",
                 required = true,
+
+        @ApiResponse(responseCode = "200", description = "Ranking obtenido correctamente"),
+        @ApiResponse(responseCode = "400", description = "Periodo o rango de fechas inválido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/reporte/top-productos")
+    public ResponseEntity<?> obtenerProductosMasVendidos(
+            @Parameter(
+                description = "Periodo: hoy, semana, mes, mes_anterior, anio o personalizado",
+
                 example = "mes"
             )
-            @RequestParam(defaultValue = "hoy") String periodo) {
+            @RequestParam(name = "periodo", defaultValue = "hoy") String periodo,
+            @Parameter(
+                description = "Fecha inicial para el periodo personalizado",
+                example = "2026-01-01"
+            )
+            @RequestParam(name = "desde", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate desde,
+            @Parameter(
+                description = "Fecha final para el periodo personalizado",
+                example = "2026-01-31"
+            )
+            @RequestParam(name = "hasta", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate hasta) {
+
 
         List<ProductoMasVendidoDTO> productos =
                 ventaService.obtenerProductosMasVendidos(periodo);
 
-        return ResponseEntity.ok(productos);
+        try {
+            List<ProductoMasVendidoDTO> productos =
+                ventaService.obtenerProductosMasVendidos(periodo, desde, hasta);
+            return ResponseEntity.ok(productos);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        }
     }
+    // Compatibilidad con llamadas anteriores sin rango personalizado.
+public ResponseEntity<List<ProductoMasVendidoDTO>> obtenerProductosMasVendidos(String periodo) {
+    List<ProductoMasVendidoDTO> productos =
+            ventaService.obtenerProductosMasVendidos(periodo);
+
+
+    return ResponseEntity.ok(productos);
+}
+
 
 
     // =========================================================
@@ -574,6 +663,7 @@ public class VentaController {
 
         return ResponseEntity.noContent().build();
     }
+
     @Operation(
     summary = "Clientes frecuentes",
     description =
@@ -602,7 +692,236 @@ public ResponseEntity<?> obtenerClientesFrecuentes(
     } catch (RuntimeException e) {
         return ResponseEntity.badRequest()
                 .body(java.util.Map.of("mensaje", e.getMessage()));
+
+
+
+    // =========================================================
+    // CLIENTES FRECUENTES
+    // =========================================================
+
+    @Operation(
+        summary = "Clientes frecuentes",
+        description =
+            "Lista los clientes de ruta ordenados por número de compras " +
+            "en el periodo. Incluye un indicador 'esFrecuente' cuando el " +
+            "cliente alcanza o supera el mínimo de compras configurado."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente"),
+        @ApiResponse(responseCode = "400", description = "Periodo o parámetros inválidos"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/reporte/clientes-frecuentes")
+    public ResponseEntity<?> obtenerClientesFrecuentes(
+            @Parameter(
+                description = "Periodo: hoy, mes o mes_anterior",
+                example = "mes"
+            )
+            @RequestParam(defaultValue = "mes") String periodo,
+
+            @Parameter(
+                description = "Mínimo de compras para ser frecuente",
+                example = "3"
+            )
+            @RequestParam(defaultValue = "3") int minimoCompras) {
+
+        try {
+            return ResponseEntity.ok(
+                ventaService.obtenerClientesFrecuentes(
+                    periodo,
+                    minimoCompras
+                )
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        }
     }
+
+
+    // =========================================================
+    // HU-045 / HU-046
+    // REPORTES DE VENTAS POR HORARIO Y CONSUMO DIARIO
+    // =========================================================
+
+    @Operation(
+        summary = "Patrones de consumo por horario y día",
+        description =
+            "Consulta las ventas agrupadas por franjas horarias " +
+            "y días dentro del rango de fechas seleccionado."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Reporte obtenido correctamente"),
+        @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/reporte/patrones")
+    public ResponseEntity<Map<String, Object>> patronesConsumo(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate inicio,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fin) {
+
+        if (inicio.isAfter(fin)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Map<String, Object> reporte =
+            ventaService.obtenerPatronesConsumo(inicio, fin);
+
+        return ResponseEntity.ok(reporte);
+    }
+
+
+    // =========================================================
+    // HU-045 / HU-046
+    // EXPORTAR PATRONES DE CONSUMO A CSV
+    // =========================================================
+
+    @Operation(
+        summary = "Exportar patrones de consumo",
+        description =
+            "Exporta los reportes de ventas por horario " +
+            "y patrones de consumo diario en formato CSV."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Archivo CSV generado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping(
+        value = "/reporte/patrones/exportar",
+        produces = "text/csv"
+    )
+    public ResponseEntity<byte[]> exportarPatronesConsumo(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate inicio,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fin) {
+
+        if (inicio.isAfter(fin)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Map<String, Object> reporte =
+            ventaService.obtenerPatronesConsumo(inicio, fin);
+
+        StringBuilder csv = new StringBuilder("sep=;\r\n");
+
+        // INFORMACIÓN GENERAL
+        csv.append("Reporte de consumo;Sucursal;")
+            .append(reporte.get("sucursalNombre"))
+            .append("\r\n");
+
+        csv.append("Desde;")
+            .append(inicio)
+            .append(";Hasta;")
+            .append(fin)
+            .append("\r\n");
+
+        csv.append("Total de ventas;")
+            .append(reporte.get("numeroVentas"))
+            .append(";Monto total;")
+            .append(reporte.get("montoTotal"))
+            .append("\r\n\r\n");
+
+        // REPORTE POR HORARIO
+        csv.append(
+            "Franja horaria;Numero de ventas;Monto total\r\n"
+        );
+
+        List<?> franjas = (List<?>) reporte.get("franjas");
+
+        if (franjas != null) {
+            for (Object obj : franjas) {
+
+                Map<?, ?> franja = (Map<?, ?>) obj;
+
+                csv.append(franja.get("franja"))
+                    .append(';')
+                    .append(franja.get("numeroVentas"))
+                    .append(';')
+                    .append(franja.get("montoTotal"))
+                    .append("\r\n");
+            }
+        }
+
+        // REPORTE DE CONSUMO DIARIO
+        csv.append(
+            "\r\nFecha;Dia;Numero de ventas;Monto total\r\n"
+        );
+
+        List<?> dias = (List<?>) reporte.get("dias");
+
+        if (dias != null) {
+            for (Object obj : dias) {
+
+                Map<?, ?> dia = (Map<?, ?>) obj;
+
+                csv.append(dia.get("fecha"))
+                    .append(';')
+                    .append(dia.get("diaSemana"))
+                    .append(';')
+                    .append(dia.get("numeroVentas"))
+                    .append(';')
+                    .append(dia.get("montoTotal"))
+                    .append("\r\n");
+            }
+        }
+
+        // GENERAR ARCHIVO CSV
+        byte[] bytes = ("\uFEFF" + csv)
+            .getBytes(StandardCharsets.UTF_8);
+
+        return ResponseEntity.ok()
+            .header(
+                org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=consumo_" +
+                    inicio + "_" + fin + ".csv"
+            )
+            .contentType(
+                org.springframework.http.MediaType.parseMediaType(
+                    "text/csv;charset=UTF-8"
+                )
+            )
+            .body(bytes);
+
+    }
+
+
+    // =========================================================
+    // HU-049: DESEMPEÑO DE REPARTIDORES
+    // =========================================================
+
+    @GetMapping("/desempeno-repartidores")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+        summary = "Consultar desempeño de repartidores",
+        description =
+            "Devuelve los rankings de entregas confirmadas por número " +
+            "de ventas y monto cobrado para la sucursal del administrador autenticado."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Desempeño obtenido correctamente"),
+        @ApiResponse(responseCode = "403", description = "El usuario no tiene permisos de administrador"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    public ResponseEntity<DesempenoRepartidoresDTO> obtenerDesempenoRepartidores() {
+
+        return ResponseEntity.ok(
+            desempenoRepartidoresService.obtenerDesempenoRepartidores()
+        );
+    }
+
 }
 
 }

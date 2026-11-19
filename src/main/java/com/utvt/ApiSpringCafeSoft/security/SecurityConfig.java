@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -33,16 +34,32 @@ public class SecurityConfig {
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(false);
 
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
+
+        UrlBasedCorsConfigurationSource source =
+            new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
+    }
+
+    // =========================================================
+    // CONFIGURACIÓN GENERAL DE SEGURIDAD
+    // =========================================================
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+
             .httpBasic(httpBasic -> httpBasic.disable())  
             .formLogin(formLogin -> formLogin.disable())
             .sessionManagement(session ->
@@ -102,6 +119,361 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+
+            .httpBasic(httpBasic ->
+                httpBasic.disable()
+            )
+
+            .formLogin(formLogin ->
+                formLogin.disable()
+            )
+
+            .headers(headers ->
+                headers.frameOptions(frame ->
+                    frame.sameOrigin()
+                )
+            )
+
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS
+                )
+            )
+
+            
+
+            // =================================================
+            // SOLICITUDES OPTIONS
+            // =================================================
+
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    HttpMethod.OPTIONS,
+                    "/**"
+                ).permitAll()
+
+            // =================================================
+            // AUTENTICACIÓN Y REGISTRO
+            // =================================================
+
+                .requestMatchers(
+                    "/api/usuarios/login",
+                    "/api/health"
+                ).permitAll()
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/usuarios"
+                ).permitAll()
+
+            // =================================================
+            // SWAGGER Y H2
+            // =================================================
+
+                .requestMatchers(
+                    "/v3/api-docs",
+                    "/v3/api-docs/**",
+                    "/api-docs",
+                    "/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/swagger-resources/**",
+                    "/webjars/**",
+                    "/h2-console",
+                    "/h2-console/**"
+                ).permitAll()
+
+            // =================================================
+            // NOTIFICACIONES PUSH
+            // =================================================
+
+                .requestMatchers(
+                    "/api/notificaciones/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/usuarios/*/push-token"
+                ).authenticated()
+
+            // =================================================
+            // USUARIOS
+            // =================================================
+
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/usuarios/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/usuarios/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/usuarios/**"
+                ).hasRole("ADMIN")
+
+            // =================================================
+            // INSUMOS
+            // =================================================
+
+                .requestMatchers(
+                    "/api/insumos/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+            // =================================================
+            // LOTES
+            // =================================================
+
+                .requestMatchers(
+                    "/api/lotes/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+            // =================================================
+            // PROVEEDORES
+            // =================================================
+
+                .requestMatchers(
+                    "/api/proveedores/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+            // =================================================
+            // CATEGORÍAS
+            // =================================================
+
+                .requestMatchers(
+                    "/api/categorias/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+            // =================================================
+            // SUCURSALES
+            // =================================================
+
+                .requestMatchers(
+                    "/api/sucursales/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+            // =================================================
+            // HU-045 / HU-046
+            // REPORTES DE PATRONES DE CONSUMO
+            // =================================================
+
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/ventas/reporte/patrones",
+                    "/api/ventas/reporte/patrones/exportar"
+                ).hasRole("ADMIN")
+
+            // =================================================
+            // VENTAS
+            // =================================================
+
+                .requestMatchers(
+                    "/api/ventas/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO",
+                    "REPARTIDOR"
+                )
+
+            // =================================================
+            // INVENTARIO
+            // =================================================
+
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/inventario/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO",
+                    "REPARTIDOR"
+                )
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/inventario/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/inventario/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/inventario/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+            // =================================================
+            // PRODUCTOS
+            // =================================================
+
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/productos/**"
+                ).authenticated()
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/productos/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/productos/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/productos/**"
+                ).hasRole("ADMIN")
+
+            // =================================================
+            // CARGAS
+            // =================================================
+
+                .requestMatchers(
+                    "/api/cargas/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO",
+                    "REPARTIDOR"
+                )
+
+            // =================================================
+            // RUTAS
+            // =================================================
+
+                .requestMatchers(
+                    "/api/rutas/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO",
+                    "REPARTIDOR"
+                )
+
+            // =================================================
+            // CLIENTES Y SEGMENTOS
+            // =================================================
+
+                .requestMatchers(
+                    "/api/clientes/segmentos/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    "/api/clientes/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "REPARTIDOR"
+                )
+
+            // =================================================
+            // AUDITORÍA
+            // =================================================
+
+                .requestMatchers(
+                    "/api/auditoria/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO",
+                    "REPARTIDOR"
+                )
+
+            // =================================================
+            // MERMAS
+            // =================================================
+
+                .requestMatchers(
+                    "/api/mermas/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "REPARTIDOR"
+                )
+
+            // =================================================
+            // PROMOCIONES
+            // =================================================
+
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/promociones/**"
+                ).authenticated()
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/promociones/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/promociones/**"
+                ).hasRole("ADMIN")
+
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/promociones/**"
+                ).hasRole("ADMIN")
+
+            // =================================================
+            // TRACCAR
+            // =================================================
+
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/traccar/**"
+                ).hasAnyRole(
+                    "ADMIN",
+                    "EMPLEADO"
+                )
+
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/traccar/**"
+                ).hasRole("ADMIN")
+
+            // =================================================
+            // DEMÁS SOLICITUDES
+            // =================================================
+
+                .anyRequest().authenticated()
+            )
+
+            // =================================================
+            // FILTRO JWT
+            // =================================================
+
+            .addFilterBefore(
+                jwtFilter,
+                UsernamePasswordAuthenticationFilter.class
+            );
+
 
         return http.build();
     }
