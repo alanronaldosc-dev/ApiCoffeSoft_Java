@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.DayOfWeek;
@@ -42,6 +43,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class VentaServiceHu050CoverageTest {
 
+    private static final String EMAIL_PRUEBA = "hu050@cafesoft.mx";
+
     @Mock
     private VentaRepository ventaRepository;
 
@@ -53,11 +56,7 @@ class VentaServiceHu050CoverageTest {
 
     @BeforeEach
     void autenticarUsuario() {
-        SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(
-                "hu050@cafesoft.mx", "", List.of()
-            )
-        );
+        establecerContextoUsuarioPrueba();
     }
 
     @AfterEach
@@ -65,16 +64,35 @@ class VentaServiceHu050CoverageTest {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Crea un SecurityContext nuevo para evitar que una autenticación
+     * dejada por otra prueba contamine esta clase durante CI.
+     */
+    private void establecerContextoUsuarioPrueba() {
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                EMAIL_PRUEBA,
+                "",
+                List.of()
+            )
+        );
+        SecurityContextHolder.setContext(context);
+    }
+
     private void prepararUsuarioConSucursal() {
+        // Restablece explícitamente el usuario antes de cada escenario que consulta ventas.
+        establecerContextoUsuarioPrueba();
+
         Sucursal sucursal = new Sucursal();
         sucursal.setId(7L);
         sucursal.setNombre("Centro");
 
         Usuario usuario = new Usuario();
-        usuario.setEmail("hu050@cafesoft.mx");
+        usuario.setEmail(EMAIL_PRUEBA);
         usuario.setSucursal(sucursal);
 
-        when(usuarioRepository.findByEmail("hu050@cafesoft.mx"))
+        when(usuarioRepository.findByEmail(EMAIL_PRUEBA))
             .thenReturn(Optional.of(usuario));
     }
 
@@ -330,7 +348,7 @@ class VentaServiceHu050CoverageTest {
 
     @Test
     void reporteRechazaUsuarioNoEncontrado() {
-        when(usuarioRepository.findByEmail("hu050@cafesoft.mx"))
+        when(usuarioRepository.findByEmail(EMAIL_PRUEBA))
             .thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () ->
@@ -343,8 +361,8 @@ class VentaServiceHu050CoverageTest {
     @Test
     void reporteRechazaUsuarioSinSucursal() {
         Usuario usuario = new Usuario();
-        usuario.setEmail("hu050@cafesoft.mx");
-        when(usuarioRepository.findByEmail("hu050@cafesoft.mx"))
+        usuario.setEmail(EMAIL_PRUEBA);
+        when(usuarioRepository.findByEmail(EMAIL_PRUEBA))
             .thenReturn(Optional.of(usuario));
 
         assertThrows(IllegalArgumentException.class, () ->
