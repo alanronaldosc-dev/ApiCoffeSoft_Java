@@ -68,6 +68,13 @@
             <version>2.2.0</version>
         </dependency>
         
+        <!-- H2 en memoria (perfil h2 para pruebas de carga sin PostgreSQL) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Spring Boot Starter Test (JUnit 5 incluido) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -114,6 +121,18 @@
             <version>4.21.0</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Mockito para tests unitarios (HU-028, HU-037) -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <build>
@@ -131,7 +150,11 @@
                 </configuration>
             </plugin>
 
+
+            <!-- JaCoCo: cobertura de tests para SonarQube (HU-028, HU-037) -->
+
             <!-- JaCoCo: cobertura de código para SonarCloud -->
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -139,6 +162,38 @@
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
+
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- SonarQube Maven plugin -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.10.0.2594</version>
+            </plugin>
+
+            <!-- Excluir tests que requieren contexto completo o driver externo -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/selenium/**</exclude>
+                        <exclude>selenium/**</exclude>
+                        <exclude>**/CanjeBeneficiosTest*</exclude>
+                        <exclude>**/ApiSpringCafeSoftApplicationTests*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
@@ -176,6 +231,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 </project>
