@@ -11,6 +11,7 @@ jobs:
     name: Build, Test & SonarCloud
     runs-on: ubuntu-latest
 
+
     env:
       # No definir SPRING_DATASOURCE_URL aquí: sobrescribe el H2 del perfil test.
       # DB_URL permanece para la configuración PostgreSQL fuera del perfil test.
@@ -21,6 +22,7 @@ jobs:
       JWT_SECRET: ci-test-secret-key-not-used-in-prod
       TRACCAR_EMAIL: test@test.com
       TRACCAR_PASSWORD: testpass
+
 
     services:
       postgres:
