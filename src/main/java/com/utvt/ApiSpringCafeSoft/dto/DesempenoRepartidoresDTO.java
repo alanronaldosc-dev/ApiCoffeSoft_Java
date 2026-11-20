@@ -6,6 +6,9 @@ import java.util.List;
 /** Respuesta del dashboard de desempeño de repartidores. */
 public class DesempenoRepartidoresDTO {
 
+    private String periodoEtiqueta;
+    private String periodoDesde;
+    private String periodoHasta;
     private Long sucursalId;
     private String sucursalNombre;
     private Long totalVentas;
@@ -60,4 +63,12 @@ public class DesempenoRepartidoresDTO {
     public void setRankingMonto(List<DesempenoRepartidorDTO> rankingMonto) {
         this.rankingMonto = rankingMonto;
     }
+
+    
+public String getPeriodoEtiqueta() { return periodoEtiqueta; }
+public void setPeriodoEtiqueta(String periodoEtiqueta) { this.periodoEtiqueta = periodoEtiqueta; }
+public String getPeriodoDesde() { return periodoDesde; }
+public void setPeriodoDesde(String periodoDesde) { this.periodoDesde = periodoDesde; }
+public String getPeriodoHasta() { return periodoHasta; }
+public void setPeriodoHasta(String periodoHasta) { this.periodoHasta = periodoHasta; }
 }

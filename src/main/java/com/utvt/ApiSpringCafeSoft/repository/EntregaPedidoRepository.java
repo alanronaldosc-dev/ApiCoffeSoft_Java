@@ -26,14 +26,19 @@ public interface EntregaPedidoRepository extends JpaRepository<EntregaPedido, Lo
      * representa una entrega confirmada; las incidencias no se contabilizan.
      */
     @Query("SELECT new com.utvt.ApiSpringCafeSoft.dto.DesempenoRepartidorDTO(" +
-            "e.repartidor.id, e.repartidor.nombre, COUNT(e.id), " +
-            "COALESCE(SUM(e.montoCobrado), 0.0)) " +
-            "FROM EntregaPedido e " +
-            "WHERE e.resultado = 'ENTREGADO' " +
-            "AND e.venta.estadoPedido = 'ENTREGADO' " +
-            "AND e.repartidor.userTipo = 4 " +
-            "AND e.repartidor.sucursal.id = :sucursalId " +
-            "GROUP BY e.repartidor.id, e.repartidor.nombre")
-    List<DesempenoRepartidorDTO> obtenerDesempenoPorSucursal(
-            @Param("sucursalId") Long sucursalId);
+        "e.repartidor.id, e.repartidor.nombre, COUNT(e.id), " +
+        "COALESCE(SUM(e.montoCobrado), 0.0)) " +
+        "FROM EntregaPedido e " +
+        "WHERE e.resultado = 'ENTREGADO' " +
+        "AND e.venta.estadoPedido = 'ENTREGADO' " +
+        "AND e.repartidor.userTipo = 4 " +
+        "AND e.repartidor.sucursal.id = :sucursalId " +
+        "AND e.fecha >= :desde " +
+        "AND e.fecha <= :hasta " +
+        "GROUP BY e.repartidor.id, e.repartidor.nombre")
+List<DesempenoRepartidorDTO> obtenerDesempenoPorSucursalYPeriodo(
+        @Param("sucursalId") Long sucursalId,
+        @Param("desde") LocalDateTime desde,
+        @Param("hasta") LocalDateTime hasta);
+
 }
