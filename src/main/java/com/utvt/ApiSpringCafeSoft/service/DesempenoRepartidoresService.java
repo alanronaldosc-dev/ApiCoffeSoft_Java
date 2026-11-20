@@ -25,44 +25,100 @@ public class DesempenoRepartidoresService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    public DesempenoRepartidoresDTO obtenerDesempenoRepartidores() {
-        Usuario administrador = obtenerAdministradorConSucursal();
-        Long sucursalId = administrador.getSucursal().getId();
+public DesempenoRepartidoresDTO obtenerDesempenoRepartidores(
+        String periodo, String desde, String hasta) {
 
-        List<DesempenoRepartidorDTO> agregados =
-                entregaPedidoRepository.obtenerDesempenoPorSucursal(sucursalId);
+    Usuario administrador = obtenerAdministradorConSucursal();
+    Long sucursalId = administrador.getSucursal().getId();
 
-        Comparator<DesempenoRepartidorDTO> porCantidad =
-                Comparator.comparingLong(this::cantidadVentas)
-                        .reversed()
-                        .thenComparing(Comparator.comparingDouble(this::monto).reversed())
-                        .thenComparing(this::nombre, String.CASE_INSENSITIVE_ORDER);
+    java.time.LocalDateTime[] rango = resolverRango(periodo, desde, hasta);
+    java.time.LocalDateTime inicio = rango[0];
+    java.time.LocalDateTime fin    = rango[1];
 
-        Comparator<DesempenoRepartidorDTO> porMonto =
-                Comparator.comparingDouble(this::monto)
-                        .reversed()
-                        .thenComparing(Comparator.comparingLong(this::cantidadVentas).reversed())
-                        .thenComparing(this::nombre, String.CASE_INSENSITIVE_ORDER);
+    List<DesempenoRepartidorDTO> agregados =
+            entregaPedidoRepository.obtenerDesempenoPorSucursalYPeriodo(
+                    sucursalId, inicio, fin);
 
-        List<DesempenoRepartidorDTO> rankingVentas = crearRanking(agregados, porCantidad);
-        List<DesempenoRepartidorDTO> rankingMonto = crearRanking(agregados, porMonto);
+    Comparator<DesempenoRepartidorDTO> porCantidad =
+            Comparator.comparingLong(this::cantidadVentas)
+                    .reversed()
+                    .thenComparing(Comparator.comparingDouble(this::monto).reversed())
+                    .thenComparing(this::nombre, String.CASE_INSENSITIVE_ORDER);
 
-        long totalVentas = agregados.stream()
-                .mapToLong(this::cantidadVentas)
-                .sum();
-        double montoTotal = agregados.stream()
-                .mapToDouble(this::monto)
-                .sum();
+    Comparator<DesempenoRepartidorDTO> porMonto =
+            Comparator.comparingDouble(this::monto)
+                    .reversed()
+                    .thenComparing(Comparator.comparingLong(this::cantidadVentas).reversed())
+                    .thenComparing(this::nombre, String.CASE_INSENSITIVE_ORDER);
 
-        DesempenoRepartidoresDTO respuesta = new DesempenoRepartidoresDTO();
-        respuesta.setSucursalId(sucursalId);
-        respuesta.setSucursalNombre(administrador.getSucursal().getNombre());
-        respuesta.setTotalVentas(totalVentas);
-        respuesta.setMontoTotal(montoTotal);
-        respuesta.setRankingVentas(rankingVentas);
-        respuesta.setRankingMonto(rankingMonto);
-        return respuesta;
+    List<DesempenoRepartidorDTO> rankingVentas = crearRanking(agregados, porCantidad);
+    List<DesempenoRepartidorDTO> rankingMonto  = crearRanking(agregados, porMonto);
+
+    long totalVentas = agregados.stream().mapToLong(this::cantidadVentas).sum();
+    double montoTotal = agregados.stream().mapToDouble(this::monto).sum();
+
+    DesempenoRepartidoresDTO respuesta = new DesempenoRepartidoresDTO();
+    respuesta.setSucursalId(sucursalId);
+    respuesta.setSucursalNombre(administrador.getSucursal().getNombre());
+    respuesta.setTotalVentas(totalVentas);
+    respuesta.setMontoTotal(montoTotal);
+    respuesta.setRankingVentas(rankingVentas);
+    respuesta.setRankingMonto(rankingMonto);
+    respuesta.setPeriodoEtiqueta(etiquetaPeriodo(periodo, desde, hasta));
+    respuesta.setPeriodoDesde(inicio.toLocalDate().toString());
+    respuesta.setPeriodoHasta(fin.toLocalDate().toString());
+    return respuesta;
+}
+
+private java.time.LocalDateTime[] resolverRango(String periodo, String desde, String hasta) {
+    java.time.LocalDate hoy = java.time.LocalDate.now();
+    switch (periodo == null ? "mes" : periodo) {
+        case "hoy":
+            return new java.time.LocalDateTime[]{
+                hoy.atStartOfDay(),
+                hoy.plusDays(1).atStartOfDay().minusSeconds(1)
+            };
+        case "semana":
+            java.time.LocalDate lunes = hoy.with(
+                java.time.DayOfWeek.MONDAY);
+            return new java.time.LocalDateTime[]{
+                lunes.atStartOfDay(),
+                hoy.plusDays(1).atStartOfDay().minusSeconds(1)
+            };
+        case "mes_anterior":
+            java.time.LocalDate primerMesAnt = hoy.minusMonths(1).withDayOfMonth(1);
+            java.time.LocalDate ultimoMesAnt = primerMesAnt.withDayOfMonth(
+                primerMesAnt.lengthOfMonth());
+            return new java.time.LocalDateTime[]{
+                primerMesAnt.atStartOfDay(),
+                ultimoMesAnt.plusDays(1).atStartOfDay().minusSeconds(1)
+            };
+        case "personalizado":
+            if (desde == null || hasta == null)
+                throw new IllegalArgumentException("Se requieren fechas 'desde' y 'hasta'.");
+            return new java.time.LocalDateTime[]{
+                java.time.LocalDate.parse(desde).atStartOfDay(),
+                java.time.LocalDate.parse(hasta).plusDays(1).atStartOfDay().minusSeconds(1)
+            };
+        default: // "mes"
+            java.time.LocalDate primerMes = hoy.withDayOfMonth(1);
+            return new java.time.LocalDateTime[]{
+                primerMes.atStartOfDay(),
+                hoy.plusDays(1).atStartOfDay().minusSeconds(1)
+            };
     }
+}
+
+private String etiquetaPeriodo(String periodo, String desde, String hasta) {
+    switch (periodo == null ? "mes" : periodo) {
+        case "hoy": return "Hoy";
+        case "semana": return "Esta semana";
+        case "mes_anterior": return "Mes anterior";
+        case "personalizado": return desde + " al " + hasta;
+        default: return "Este mes";
+    }
+}
+
 
     private List<DesempenoRepartidorDTO> crearRanking(
             List<DesempenoRepartidorDTO> agregados,
