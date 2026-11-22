@@ -361,6 +361,11 @@ public class SecurityConfig {
                     "/api/clientes/segmentos/**"
                 ).hasRole("ADMIN")
 
+                // HU-081: acciones de retención sobre clientes en riesgo.
+                .requestMatchers(
+                    "/api/acciones-retencion/**"
+                ).hasRole("ADMIN")
+
                 .requestMatchers(
                     "/api/clientes/**"
                 ).hasAnyRole(

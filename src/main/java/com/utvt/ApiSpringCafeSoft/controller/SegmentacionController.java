@@ -27,4 +27,9 @@ public class SegmentacionController {
     public ResponseEntity<SegmentacionService.SegmentoCliente> cliente(@PathVariable Long id) {
         return ResponseEntity.ok(service.porCliente(id));
     }
+
+    @GetMapping("/riesgo")
+    public ResponseEntity<List<SegmentacionService.ClienteRiesgo>> riesgo() {
+        return ResponseEntity.ok(service.listarRiesgo());
+    }
 }

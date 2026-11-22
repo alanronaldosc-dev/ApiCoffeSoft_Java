@@ -10,9 +10,8 @@ class ApiSpringCafeSoftApplicationTests {
 
     @Test
     void contextLoads() {
-    }
-
 }
+
 
 }
 
