@@ -253,7 +253,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/ventas/reporte/patrones",
-                    "/api/ventas/reporte/patrones/exportar"
+                    "/api/ventas/reporte/patrones/exportar",
+                    "/api/ventas/reporte/prediccion-productos"
                 ).hasRole("ADMIN")
 
                 // ============================================
