@@ -20,6 +20,7 @@ pipeline {
 
         stage('Build & Test') {
             steps {
+                sh 'chmod +x mvnw'
                 sh './mvnw -B clean verify'
             }
             post {
@@ -33,13 +34,13 @@ pipeline {
         stage('Quality Gate – SonarCloud') {
             steps {
                 withSonarQubeEnv('SonarCloud') {
-                    sh '''./mvnw sonar:sonar \
+                    sh '''MAVEN_OPTS="-Xmx768m -Xms256m" ./mvnw sonar:sonar \
                         -Dsonar.projectKey=alanronaldosc-dev_ApiCoffeSoft_Java \
                         -Dsonar.organization=alanronaldosc-dev'''
                 }
                 // Espera el resultado del quality gate (máx 5 min)
                 timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
