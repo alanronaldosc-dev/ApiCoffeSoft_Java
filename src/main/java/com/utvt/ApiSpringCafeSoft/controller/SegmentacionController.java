@@ -32,4 +32,9 @@ public class SegmentacionController {
     public ResponseEntity<List<SegmentacionService.ClienteRiesgo>> riesgo() {
         return ResponseEntity.ok(service.listarRiesgo());
     }
+        // HU-060: consulta de anomalías de clientes.
+    @GetMapping("/anomalias")
+    public ResponseEntity<List<SegmentacionService.AnomaliaCliente>> anomalias() {
+        return ResponseEntity.ok(service.listarAnomalias());
+    }
 }
