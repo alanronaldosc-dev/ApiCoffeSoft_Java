@@ -4,6 +4,7 @@ package com.utvt.ApiSpringCafeSoft.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "Promocion con vigencia y auditoria")
 public class PromocionDTO {
@@ -44,6 +45,11 @@ public class PromocionDTO {
     private Long desactivadaPorId;
     private String desactivadaPorNombre;
     private String desactivadaPorEmail;
+
+    // HU-055: productos que deben comprarse juntos para aplicar el combo.
+    private List<Long> productosComboIds;
+    public List<Long> getProductosComboIds() { return productosComboIds; }
+    public void setProductosComboIds(List<Long> ids) { this.productosComboIds = ids; }
 
     public PromocionDTO() {}
 

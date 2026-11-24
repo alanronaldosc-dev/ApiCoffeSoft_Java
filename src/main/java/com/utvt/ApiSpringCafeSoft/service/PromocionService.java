@@ -6,6 +6,7 @@ import com.utvt.ApiSpringCafeSoft.model.Promocion;
 import com.utvt.ApiSpringCafeSoft.model.Usuario;
 import com.utvt.ApiSpringCafeSoft.repository.PromocionRepository;
 import com.utvt.ApiSpringCafeSoft.repository.UsuarioRepository;
+import com.utvt.ApiSpringCafeSoft.repository.ProductoRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,19 @@ public class PromocionService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    private void validarCombo(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return;
+        if (ids.size() < 2 || ids.size() > 20 || ids.stream().anyMatch(id -> id == null || id <= 0)
+                || ids.stream().distinct().count() != ids.size()
+                || productoRepository.findAllById(ids).size() != ids.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "El combo debe contener entre 2 y 20 productos existentes y sin repetir.");
+        }
+    }
 
     // =====================================================
     // HU-039: ESTADO AUTOMATICO
@@ -154,6 +168,7 @@ public class PromocionService {
         PromocionDTO dto = new PromocionDTO();
 
         dto.setId(p.getId());
+        dto.setProductosComboIds(p.getProductosComboIds());
         dto.setNombre(p.getNombre());
         dto.setDescripcion(p.getDescripcion());
         dto.setDescuentoPorcentaje(
@@ -217,6 +232,8 @@ public class PromocionService {
 
         Promocion p = new Promocion();
 
+        validarCombo(dto.getProductosComboIds());
+        p.setProductosComboIds(dto.getProductosComboIds());
         p.setNombre(dto.getNombre());
         p.setDescripcion(dto.getDescripcion());
         p.setDescuentoPorcentaje(
@@ -392,6 +409,10 @@ public class PromocionService {
 
         validarFechas(inicio, fin);
 
+        if (dto.getProductosComboIds() != null) {
+            validarCombo(dto.getProductosComboIds());
+            p.setProductosComboIds(dto.getProductosComboIds());
+        }
         p.setNombre(dto.getNombre());
         p.setDescripcion(dto.getDescripcion());
         p.setDescuentoPorcentaje(

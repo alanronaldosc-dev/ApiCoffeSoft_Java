@@ -253,6 +253,11 @@ public class SecurityConfig {
                     "/api/ventas/reporte/patrones/exportar"
                 ).hasRole("ADMIN")
 
+                // HU-055: analítica exclusiva para administradores
+                .requestMatchers(HttpMethod.GET, "/api/analitica/combinaciones").hasRole("ADMIN")
+                // HU-056: recomendaciones para repartidores y administradores
+                .requestMatchers(HttpMethod.GET, "/api/analitica/recomendaciones/**").hasAnyRole("REPARTIDOR", "ADMIN")
+
                 // ============================================
                 // VENTAS
                 // ============================================
