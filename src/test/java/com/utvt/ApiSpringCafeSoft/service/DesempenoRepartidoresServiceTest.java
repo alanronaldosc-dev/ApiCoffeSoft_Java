@@ -1,4 +1,3 @@
-
 package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.DesempenoRepartidorDTO;
@@ -20,6 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,7 +76,10 @@ class DesempenoRepartidoresServiceTest {
         when(usuarioRepository.findByEmail("admin@cafesoft.com"))
             .thenReturn(Optional.of(crearAdministrador()));
 
-        when(entregaPedidoRepository.obtenerDesempenoPorSucursal(7L))
+        when(entregaPedidoRepository.obtenerDesempenoPorSucursalYPeriodo(
+                eq(7L),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class)))
             .thenReturn(List.of(
                 new DesempenoRepartidorDTO(1L, "Ana", 3L, 150.0),
                 new DesempenoRepartidorDTO(2L, "Bruno", 5L, 100.0),
@@ -85,7 +88,7 @@ class DesempenoRepartidoresServiceTest {
             ));
 
         DesempenoRepartidoresDTO resultado =
-            service.obtenerDesempenoRepartidores();
+            service.obtenerDesempenoRepartidores("mes", null, null);
 
         assertEquals(7L, resultado.getSucursalId());
         assertEquals("Sucursal Central", resultado.getSucursalNombre());
@@ -93,7 +96,6 @@ class DesempenoRepartidoresServiceTest {
         assertEquals(14L, resultado.getTotalVentas());
         assertEquals(650.0, resultado.getMontoTotal(), 0.001);
 
-        // Ranking por cantidad de ventas
         List<DesempenoRepartidorDTO> ventas =
             resultado.getRankingVentas();
 
@@ -103,7 +105,6 @@ class DesempenoRepartidoresServiceTest {
         assertEquals("Carla", ventas.get(2).getNombre());
         assertEquals("Ana", ventas.get(3).getNombre());
 
-        // Ranking por monto cobrado
         List<DesempenoRepartidorDTO> monto =
             resultado.getRankingMonto();
 
@@ -113,14 +114,17 @@ class DesempenoRepartidoresServiceTest {
         assertEquals("Ana", monto.get(2).getNombre());
         assertEquals("Bruno", monto.get(3).getNombre());
 
-        // Posiciones consecutivas
         for (int i = 0; i < 4; i++) {
             assertEquals(i + 1, ventas.get(i).getPosicion());
             assertEquals(i + 1, monto.get(i).getPosicion());
         }
 
         verify(entregaPedidoRepository)
-            .obtenerDesempenoPorSucursal(7L);
+            .obtenerDesempenoPorSucursalYPeriodo(
+                eq(7L),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class)
+            );
     }
 
     @Test
@@ -131,11 +135,14 @@ class DesempenoRepartidoresServiceTest {
         when(usuarioRepository.findByEmail("admin@cafesoft.com"))
             .thenReturn(Optional.of(crearAdministrador()));
 
-        when(entregaPedidoRepository.obtenerDesempenoPorSucursal(7L))
+        when(entregaPedidoRepository.obtenerDesempenoPorSucursalYPeriodo(
+                eq(7L),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class)))
             .thenReturn(List.of());
 
         DesempenoRepartidoresDTO resultado =
-            service.obtenerDesempenoRepartidores();
+            service.obtenerDesempenoRepartidores("mes", null, null);
 
         assertTrue(resultado.getRankingVentas().isEmpty());
         assertTrue(resultado.getRankingMonto().isEmpty());
@@ -150,7 +157,9 @@ class DesempenoRepartidoresServiceTest {
 
         assertThrows(
             IllegalStateException.class,
-            () -> service.obtenerDesempenoRepartidores()
+            () -> service.obtenerDesempenoRepartidores(
+                "mes", null, null
+            )
         );
 
         verifyNoInteractions(usuarioRepository);
@@ -170,7 +179,9 @@ class DesempenoRepartidoresServiceTest {
 
         assertThrows(
             IllegalArgumentException.class,
-            () -> service.obtenerDesempenoRepartidores()
+            () -> service.obtenerDesempenoRepartidores(
+                "mes", null, null
+            )
         );
 
         verifyNoInteractions(entregaPedidoRepository);
@@ -186,9 +197,41 @@ class DesempenoRepartidoresServiceTest {
 
         assertThrows(
             IllegalStateException.class,
-            () -> service.obtenerDesempenoRepartidores()
+            () -> service.obtenerDesempenoRepartidores(
+                "mes", null, null
+            )
         );
 
         verifyNoInteractions(entregaPedidoRepository);
+    }
+
+    @Test
+    void obtenerDesempeno_respetaRangoPersonalizado() {
+
+        autenticarAdministrador();
+
+        when(usuarioRepository.findByEmail("admin@cafesoft.com"))
+            .thenReturn(Optional.of(crearAdministrador()));
+
+        LocalDateTime inicio =
+            LocalDateTime.of(2026, 11, 1, 0, 0);
+
+        LocalDateTime fin =
+            LocalDateTime.of(2026, 11, 15, 23, 59, 59);
+
+        when(entregaPedidoRepository.obtenerDesempenoPorSucursalYPeriodo(
+                7L, inicio, fin))
+            .thenReturn(List.of());
+
+        service.obtenerDesempenoRepartidores(
+            "personalizado",
+            "2026-11-01",
+            "2026-11-15"
+        );
+
+        verify(entregaPedidoRepository)
+            .obtenerDesempenoPorSucursalYPeriodo(
+                7L, inicio, fin
+            );
     }
 }

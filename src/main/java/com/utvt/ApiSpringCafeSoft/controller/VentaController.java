@@ -293,69 +293,51 @@ public class VentaController {
     }
 
     // =========================================================
-    // HU-016: REPORTE DE VENTAS DIARIAS Y MENSUALES
+    // HU-016 / HU-050: REPORTE DE VENTAS POR PERIODO
     // =========================================================
 
-    @Operation(
-        summary = "Reporte de ventas diarias y mensuales",
-        description =
-            "Genera el reporte de ventas de un periodo " +
-            "(hoy, mes o mes_anterior) para la sucursal " +
-            "del usuario autenticado. Incluye el número " +
-            "de ventas, el monto total y los desgloses " +
-            "por día y por método de pago."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Reporte generado correctamente"),
-        @ApiResponse(responseCode = "400", description = "Periodo no válido o usuario sin sucursal"),
-        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
-    })
+    @Operation(summary = "Reporte de ventas por periodo")
     @GetMapping("/reporte")
-    public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(
-            @Parameter(
-                description = "Periodo: hoy, mes o mes_anterior",
-                required = true,
-                example = "hoy"
-            )
-            @RequestParam(defaultValue = "hoy") String periodo) {
+    public ResponseEntity<?> obtenerReporteVentas(
+            @RequestParam(name = "periodo", defaultValue = "hoy") String periodo,
+            @RequestParam(name = "desde", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(name = "hasta", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        try {
+            return ResponseEntity.ok(
+                ventaService.obtenerReporteVentas(periodo, desde, hasta));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
+        }
+    }
 
-        ReporteVentasDTO reporte =
-            ventaService.obtenerReporteVentas(periodo);
-
-        return ResponseEntity.ok(reporte);
+    public ResponseEntity<ReporteVentasDTO> obtenerReporteVentas(String periodo) {
+        return ResponseEntity.ok(ventaService.obtenerReporteVentas(periodo));
     }
 
     // =========================================================
-    // HU-017: PRODUCTOS MÁS VENDIDOS
+    // HU-017 / HU-050: PRODUCTOS MAS VENDIDOS
     // =========================================================
 
-    @Operation(
-        summary = "Productos más vendidos",
-        description =
-            "Devuelve los productos ordenados por " +
-            "unidades vendidas (descendente) del periodo " +
-            "seleccionado (hoy, mes o mes_anterior) para " +
-            "la sucursal del usuario autenticado. " +
-            "Incluye unidades vendidas y monto recaudado."
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Ranking obtenido correctamente"),
-        @ApiResponse(responseCode = "400", description = "Periodo no válido o usuario sin sucursal"),
-        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
-    })
+    @Operation(summary = "Productos más vendidos por periodo")
     @GetMapping("/reporte/top-productos")
-    public ResponseEntity<List<ProductoMasVendidoDTO>> obtenerProductosMasVendidos(
-            @Parameter(
-                description = "Periodo: hoy, mes o mes_anterior",
-                required = true,
-                example = "mes"
-            )
-            @RequestParam(defaultValue = "hoy") String periodo) {
+    public ResponseEntity<?> obtenerProductosMasVendidos(
+            @RequestParam(name = "periodo", defaultValue = "hoy") String periodo,
+            @RequestParam(name = "desde", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(name = "hasta", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        try {
+            return ResponseEntity.ok(
+                ventaService.obtenerProductosMasVendidos(periodo, desde, hasta));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
+        }
+    }
 
-        List<ProductoMasVendidoDTO> productos =
-            ventaService.obtenerProductosMasVendidos(periodo);
-
-        return ResponseEntity.ok(productos);
+    public ResponseEntity<List<ProductoMasVendidoDTO>> obtenerProductosMasVendidos(String periodo) {
+        return ResponseEntity.ok(ventaService.obtenerProductosMasVendidos(periodo));
     }
 
     // =========================================================
