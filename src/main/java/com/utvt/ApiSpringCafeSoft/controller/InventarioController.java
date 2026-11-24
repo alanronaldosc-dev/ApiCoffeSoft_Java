@@ -13,6 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.utvt.ApiSpringCafeSoft.dto.PrediccionDemandaDTO;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -236,5 +237,19 @@ public class InventarioController {
             @PathVariable Long sucursalId) {
         return ResponseEntity.ok(inventarioService.obtenerPorSucursal(sucursalId));
     }
+    @Operation(
+    summary = "Predecir demanda de insumos",
+    description = "Calcula el consumo de los últimos 30 días y estima "
+                + "la demanda de los siguientes 30 días, comparándola "
+                + "con el stock actual."
+)
+@GetMapping("/prediccion-demanda")
+public ResponseEntity<PrediccionDemandaDTO> obtenerPrediccionDemanda(
+        @RequestParam(required = false) Long sucursalId) {
+
+    return ResponseEntity.ok(
+            inventarioService.obtenerPrediccionDemanda(sucursalId)
+    );
+}
 
 }
