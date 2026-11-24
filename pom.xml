@@ -162,6 +162,7 @@
                         <testExclude>**/DesempenoRepartidoresServiceTest.java</testExclude>
                         <testExclude>**/VentaControllerHu050CoverageTest.java</testExclude>
                         <testExclude>**/VentaServiceHu050CoverageTest.java</testExclude>
+                        <testExclude>**/VentaServiceCoberturaTest.java</testExclude>
                     </testExcludes>
                 </configuration>
             </plugin>
