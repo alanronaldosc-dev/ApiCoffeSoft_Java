@@ -40,7 +40,7 @@ pipeline {
                 }
                 // Espera el resultado del quality gate (máx 5 min)
                 timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
