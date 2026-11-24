@@ -34,7 +34,7 @@ pipeline {
         stage('Quality Gate – SonarCloud') {
             steps {
                 withSonarQubeEnv('SonarCloud') {
-                    sh '''./mvnw sonar:sonar \
+                    sh '''MAVEN_OPTS="-Xmx768m -Xms256m" ./mvnw sonar:sonar \
                         -Dsonar.projectKey=alanronaldosc-dev_ApiCoffeSoft_Java \
                         -Dsonar.organization=alanronaldosc-dev'''
                 }
