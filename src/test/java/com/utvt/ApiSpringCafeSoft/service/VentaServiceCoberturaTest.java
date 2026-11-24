@@ -1,4 +1,3 @@
-
 package com.utvt.ApiSpringCafeSoft.service;
 
 import com.utvt.ApiSpringCafeSoft.dto.ClienteFrecuenteDTO;
@@ -18,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
@@ -31,6 +31,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class VentaServiceCoberturaTest {
 
+    private static final String EMAIL_TEST = "test@cafesoft.mx";
+
     @Mock
     VentaRepository ventaRepository;
 
@@ -40,15 +42,31 @@ class VentaServiceCoberturaTest {
     @InjectMocks
     VentaService service;
 
+    // ================================================
+    // CONFIGURACIÓN Y AISLAMIENTO DE AUTENTICACIÓN
+    // ================================================
+
     @BeforeEach
     void login() {
-        SecurityContextHolder.getContext().setAuthentication(
+        autenticarUsuario();
+    }
+
+    private void autenticarUsuario() {
+
+        SecurityContextHolder.clearContext();
+
+        SecurityContext contexto =
+            SecurityContextHolder.createEmptyContext();
+
+        contexto.setAuthentication(
             new UsernamePasswordAuthenticationToken(
-                "test@cafesoft.mx",
+                EMAIL_TEST,
                 "",
                 List.of()
             )
         );
+
+        SecurityContextHolder.setContext(contexto);
     }
 
     @AfterEach
@@ -56,21 +74,30 @@ class VentaServiceCoberturaTest {
         SecurityContextHolder.clearContext();
     }
 
+    // ================================================
+    // MÉTODOS AUXILIARES
+    // ================================================
+
     private void sucursal() {
+
+        autenticarUsuario();
+
         Sucursal s = new Sucursal();
         s.setId(7L);
         s.setNombre("Centro");
 
         Usuario u = new Usuario();
-        u.setEmail("test@cafesoft.mx");
+        u.setEmail(EMAIL_TEST);
         u.setSucursal(s);
 
-        when(usuarioRepository.findByEmail("test@cafesoft.mx"))
+        when(usuarioRepository.findByEmail(EMAIL_TEST))
             .thenReturn(Optional.of(u));
     }
 
     private Venta venta(double total, String pago) {
+
         Venta v = new Venta();
+
         v.setFecha(LocalDateTime.now());
         v.setTotal(total);
         v.setSubtotal(total / 1.16);
@@ -81,11 +108,14 @@ class VentaServiceCoberturaTest {
     }
 
     private void ventas(List<Venta> datos) {
-        when(ventaRepository.findByFechaBetweenAndSucursalId(
-            any(),
-            any(),
-            eq(7L)
-        )).thenReturn(datos);
+
+        when(
+            ventaRepository.findByFechaBetweenAndSucursalId(
+                any(),
+                any(),
+                eq(7L)
+            )
+        ).thenReturn(datos);
     }
 
     // ================================================
@@ -94,10 +124,12 @@ class VentaServiceCoberturaTest {
 
     @Test
     void reporteSinVentas() {
+
         sucursal();
         ventas(List.of());
 
-        ReporteVentasDTO r = service.obtenerReporteVentas("hoy");
+        ReporteVentasDTO r =
+            service.obtenerReporteVentas("hoy");
 
         assertEquals(0, r.getNumeroVentas());
         assertEquals(0, r.getMontoTotal());
@@ -106,6 +138,7 @@ class VentaServiceCoberturaTest {
 
     @Test
     void reporteAgrupaDiasYMetodos() {
+
         sucursal();
 
         Venta a = venta(116, "efectivo");
@@ -114,7 +147,8 @@ class VentaServiceCoberturaTest {
 
         ventas(List.of(a, b, c));
 
-        ReporteVentasDTO r = service.obtenerReporteVentas("hoy");
+        ReporteVentasDTO r =
+            service.obtenerReporteVentas("hoy");
 
         assertEquals(3, r.getNumeroVentas());
         assertEquals(406, r.getMontoTotal(), 0.001);
@@ -124,16 +158,19 @@ class VentaServiceCoberturaTest {
 
     @Test
     void reporteToleraImportesNulos() {
+
         sucursal();
 
         Venta a = venta(100, "efectivo");
+
         a.setTotal(null);
         a.setSubtotal(null);
         a.setImpuestos(null);
 
         ventas(List.of(a));
 
-        ReporteVentasDTO r = service.obtenerReporteVentas("hoy");
+        ReporteVentasDTO r =
+            service.obtenerReporteVentas("hoy");
 
         assertEquals(0, r.getMontoTotal());
         assertEquals(0, r.getSubtotal());
@@ -142,6 +179,7 @@ class VentaServiceCoberturaTest {
 
     @Test
     void reporteAceptaMes() {
+
         sucursal();
         ventas(List.of());
 
@@ -153,35 +191,42 @@ class VentaServiceCoberturaTest {
 
     @Test
     void reporteAceptaMesAnterior() {
+
         sucursal();
         ventas(List.of());
 
         assertEquals(
             "mes_anterior",
-            service.obtenerReporteVentas("mes_anterior").getPeriodo()
+            service.obtenerReporteVentas("mes_anterior")
+                .getPeriodo()
         );
     }
 
-    // HU-050: comprobar que el periodo semanal funciona.
+    // HU-050: validar periodo semanal.
+
     @Test
     void reporteAceptaSemana() {
+
         sucursal();
         ventas(List.of());
 
         assertEquals(
             "semana",
-            service.obtenerReporteVentas("semana").getPeriodo()
+            service.obtenerReporteVentas("semana")
+                .getPeriodo()
         );
     }
 
-    // Comprobar que los periodos realmente inexistentes son rechazados.
     @Test
     void reporteRechazaPeriodoInvalido() {
+
         sucursal();
 
         assertThrows(
             IllegalArgumentException.class,
-            () -> service.obtenerReporteVentas("periodo_invalido")
+            () -> service.obtenerReporteVentas(
+                "periodo_invalido"
+            )
         );
     }
 
@@ -191,28 +236,34 @@ class VentaServiceCoberturaTest {
 
     @Test
     void productosSinVentas() {
+
         sucursal();
         ventas(List.of());
 
         assertTrue(
-            service.obtenerProductosMasVendidos("hoy").isEmpty()
+            service.obtenerProductosMasVendidos("hoy")
+                .isEmpty()
         );
     }
 
     @Test
     void productosAgrupaYOrdena() {
+
         sucursal();
 
         Producto p = new Producto();
+
         p.setId(11L);
         p.setNombre("Cafe");
 
         VentaDetalle d1 = new VentaDetalle();
+
         d1.setProducto(p);
         d1.setCantidad(2);
         d1.setSubtotal(80.0);
 
         VentaDetalle d2 = new VentaDetalle();
+
         d2.setProducto(p);
         d2.setCantidad(3);
         d2.setSubtotal(120.0);
@@ -239,6 +290,7 @@ class VentaServiceCoberturaTest {
 
     @Test
     void clientesRechazaMinimoCero() {
+
         assertThrows(
             IllegalArgumentException.class,
             () -> service.obtenerClientesFrecuentes("hoy", 0)
@@ -247,6 +299,7 @@ class VentaServiceCoberturaTest {
 
     @Test
     void clientesSinCompras() {
+
         sucursal();
 
         when(
@@ -259,19 +312,23 @@ class VentaServiceCoberturaTest {
         ).thenReturn(List.of());
 
         assertTrue(
-            service.obtenerClientesFrecuentes("hoy", 2).isEmpty()
+            service.obtenerClientesFrecuentes("hoy", 2)
+                .isEmpty()
         );
     }
 
     @Test
     void clientesAgrupaCompras() {
+
         sucursal();
 
         Venta a = venta(100, "efectivo");
+
         a.setClienteRutaId(42L);
         a.setNombreCliente("Ana");
 
         Venta b = venta(50, "tarjeta");
+
         b.setClienteRutaId(42L);
         b.setNombreCliente("Ana");
 
@@ -299,15 +356,31 @@ class VentaServiceCoberturaTest {
 
     @Test
     void usuarioSinSucursalRechazado() {
-        Usuario u = new Usuario();
-        u.setEmail("test@cafesoft.mx");
 
-        when(usuarioRepository.findByEmail("test@cafesoft.mx"))
+        autenticarUsuario();
+
+        Usuario u = new Usuario();
+
+        u.setEmail(EMAIL_TEST);
+        u.setSucursal(null);
+
+        when(usuarioRepository.findByEmail(EMAIL_TEST))
             .thenReturn(Optional.of(u));
+
+        assertEquals(
+            EMAIL_TEST,
+            SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName()
+        );
 
         assertThrows(
             IllegalArgumentException.class,
             () -> service.obtenerReporteVentas("hoy")
         );
+
+        verify(usuarioRepository).findByEmail(EMAIL_TEST);
+
+        verifyNoInteractions(ventaRepository);
     }
 }
