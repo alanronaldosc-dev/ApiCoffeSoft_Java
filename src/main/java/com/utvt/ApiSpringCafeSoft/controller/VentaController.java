@@ -611,4 +611,29 @@ public class VentaController {
             )
             .body(bytes);
     }
+
+
+    // =========================================================
+// HU-049: DESEMPEÑO DE REPARTIDORES
+// =========================================================
+
+@Autowired
+private com.utvt.ApiSpringCafeSoft.service.DesempenoRepartidoresService desempenoRepartidoresService;
+
+@Operation(summary = "Desempeño de repartidores por sucursal y periodo")
+@GetMapping("/desempeno-repartidores")
+public ResponseEntity<?> desempenoRepartidores(
+        @RequestParam(value = "periodo", defaultValue = "mes") String periodo,
+        @RequestParam(value = "desde", required = false) String desde,
+        @RequestParam(value = "hasta", required = false) String hasta) {
+    try {
+        return ResponseEntity.ok(
+            desempenoRepartidoresService.obtenerDesempenoRepartidores(periodo, desde, hasta));
+    } catch (IllegalArgumentException | IllegalStateException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("error", ex.getMessage()));
+    }
+}
+
+
 }

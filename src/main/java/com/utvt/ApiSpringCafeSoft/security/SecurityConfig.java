@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -55,20 +56,23 @@ public class SecurityConfig {
 
         config.setAllowCredentials(false);
 
-        UrlBasedCorsConfigurationSource source =
-            new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration(
-            "/**",
-            config
-        );
-
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    private static AntPathRequestMatcher ant(HttpMethod method, String pattern) {
+        return new AntPathRequestMatcher(pattern, method.name());
+    }
+
+    private static AntPathRequestMatcher ant(String pattern) {
+        return new AntPathRequestMatcher(pattern);
     }
 
     // =========================================================
     // CONFIGURACIÓN DE SEGURIDAD
     // =========================================================
+
 
     @Bean
     public SecurityFilterChain filterChain(
@@ -83,13 +87,10 @@ public class SecurityConfig {
 
             .csrf(csrf -> csrf.disable())
 
-            .httpBasic(httpBasic ->
-                httpBasic.disable()
-            )
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(formLogin -> formLogin.disable())
 
-            .formLogin(formLogin ->
-                formLogin.disable()
-            )
+
 
             .sessionManagement(session ->
                 session.sessionCreationPolicy(
@@ -98,6 +99,8 @@ public class SecurityConfig {
             )
 
             .authorizeHttpRequests(auth -> auth
+
+
 
                 // ============================================
                 // SOLICITUDES OPTIONS
@@ -437,6 +440,7 @@ public class SecurityConfig {
                 // ============================================
                 // DEMÁS SOLICITUDES
                 // ============================================
+
 
                 .anyRequest().authenticated()
             )
