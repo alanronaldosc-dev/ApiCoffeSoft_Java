@@ -59,7 +59,7 @@ pipeline {
                 sh '''
                     sleep 30
                     for i in 1 2 3 4 5; do
-                        curl -f http://${EC2_STAGING}:8081/api/health && exit 0
+                        curl -f http://localhost:8081/api/health && exit 0
                         sleep 10
                     done
                     exit 1
@@ -97,7 +97,7 @@ pipeline {
                 sh '''
                     sleep 45
                     for i in 1 2 3 4 5; do
-                        curl -f http://${EC2_PROD}:8080/api/health && exit 0
+                        curl -f http://localhost:8080/api/health && exit 0
                         sleep 15
                     done
                     exit 1
