@@ -33,6 +33,7 @@ pipeline {
 
         stage('Quality Gate – SonarCloud') {
             steps {
+                sh 'sudo systemctl stop cafesoft-api-staging || true'
                 withSonarQubeEnv('SonarCloud') {
                     sh '''MAVEN_OPTS="-Xmx768m -Xms256m" ./mvnw sonar:sonar \
                         -Dsonar.projectKey=alanronaldosc-dev_ApiCoffeSoft_Java \
