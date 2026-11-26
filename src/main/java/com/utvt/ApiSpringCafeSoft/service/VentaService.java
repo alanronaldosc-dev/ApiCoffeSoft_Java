@@ -6,6 +6,7 @@ import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDetalleDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
+import com.utvt.ApiSpringCafeSoft.dto.PrediccionProductosDTO;
 import com.utvt.ApiSpringCafeSoft.exception.RecursoNoEncontradoException;
 import com.utvt.ApiSpringCafeSoft.model.*;
 import com.utvt.ApiSpringCafeSoft.repository.*;
@@ -65,6 +66,10 @@ public class VentaService {
         "EN_PROCESO",
         "ENTREGADA"
     );
+
+    private static final int DIAS_HISTORIAL_PREDICCION = 28;
+
+    private static final List<Integer> HORIZONTES_PREDICCION = List.of(7, 30, 90);
 
     // =========================================================
     // CONVERTIR VENTA A DTO
@@ -810,6 +815,162 @@ public class VentaService {
                 porUnidades.thenComparing(porMonto)
             )
             .collect(Collectors.toList());
+    }
+
+    public PrediccionProductosDTO obtenerPrediccionProductos(int horizonteDias) {
+
+        if (!HORIZONTES_PREDICCION.contains(horizonteDias)) {
+            throw new IllegalArgumentException(
+                "Horizonte no válido. Usa: 7, 30 o 90 días."
+            );
+        }
+
+        Usuario usuario = usuarioConSucursal();
+        Long sucursalId = usuario.getSucursal().getId();
+
+        LocalDate hoy = LocalDate.now();
+        LocalDate desdeFecha =
+            hoy.minusDays(DIAS_HISTORIAL_PREDICCION - 1L);
+        LocalDate mitadFecha = desdeFecha.plusDays(
+            DIAS_HISTORIAL_PREDICCION / 2L
+        );
+
+        List<Venta> ventas = ventaRepository
+            .findByFechaBetweenAndSucursalId(
+                desdeFecha.atStartOfDay(),
+                hoy.atTime(LocalTime.MAX),
+                sucursalId
+            );
+
+        Map<Long, String> nombres = new LinkedHashMap<>();
+        Map<Long, long[]> historial = new LinkedHashMap<>();
+
+        for (Producto producto :
+                productoRepository.findBySucursalId(sucursalId)) {
+
+            if (producto == null || producto.getId() == null) {
+                continue;
+            }
+
+            nombres.putIfAbsent(producto.getId(), producto.getNombre());
+            historial.putIfAbsent(
+                producto.getId(), new long[] {0L, 0L, 0L}
+            );
+        }
+
+        for (Venta venta : ventas) {
+
+            if (venta.getFecha() == null) {
+                continue;
+            }
+
+            LocalDate fecha = venta.getFecha().toLocalDate();
+
+            for (VentaDetalle detalle : venta.getDetalles()) {
+
+                if (detalle.getProducto() == null
+                        || detalle.getProducto().getId() == null) {
+                    continue;
+                }
+
+                Long productoId = detalle.getProducto().getId();
+                int cantidad = detalle.getCantidad() != null
+                    ? detalle.getCantidad()
+                    : 0;
+
+                long[] fila = historial.computeIfAbsent(
+                    productoId, k -> new long[] {0L, 0L, 0L}
+                );
+
+                nombres.putIfAbsent(
+                    productoId, detalle.getProducto().getNombre()
+                );
+                fila[0] += cantidad;
+
+                if (fecha.isBefore(mitadFecha)) {
+                    fila[1] += cantidad;
+                } else {
+                    fila[2] += cantidad;
+                }
+            }
+        }
+
+        List<PrediccionProductosDTO.Producto> estimados =
+            new ArrayList<>();
+
+        for (Map.Entry<Long, long[]> entry : historial.entrySet()) {
+
+            long[] fila = entry.getValue();
+
+            double promedioDiario = fila[0]
+                / (double) DIAS_HISTORIAL_PREDICCION;
+
+            double factor = calcularFactorTendencia(fila[1], fila[2]);
+
+            long estimadas = Math.max(
+                0L,
+                Math.round(promedioDiario * factor * horizonteDias)
+            );
+
+            estimados.add(new PrediccionProductosDTO.Producto(
+                entry.getKey(),
+                nombres.get(entry.getKey()),
+                fila[0],
+                estimadas
+            ));
+        }
+
+        Comparator<PrediccionProductosDTO.Producto> porEstimadas =
+            Comparator.comparingLong(
+                PrediccionProductosDTO.Producto::getUnidadesEstimadas
+            ).thenComparing(
+                p -> p.getNombre() == null ? "" : p.getNombre(),
+                String.CASE_INSENSITIVE_ORDER
+            );
+
+        List<PrediccionProductosDTO.Producto> masVendidos =
+            estimados.stream()
+                .sorted(porEstimadas.reversed())
+                .limit(5)
+                .collect(Collectors.toList());
+
+        List<PrediccionProductosDTO.Producto> menosVendidos =
+            estimados.stream()
+                .sorted(porEstimadas)
+                .limit(5)
+                .collect(Collectors.toList());
+
+        PrediccionProductosDTO prediccion =
+            new PrediccionProductosDTO();
+
+        prediccion.setHorizonteDias(horizonteDias);
+        prediccion.setHistorialDias(DIAS_HISTORIAL_PREDICCION);
+        prediccion.setEsEstimacion(true);
+        prediccion.setMetodo(
+            "Promedio diario de los últimos 28 días " +
+            "con tendencia atenuada"
+        );
+        prediccion.setSucursalNombre(usuario.getSucursal().getNombre());
+        prediccion.setGeneradoEn(LocalDateTime.now());
+        prediccion.setMasVendidos(masVendidos);
+        prediccion.setMenosVendidos(menosVendidos);
+
+        return prediccion;
+    }
+
+    private double calcularFactorTendencia(
+            long anteriores, long recientes) {
+
+        if (anteriores <= 0L) {
+            return recientes > 0L ? 1.5 : 1.0;
+        }
+
+        double cambio =
+            (recientes - anteriores) / (double) anteriores;
+
+        double factor = 1.0 + cambio * 0.5;
+
+        return Math.max(0.5, Math.min(1.5, factor));
     }
 
     // =========================================================

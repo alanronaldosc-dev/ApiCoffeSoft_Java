@@ -4,6 +4,7 @@ package com.utvt.ApiSpringCafeSoft.controller;
 import com.utvt.ApiSpringCafeSoft.dto.VentaDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ReporteVentasDTO;
 import com.utvt.ApiSpringCafeSoft.dto.ProductoMasVendidoDTO;
+import com.utvt.ApiSpringCafeSoft.dto.PrediccionProductosDTO;
 import com.utvt.ApiSpringCafeSoft.service.VentaService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -356,6 +357,41 @@ public class VentaController {
             ventaService.obtenerProductosMasVendidos(periodo);
 
         return ResponseEntity.ok(productos);
+    }
+
+    @Operation(
+        summary = "Ranking predictivo de productos",
+        description =
+            "Estima los cinco productos con mayor y con menor " +
+            "demanda para el horizonte seleccionado (7, 30 o 90 " +
+            "días), a partir del promedio diario de los últimos " +
+            "28 días. Los valores son estimaciones, no ventas reales."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Predicción generada correctamente"),
+        @ApiResponse(responseCode = "400", description = "Horizonte no válido o usuario sin sucursal"),
+        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/reporte/prediccion-productos")
+    public ResponseEntity<?> obtenerPrediccionProductos(
+            @Parameter(
+                description = "Horizonte de predicción en días: 7, 30 o 90",
+                required = true,
+                example = "7"
+            )
+            @RequestParam(defaultValue = "7") int horizonte) {
+
+        try {
+            return ResponseEntity.ok(
+                ventaService.obtenerPrediccionProductos(horizonte)
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("mensaje", e.getMessage()));
+        }
     }
 
     // =========================================================

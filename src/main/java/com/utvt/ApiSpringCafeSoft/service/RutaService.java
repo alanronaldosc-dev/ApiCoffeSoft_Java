@@ -1,5 +1,7 @@
 package com.utvt.ApiSpringCafeSoft.service;
 
+import com.utvt.ApiSpringCafeSoft.dto.ClienteRutaDTO;
+import com.utvt.ApiSpringCafeSoft.dto.RutaAsignadaDTO;
 import com.utvt.ApiSpringCafeSoft.model.Carga;
 import com.utvt.ApiSpringCafeSoft.model.Cliente;
 import com.utvt.ApiSpringCafeSoft.model.Ruta;
@@ -383,7 +385,7 @@ public class RutaService {
      * ruta en el orden establecido por
      * el encargado.
      */
-    public List<Cliente> obtenerClientesRuta(
+    public List<ClienteRutaDTO> obtenerClientesRuta(
             Long rutaId) {
 
         Ruta ruta =
@@ -404,7 +406,48 @@ public class RutaService {
                                 )
                         )
                 )
+                .map(this::toClienteRutaDTO)
                 .toList();
+    }
+
+    private ClienteRutaDTO toClienteRutaDTO(Cliente cliente) {
+        ClienteRutaDTO dto = new ClienteRutaDTO();
+
+        dto.setId(cliente.getId());
+        dto.setNombre(cliente.getNombre());
+        dto.setDomicilio(cliente.getDomicilio());
+        dto.setLinkGoogleMaps(cliente.getLinkGoogleMaps());
+        dto.setDiasReparto(cliente.getDiasReparto());
+        dto.setPrecioPorGarrafon(cliente.getPrecioPorGarrafon());
+        dto.setOrdenEnRuta(cliente.getOrdenEnRuta());
+
+        if (cliente.getGarrafonPreferencia() != null) {
+            dto.setGarrafonPreferencia(
+                new ClienteRutaDTO.ProductoResumen(
+                    cliente.getGarrafonPreferencia().getId(),
+                    cliente.getGarrafonPreferencia().getNombre()
+                )
+            );
+        }
+
+        if (cliente.getRuta() != null) {
+            dto.setRuta(
+                new ClienteRutaDTO.RutaResumen(cliente.getRuta().getId())
+            );
+        }
+
+        return dto;
+    }
+
+    private RutaAsignadaDTO toRutaAsignadaDTO(Ruta ruta) {
+        RutaAsignadaDTO dto = new RutaAsignadaDTO();
+
+        dto.setId(ruta.getId());
+        dto.setNombre(ruta.getNombre());
+        dto.setDiasReparto(ruta.getDiasReparto());
+        dto.setFechaAsignacion(ruta.getFechaAsignacion());
+
+        return dto;
     }
 
     // ============================================
@@ -464,7 +507,7 @@ public class RutaService {
      * del repartidor y respeta el orden
      * establecido por el encargado.
      */
-    public List<Cliente>
+    public List<ClienteRutaDTO>
     clientesRutaActivaDelRepartidor(
             Long repartidorId) {
 
@@ -563,7 +606,9 @@ public class RutaService {
             + ": " + clientesEncontrados.size()
         );
 
-        return clientesEncontrados;
+        return clientesEncontrados.stream()
+                .map(this::toClienteRutaDTO)
+                .toList();
     }
 
     // ============================================
@@ -664,7 +709,7 @@ public class RutaService {
         return repartidor;
     }
 
-    public List<Ruta> rutasAsignadasDelRepartidor(Long repartidorId) {
+    public List<RutaAsignadaDTO> rutasAsignadasDelRepartidor(Long repartidorId) {
         if (repartidorId == null) {
             throw new RuntimeException("El repartidor es obligatorio");
         }
@@ -674,6 +719,7 @@ public class RutaService {
                 .filter(r -> Boolean.TRUE.equals(r.getActiva())
                         && "ACTIVA".equalsIgnoreCase(r.getEstado()))
                 .sorted(java.util.Comparator.comparing(Ruta::getId))
+                .map(this::toRutaAsignadaDTO)
                 .toList();
     }
 
@@ -710,7 +756,7 @@ public class RutaService {
                 .orElse(null);
     }
 
-    public List<Cliente> clientesRutaEnCursoDelRepartidor(Long repartidorId) {
+    public List<ClienteRutaDTO> clientesRutaEnCursoDelRepartidor(Long repartidorId) {
         Ruta ruta = rutaEnCursoDelRepartidor(repartidorId);
         if (ruta == null) {
             throw new RuntimeException("No hay ruta en curso");
@@ -719,6 +765,7 @@ public class RutaService {
                 .stream()
                 .sorted(java.util.Comparator.comparing(Cliente::getOrdenEnRuta,
                         java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                .map(this::toClienteRutaDTO)
                 .toList();
     }
 

@@ -4,6 +4,8 @@ package com.utvt.ApiSpringCafeSoft.repository;
 import com.utvt.ApiSpringCafeSoft.model.Venta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -21,4 +23,18 @@ public interface SegmentacionRepository
         GROUP BY v.clienteRutaId
         """)
     List<Object[]> actividadPorCliente();
+
+    /**
+     * HU-081: compras, primera/última fecha y compras recientes por cliente.
+     * Las ventas canceladas (o dadas de baja lógicamente) no cuentan.
+     */
+    @Query("""
+        SELECT v.clienteRutaId, COUNT(v), MIN(v.fecha), MAX(v.fecha),
+               SUM(CASE WHEN v.fecha >= :desde THEN 1 ELSE 0 END)
+        FROM Venta v
+        WHERE v.clienteRutaId IS NOT NULL
+          AND (v.estadoPedido IS NULL OR UPPER(v.estadoPedido) <> 'CANCELADO')
+        GROUP BY v.clienteRutaId
+        """)
+    List<Object[]> actividadRiesgoPorCliente(@Param("desde") LocalDateTime desde);
 }

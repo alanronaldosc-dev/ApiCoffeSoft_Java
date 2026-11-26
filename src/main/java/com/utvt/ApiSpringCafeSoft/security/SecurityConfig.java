@@ -253,7 +253,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/ventas/reporte/patrones",
-                    "/api/ventas/reporte/patrones/exportar"
+                    "/api/ventas/reporte/patrones/exportar",
+                    "/api/ventas/reporte/prediccion-productos"
                 ).hasRole("ADMIN")
 
                 // ============================================
@@ -359,6 +360,11 @@ public class SecurityConfig {
 
                 .requestMatchers(
                     "/api/clientes/segmentos/**"
+                ).hasRole("ADMIN")
+
+                // HU-081: acciones de retención sobre clientes en riesgo.
+                .requestMatchers(
+                    "/api/acciones-retencion/**"
                 ).hasRole("ADMIN")
 
                 .requestMatchers(

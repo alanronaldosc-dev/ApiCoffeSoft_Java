@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "clientes")
@@ -23,6 +24,13 @@ public class Cliente {
     @NotBlank(message = "El domicilio es obligatorio")
     @Column(nullable = false)
     private String domicilio;
+
+    @Pattern(
+        regexp = "^[0-9+\\s()-]{7,20}$",
+        message = "El teléfono debe tener entre 7 y 20 caracteres válidos"
+    )
+    @Column(length = 20)
+    private String telefono;
 
     @UrlGoogleMaps(
         message = "El enlace debe ser una URL de Google Maps: https://maps.google.com/... o https://goo.gl/maps/..."
@@ -90,6 +98,14 @@ public class Cliente {
 
     public void setDomicilio(String domicilio) {
         this.domicilio = domicilio;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
     }
 
     public String getLinkGoogleMaps() {

@@ -162,6 +162,7 @@ public class ClienteService {
 
         cliente.setNombre(clienteActualizado.getNombre());
         cliente.setDomicilio(clienteActualizado.getDomicilio());
+        cliente.setTelefono(clienteActualizado.getTelefono());
         cliente.setLinkGoogleMaps(clienteActualizado.getLinkGoogleMaps());
         cliente.setDiasReparto(clienteActualizado.getDiasReparto());
         cliente.setFrecuencia(clienteActualizado.getFrecuencia());
