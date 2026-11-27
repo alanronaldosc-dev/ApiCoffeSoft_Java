@@ -4,6 +4,8 @@ package com.utvt.ApiSpringCafeSoft.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "promociones")
@@ -60,6 +62,18 @@ public class Promocion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "desactivada_por_usuario_id")
     private Usuario desactivadaPor;
+
+    // HU-055: IDs de los productos requeridos para el combo.
+    // No modifica las promociones anteriores: lista vacia = promocion general.
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "promocion_combo_productos", joinColumns = @JoinColumn(name = "promocion_id"))
+    @Column(name = "producto_id", nullable = false)
+    private List<Long> productosComboIds = new ArrayList<>();
+
+    public List<Long> getProductosComboIds() { return productosComboIds; }
+    public void setProductosComboIds(List<Long> ids) {
+        this.productosComboIds = ids == null ? new ArrayList<>() : new ArrayList<>(ids);
+    }
 
     public Promocion() {}
 

@@ -24,7 +24,6 @@
 
     <dependencies>
 
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -145,25 +144,6 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
-                </configuration>
-            </plugin>
-
-            <!-- Excluir tests desactualizados temporalmente -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>**/DesempenoRepartidoresServiceTest.java</exclude>
-                        <exclude>**/VentaControllerHu050CoverageTest.java</exclude>
-                        <exclude>**/VentaServiceHu050CoverageTest.java</exclude>
-                    </excludes>
-                    <testExcludes>
-                        <testExclude>**/DesempenoRepartidoresServiceTest.java</testExclude>
-                        <testExclude>**/VentaControllerHu050CoverageTest.java</testExclude>
-                        <testExclude>**/VentaServiceHu050CoverageTest.java</testExclude>
-                        <testExclude>**/VentaServiceCoberturaTest.java</testExclude>
-                    </testExcludes>
                 </configuration>
             </plugin>
 
