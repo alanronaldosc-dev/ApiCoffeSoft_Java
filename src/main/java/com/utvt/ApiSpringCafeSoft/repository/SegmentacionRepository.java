@@ -5,6 +5,7 @@ import com.utvt.ApiSpringCafeSoft.model.Venta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -37,4 +38,17 @@ public interface SegmentacionRepository
         GROUP BY v.clienteRutaId
         """)
     List<Object[]> actividadRiesgoPorCliente(@Param("desde") LocalDateTime desde);
+
+    /**
+     * HU-060: obtiene las ventas de clientes para detectar anomalías.
+     * Excluye ventas canceladas y ordena por cliente y fecha.
+     */
+    @Query("""
+        SELECT v.clienteRutaId, v.fecha, v.total
+        FROM Venta v
+        WHERE v.clienteRutaId IS NOT NULL
+          AND (v.estadoPedido IS NULL OR UPPER(v.estadoPedido) <> 'CANCELADO')
+        ORDER BY v.clienteRutaId ASC, v.fecha ASC
+        """)
+    List<Object[]> ventasParaDeteccionAnomalias();
 }

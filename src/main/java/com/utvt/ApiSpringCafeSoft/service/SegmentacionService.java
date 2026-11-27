@@ -32,6 +32,18 @@ public class SegmentacionService {
     public record ClienteRiesgo(Long clienteId, String nombre, String nivel, String motivo,
         Long diasSinCompra, double caidaFrecuencia, String telefono, String linkGoogleMaps,
         LocalDateTime fechaCalculo, DatosReferencia datosReferencia) {}
+    // HU-060: resultado de una anomalía detectada.
+public record AnomaliaCliente(
+    Long clienteId,
+    String nombre,
+    String tipo,
+    LocalDateTime fechaDeteccion,
+    String metrica,
+    Double valorDetectado,
+    String detalle
+) {}
+
+private record CompraAnomalia(LocalDateTime fecha, double total) {}
 
     private static final int VENTANA_DIAS = 30;
     private record Actividad(long compras, LocalDateTime ultima) {}
@@ -171,4 +183,130 @@ public class SegmentacionService {
             .sorted(orden)
             .collect(Collectors.toList());
     }
+    // HU-060: detección de anomalías en compras de clientes.
+@Transactional(readOnly = true)
+public List<AnomaliaCliente> listarAnomalias() {
+
+    List<Object[]> filas = ventas.ventasParaDeteccionAnomalias();
+
+    Map<Long, String> nombres = clientes.findAll().stream()
+        .collect(Collectors.toMap(
+            Cliente::getId,
+            Cliente::getNombre,
+            (a, b) -> a
+        ));
+
+    Map<Long, ClienteRiesgo> riesgos = listarRiesgo().stream()
+        .collect(Collectors.toMap(
+            ClienteRiesgo::clienteId,
+            cliente -> cliente,
+            (a, b) -> a
+        ));
+
+    Map<Long, List<CompraAnomalia>> comprasPorCliente =
+        new LinkedHashMap<>();
+
+    for (Object[] fila : filas) {
+        Long clienteId = ((Number) fila[0]).longValue();
+        LocalDateTime fecha = (LocalDateTime) fila[1];
+
+        double total = fila[2] == null
+            ? 0.0
+            : ((Number) fila[2]).doubleValue();
+
+        comprasPorCliente
+            .computeIfAbsent(clienteId, id -> new ArrayList<>())
+            .add(new CompraAnomalia(fecha, total));
+    }
+
+    List<AnomaliaCliente> resultado = new ArrayList<>();
+
+    for (Map.Entry<Long, List<CompraAnomalia>> entry
+            : comprasPorCliente.entrySet()) {
+
+        Long clienteId = entry.getKey();
+
+        String nombre = nombres.getOrDefault(
+            clienteId, "Cliente " + clienteId
+        );
+
+        ClienteRiesgo riesgo = riesgos.get(clienteId);
+
+        boolean clienteEnRiesgo = riesgo != null
+            && !"BAJO".equalsIgnoreCase(riesgo.nivel());
+
+        List<CompraAnomalia> compras = entry.getValue();
+
+        double sumaHistorica = 0;
+        int comprasHistoricas = 0;
+        int inicioVentana = 0;
+
+        for (int i = 0; i < compras.size(); i++) {
+
+            CompraAnomalia actual = compras.get(i);
+
+            // Detectar pedidos dentro de una ventana de tres horas.
+            LocalDateTime limite = actual.fecha().minusHours(3);
+
+            while (inicioVentana < i
+                    && compras.get(inicioVentana).fecha().isBefore(limite)) {
+                inicioVentana++;
+            }
+
+            int pedidosEnVentana = i - inicioVentana + 1;
+
+            if (pedidosEnVentana >= 2) {
+                resultado.add(new AnomaliaCliente(
+                    clienteId,
+                    nombre,
+                    "PEDIDOS_DUPLICADOS",
+                    actual.fecha(),
+                    "PEDIDOS_EN_3_HORAS",
+                    (double) pedidosEnVentana,
+                    "Se identificaron " + pedidosEnVentana
+                        + " pedidos dentro de una ventana de 3 horas."
+                ));
+            }
+
+            // Comparar con las compras históricas anteriores.
+            if (comprasHistoricas > 0) {
+
+                double promedio = sumaHistorica / comprasHistoricas;
+
+                if (promedio > 0 && actual.total() > promedio * 5) {
+
+                    String tipo = clienteEnRiesgo
+                        ? "COMPRA_ATIPICA_CLIENTE_EN_RIESGO"
+                        : "COMPRA_ATIPICA";
+
+                    resultado.add(new AnomaliaCliente(
+                        clienteId,
+                        nombre,
+                        tipo,
+                        actual.fecha(),
+                        "TOTAL_VS_PROMEDIO_HISTORICO",
+                        actual.total(),
+                        String.format(
+                            Locale.ROOT,
+                            "Compra de %.2f; promedio histórico previo de %.2f.",
+                            actual.total(),
+                            promedio
+                        )
+                    ));
+                }
+            }
+
+            sumaHistorica += actual.total();
+            comprasHistoricas++;
+        }
+    }
+
+    resultado.sort(
+        Comparator.comparing(
+            AnomaliaCliente::fechaDeteccion
+        ).reversed()
+    );
+
+    return resultado;
+}
 }
